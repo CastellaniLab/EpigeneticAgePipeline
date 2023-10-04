@@ -14,84 +14,69 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   #installing packages
 
-  if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+  # if (!requireNamespace("BiocManager", quietly = TRUE))
+  #   install.packages("BiocManager")
 
-  if (!requireNamespace("minfi", quietly = TRUE))
-    BiocManager::install("minfi")
+  # if (!requireNamespace("minfi", quietly = TRUE))
+  #   BiocManager::install("minfi")
 
-  if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
+  # if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE))
+  #   BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
 
-  if (!requireNamespace("tidyverse", quietly = TRUE))
-    install.packages("tidyverse")
+  # if (!requireNamespace("tidyverse", quietly = TRUE))
+  #   install.packages("tidyverse")
 
-  if (!requireNamespace("ggplot2", quietly = TRUE))
-    install.packages("ggplot2")
+  # if (!requireNamespace("ggplot2", quietly = TRUE))
+  #   install.packages("ggplot2")
 
-  if (!requireNamespace("ggpubr", quietly = TRUE))
-    install.packages("ggpubr")
+  # if (!requireNamespace("ggpubr", quietly = TRUE))
+  #   install.packages("ggpubr")
 
-  if (!requireNamespace("umap", quietly = TRUE))
-    install.packages("umap")
+  # if (!requireNamespace("umap", quietly = TRUE))
+  #   install.packages("umap")
 
-  if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylationEPICmanifest")
+  # if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE))
+  #   BiocManager::install("IlluminaHumanMethylationEPICmanifest")
 
-  if (!requireNamespace("methylclock", quietly = TRUE))
-    BiocManager::install("methylclock")
+  # if (!requireNamespace("methylclock", quietly = TRUE))
+  #   BiocManager::install("methylclock")
 
-  if (!requireNamespace("DunedinPACE", quietly = TRUE))
-    remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
+  # if (!requireNamespace("DunedinPACE", quietly = TRUE))
+  #   remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
 
-  if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE))
-    BiocManager::install("FlowSorted.CordBlood.450k")
+  # if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE))
+  #   BiocManager::install("FlowSorted.CordBlood.450k")
 
-  if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylation450kmanifest")
+  # if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE))
+  #   BiocManager::install("IlluminaHumanMethylation450kmanifest")
 
-  if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+  # if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE))
+  #   BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 
-  if (!requireNamespace("lme4", quietly = TRUE))
-    install.packages("lme4")
+  # if (!requireNamespace("lme4", quietly = TRUE))
+  #   install.packages("lme4")
 
-  if (!requireNamespace("dnaMethyAge", quietly = TRUE))
-    BiocManager::install("yiluyucheng/dnaMethyAge")
+  # if (!requireNamespace("dnaMethyAge", quietly = TRUE))
+  #   BiocManager::install("yiluyucheng/dnaMethyAge")
 
-  #if (!require("BiocManager", quietly = TRUE))
-  #install.packages("BiocManager")
-  #BiocManager::install("minfi")
-  #BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
-  #install.packages(c("tidyverse", "ggplot2", "ggpubr", "umap"))
-  #BiocManager::install("IlluminaHumanMethylationEPICmanifest")
-  #BiocManager::install("methylclock")
-  #devtools::install_github("danbelsky/DunedinPACE")
-  #BiocManager::install("FlowSorted.CordBlood.450k")
-  #BiocManager::install("IlluminaHumanMethylation450kmanifest")
-  #BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
-  #install.packages("lme4")
-  #BiocManager::install("yiluyucheng/dnaMethyAge")
-  #BiocManager::install("FlowSorted.CordBlood.450k")
+  # Load packages
+  # suppressMessages(library("minfi"))
+  #suppressMessages(library("IlluminaHumanMethylationEPICanno.ilm10b4.hg19"))
+  #suppressMessages(library("IlluminaHumanMethylationEPICmanifest"))
+  #suppressMessages(library("IlluminaHumanMethylation450kmanifest"))
+  #suppressMessages(library("IlluminaHumanMethylation450kanno.ilmn12.hg19"))
+  #suppressMessages(library("methylclock"))
+  #suppressMessages(library("DunedinPACE"))
+  #suppressMessages(library("FlowSorted.CordBlood.450k"))
+  #suppressMessages(library("tidyverse"))
+  #suppressMessages(library("ggplot2"))
+  #suppressMessages(library("ggpubr"))
+  #suppressMessages(library("umap"))
+  #suppressMessages(library("lme4"))
+  #suppressMessages(library("dnaMethyAge"))
+  #suppressMessages(library("glmmTMB"))
 
-  #Load packages
-  suppressMessages(library(minfi))
-  suppressMessages(library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19))
-  suppressMessages(library(IlluminaHumanMethylationEPICmanifest))
-  suppressMessages(library(IlluminaHumanMethylation450kmanifest))
-  suppressMessages(library(IlluminaHumanMethylation450kanno.ilmn12.hg19))
-  suppressMessages(library(methylclock))
-  suppressMessages(library("DunedinPACE"))
-  suppressMessages(library(FlowSorted.CordBlood.450k))
-  suppressMessages(library(tidyverse))
-  suppressMessages(library(ggplot2))
-  suppressMessages(library(ggpubr))
-  suppressMessages(library(umap))
-  suppressMessages(library(lme4))
-  suppressMessages(library('dnaMethyAge'))
-  suppressMessages(library(glmmTMB))
 
-  #function for processing IDAT files, returns df of beta values
   processIDAT <- function(){
     dataDirectory <-  directory
     pdata <- read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
@@ -157,25 +142,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     probes_before <- dim(mSetSqFlt)[1]
 
     #Exclude cross reactive probes
-    if (arrayType == "450K")
-    {
-      xReactiveProbes <- read.csv(file=paste(dataDirectory,
-                                             "ChenEtAlList.csv",
-                                             sep="/"), stringsAsFactors=FALSE)
-    }
-    else if (arrayType == "27K")
-    {
-      xReactiveProbes <- read.csv(file=paste(dataDirectory,
-                                             "non-specific-probes-Illumina27k.csv",
-                                             sep="/"), stringsAsFactors=FALSE)
-    }
-    else
-    {
-      xReactiveProbes <- read.csv(file=paste(dataDirectory,
-                                             "PidsleyCrossReactiveProbesEPIC.csv",
-                                             sep="/"), stringsAsFactors=FALSE)
-    }
-
+    xReactiveProbes <- read.csv(file=paste(dataDirectory,
+                                           "ChenEtAlList.csv",
+                                           sep="/"), stringsAsFactors=FALSE)
     keep <- !(featureNames(mSetSqFlt) %in% xReactiveProbes$TargetID)
     mSetSqFlt <- mSetSqFlt[keep,]
 
@@ -217,7 +186,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     rect(ll[1], ll[3], ll[2], ll[4], col="#CC7178")
   }
 
-  #function for finding the correlation between covariates
   corCovariates = function(x){
     corDf <- pdataSVs
     corDf <- corDf[1:ncol(pdataSVs),]
@@ -266,7 +234,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     return(x)
   }
 
-  #function for plotting correlation line between matrix
   twolines = function(x,y) {
     points(x,y,pch=20)
     abline(lm(y~x),col="#CC7178")
@@ -372,7 +339,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   }
 
   createGroupedBarChart <- function(data, x, y, fill, title) {
-    melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
+    melted_df <- melt(data, id.vars = x, variable.name = fill)
     custom_palette <- c("age" = "red", "horvath" = "#66c2a5", "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine"="#3288dd")
 
     plot <- ggplot(data = melted_df, aes_string(x = x, y = y, fill = fill)) +
@@ -457,12 +424,10 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   bpca <- prcomp(bValst, center=TRUE, scale=FALSE)
   pca_scores <- as.data.frame(bpca$x)
 
-
   #Cell Type Composition
 
   if (exists("rgSet"))
   {
-    library(FlowSorted.CordBlood.450k)
     CC <- estimateCellCounts(rgSet, compositeCellType = "CordBlood",
                              processMethod = "auto", probeSelect = "auto",
                              cellTypes = c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC"),
@@ -605,8 +570,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 }
 
+# 1 = 27K, 2 = 450K, 3 = EPIC
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE, arrayType = "EPIC")
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE)
 
 
 

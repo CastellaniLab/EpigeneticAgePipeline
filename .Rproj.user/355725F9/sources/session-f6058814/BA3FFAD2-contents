@@ -1,4 +1,4 @@
-main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K")
+main <- function(normalize = TRUE, useBeta = FALSE, directory = getwd(), arrayType = "450K")
 {
   setwd(directory)
   print(directory)
@@ -12,7 +12,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   bVals <- NULL
 
-  #installing packages
+  #checking if packages need to be installed
 
   if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -59,6 +59,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if (!requireNamespace("dnaMethyAge", quietly = TRUE))
     BiocManager::install("yiluyucheng/dnaMethyAge")
 
+
   #if (!require("BiocManager", quietly = TRUE))
   #install.packages("BiocManager")
   #BiocManager::install("minfi")
@@ -91,7 +92,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   suppressMessages(library('dnaMethyAge'))
   suppressMessages(library(glmmTMB))
 
-  #function for processing IDAT files, returns df of beta values
+  #function for processing IDAT files, returns a beta values
   processIDAT <- function(){
     dataDirectory <-  directory
     pdata <- read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
@@ -157,25 +158,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     probes_before <- dim(mSetSqFlt)[1]
 
     #Exclude cross reactive probes
-    if (arrayType == "450K")
-    {
-      xReactiveProbes <- read.csv(file=paste(dataDirectory,
-                                             "ChenEtAlList.csv",
-                                             sep="/"), stringsAsFactors=FALSE)
-    }
-    else if (arrayType == "27K")
-    {
-      xReactiveProbes <- read.csv(file=paste(dataDirectory,
-                                             "non-specific-probes-Illumina27k.csv",
-                                             sep="/"), stringsAsFactors=FALSE)
-    }
-    else
-    {
-      xReactiveProbes <- read.csv(file=paste(dataDirectory,
-                                             "PidsleyCrossReactiveProbesEPIC.csv",
-                                             sep="/"), stringsAsFactors=FALSE)
-    }
-
+    xReactiveProbes <- read.csv(file=paste(dataDirectory,
+                                           "ChenEtAlList.csv",
+                                           sep="/"), stringsAsFactors=FALSE)
     keep <- !(featureNames(mSetSqFlt) %in% xReactiveProbes$TargetID)
     mSetSqFlt <- mSetSqFlt[keep,]
 
@@ -201,6 +186,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     bVals <<- getBeta(mSetSqFlt)
   }
 
+  #function for plotting matrix
   panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...){
     usr <- par("usr"); on.exit(par(usr))
     par(usr = c(0, 1, 0, 1))
@@ -212,6 +198,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     text(0.5, 0.5, txt, cex = cex.cor)
   }
 
+  #function for plotting matrix
   mydiag.panel <- function( x,  labels, ...){
     ll <- par("usr")
     rect(ll[1], ll[3], ll[2], ll[4], col="#CC7178")
@@ -272,6 +259,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     abline(lm(y~x),col="#CC7178")
   }
 
+  #function for generating residuals
   residGeneration <- function(pdata, output) {
     columns <- colnames(pdata)
     columnsUsed <- columns[1:length(columns)]
@@ -316,6 +304,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     return(output)
   }
 
+  #removing covariates that have been selected by the user
   removeCovariates <- function(df) {
     print("The following covariates were found to be highly correlated: \n")
     print(corsToRemove)
@@ -334,6 +323,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     return(df)
   }
 
+  #removing outlier samples, uses principal component analysis
   removeOutliers <- function(df,isSampleSheet = FALSE) {
     if (isSampleSheet == FALSE)
     {
@@ -346,6 +336,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   }
 
+  #function for analyzing each measure of epigenetic age
   processAgeType <- function(data, age_type, output) {
     pdataSVs$Clock <- as.numeric(data[[age_type]])
     diag.labels[1] <- age_type
@@ -371,6 +362,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     return(finalOutput)
   }
 
+  #function for generating barplot
   createGroupedBarChart <- function(data, x, y, fill, title) {
     melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
     custom_palette <- c("age" = "red", "horvath" = "#66c2a5", "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine"="#3288dd")
@@ -412,7 +404,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     processIDAT()
   }
 
-  print(bVals)
   #PCA Generation####################################
   #Remove NAs
   #which(is.na(bVals)) # no NA values in data frame
@@ -605,8 +596,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 }
 
+# 1 = 27K, 2 = 450K, 3 = EPIC
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE, arrayType = "EPIC")
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE)
 
 
 
