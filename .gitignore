@@ -1,0 +1,7 @@
+*.Rbuildignore
+*.RData
+*.Rhistory
+*.Rproj
+*.txt
+EpigeneticAgePipeline.Rcheck/
+.Rproj.user/
