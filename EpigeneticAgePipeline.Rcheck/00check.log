@@ -1,0 +1,122 @@
+* using log directory 'C:/Users/stanl/Documents/EpigeneticAgePipeline/EpigeneticAgePipeline.Rcheck'
+* using R version 4.3.1 (2023-06-16 ucrt)
+* using platform: x86_64-w64-mingw32 (64-bit)
+* R was compiled by
+    gcc.exe (GCC) 12.2.0
+    GNU Fortran (GCC) 12.2.0
+* running under: Windows 10 x64 (build 19045)
+* using session charset: UTF-8
+* checking for file 'EpigeneticAgePipeline/DESCRIPTION' ... OK
+* checking extension type ... Package
+* this is package 'EpigeneticAgePipeline' version '0.1.0'
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for .dll and .exe files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .Rd2pdf16728
+  .Rd2pdf20228
+These were most likely included in error. See section 'Package
+structure' in the 'Writing R Extensions' manual.
+* checking for portable file names ... OK
+* checking whether package 'EpigeneticAgePipeline' can be installed ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directories with names of Rd2pdf directories:
+  ./.Rd2pdf16728
+  ./.Rd2pdf20228
+Most likely, these were included erroneously.
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+main : processIDAT: no visible global function definition for
+  'write.csv'
+main : processIDAT: no visible global function definition for
+  'read.csv'
+main : processIDAT: no visible binding for global variable
+  'IlluminaHumanMethylationEPICanno.ilm10b4.hg19'
+main : panel.cor: no visible global function definition for 'par'
+main : panel.cor: no visible global function definition for 'cor'
+main : panel.cor: no visible binding for '<<-' assignment to
+  'listofCors'
+main : panel.cor: no visible binding for global variable 'listofCors'
+main : panel.cor: no visible global function definition for 'strwidth'
+main : panel.cor: no visible global function definition for 'text'
+main : mydiag.panel: no visible global function definition for 'par'
+main : mydiag.panel: no visible global function definition for 'rect'
+main : corCovariates: no visible binding for global variable
+  'listofCors'
+main : corCovariates: no visible binding for global variable
+  'corsToRemove'
+main : corCovariates: no visible binding for '<<-' assignment to
+  'corsToRemove'
+main : twolines: no visible global function definition for 'points'
+main : twolines: no visible global function definition for 'abline'
+main : twolines: no visible global function definition for 'lm'
+main : residGeneration: no visible global function definition for
+  'as.formula'
+main : residGeneration: no visible global function definition for
+  'residuals'
+main : removeCovariates: no visible binding for global variable
+  'corsToRemove'
+main : processAgeType: no visible global function definition for
+  'cairo_pdf'
+main : processAgeType: no visible global function definition for
+  'pairs'
+main : processAgeType: no visible global function definition for
+  'dev.off'
+main: no visible global function definition for 'read.csv'
+main: no visible global function definition for 'na.omit'
+main: no visible global function definition for 'prcomp'
+main: no visible global function definition for 'sd'
+main: no visible binding for global variable 'rgSet'
+main: no visible global function definition for 'select_if'
+main: no visible global function definition for 'as.formula'
+main: no visible global function definition for 'write.table'
+main: no visible global function definition for 'write_file'
+Undefined global functions or variables:
+  IlluminaHumanMethylationEPICanno.ilm10b4.hg19 abline as.formula
+  cairo_pdf cor corsToRemove dev.off listofCors lm na.omit pairs par
+  points prcomp read.csv rect residuals rgSet sd select_if strwidth
+  text write.csv write.table write_file
+Consider adding
+  importFrom("grDevices", "cairo_pdf", "dev.off")
+  importFrom("graphics", "abline", "pairs", "par", "points", "rect",
+             "strwidth", "text")
+  importFrom("stats", "as.formula", "cor", "lm", "na.omit", "prcomp",
+             "residuals", "sd")
+  importFrom("utils", "read.csv", "write.csv", "write.table")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking examples ... NONE
+* checking PDF version of manual ... WARNING
+LaTeX errors when creating PDF version.
+This typically indicates Rd problems.
+LaTeX errors found:
+* checking PDF version of manual without index ... ERROR
+* DONE
+Status: 1 ERROR, 2 WARNINGs, 2 NOTEs
