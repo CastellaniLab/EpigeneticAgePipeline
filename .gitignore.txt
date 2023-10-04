@@ -1,9 +1,0 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-*.Rbuildignore
-*.RData
-*.Rhistory
-*.Rproj
-*.txt
-EpigeneticAgePipeline.Rcheck/
