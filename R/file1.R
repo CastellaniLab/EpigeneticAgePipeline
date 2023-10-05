@@ -457,7 +457,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 
   #determining cell composition
-  if (exists("rgSet") & arrayType != "27K")
+  if (rgSet != NULL & arrayType != "27K")
   {
     FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
 
