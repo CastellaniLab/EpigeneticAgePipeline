@@ -12,11 +12,13 @@ NeedsCompilation: no
 Packaged: 2023-09-26 16:33:54 UTC; stanl
 Imports:
   BiocManager,
-  minfi,
   ggplot2,
   ggpubr,
-  methylclock,
-  DunedinPACE,
+  remotes,
+  reshape2,
+  readr,
+  glmmTMB
+Suggests:
   IlluminaHumanMethylationEPICmanifest,
   IlluminaHumanMethylation450kmanifest,
   IlluminaHumanMethylation27kmanifest,
@@ -24,21 +26,8 @@ Imports:
   IlluminaHumanMethylation450kanno.ilmn12.hg19,
   IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
   IlluminaHumanMethylation27kanno.ilmn12.hg19,
+  minfi,
+  methylclock,
   dnaMethyAge,
-  remotes,
-  reshape2,
-  readr,
-  glmmTMB
-Remotes:
-  hansenlab/minfi,
-  isglobal-brge/methylclock,
-  bioc::release/IlluminaHumanMethylationEPICmanifest,
-  bioc::release/IlluminaHumanMethylation450kmanifest,
-  bioc::release/IlluminaHumanMethylation27kmanifest,
-  bioc::release/FlowSorted.CordBlood.450k,
-  bioc::release/IlluminaHumanMethylation450kanno.ilmn12.hg19,
-  bioc::release/IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
-  bioc::release/IlluminaHumanMethylation27kanno.ilmn12.hg19,
-  yiluyucheng/dnaMethyAge,
-  danbelsky/DunedinPACE
+  DunedinPACE
 RoxygenNote: 7.2.3

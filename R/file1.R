@@ -20,7 +20,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     if (!requireNamespace("minfi", quietly = TRUE)) {
-      BiocManager::install("minfi")
+      remotes::install_bioc("minfi")
     }
 
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
@@ -44,38 +44,38 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylationEPICmanifest")
+      remotes::install_bioc("IlluminaHumanMethylationEPICmanifest")
       IlluminaHumanMethylationEPICmanifest::IlluminaHumanMethylationEPICmanifest
     }
 
     if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation450kmanifest")
+      remotes::install_bioc("IlluminaHumanMethylation450kmanifest")
       IlluminaHumanMethylation450kmanifest::IlluminaHumanMethylation450kmanifest
     }
 
     if (!requireNamespace("IlluminaHumanMethylation27kmanifest", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation27kmanifest")
+      remotes::install_bioc("IlluminaHumanMethylation27kmanifest")
       IlluminaHumanMethylation27kmanifest::IlluminaHumanMethylation27kmanifest
     }
 
     if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE)) {
-      BiocManager::install("FlowSorted.CordBlood.450k")
+      remotes::install_bioc("FlowSorted.CordBlood.450k")
     }
 
     if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+      remotes::install_bioc("IlluminaHumanMethylation450kanno.ilmn12.hg19")
     }
 
     if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
+      remotes::install_bioc("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
     }
 
     if (!requireNamespace("IlluminaHumanMethylation27kanno.ilmn12.hg19", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation27kanno.ilmn12.hg19")
+      remotes::install_bioc("IlluminaHumanMethylation27kanno.ilmn12.hg19")
     }
 
     if (!requireNamespace("dnaMethyAge", quietly = TRUE)) {
-      BiocManager::install("yiluyucheng/dnaMethyAge")
+      remotes::install_bioc("yiluyucheng/dnaMethyAge")
     }
   }
 
