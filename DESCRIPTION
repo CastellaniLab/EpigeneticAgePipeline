@@ -39,6 +39,6 @@ Remotes:
   remotes::install_bioc("IlluminaHumanMethylation450kanno.ilmn12.hg19"),
   remotes::install_bioc("IlluminaHumanMethylationEPICanno.ilm10b4.hg19"),
   remotes::install_bioc("IlluminaHumanMethylation27kanno.ilmn12.hg19"),
-  remotes::install_bioc("yiluyucheng/dnaMethyAge")
-  remotes::install_github("danbelsky/DunedinPACE"),
+  remotes::install_bioc("yiluyucheng/dnaMethyAge"),
+  remotes::install_github("danbelsky/DunedinPACE")
 RoxygenNote: 7.2.3
