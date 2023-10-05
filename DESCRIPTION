@@ -32,13 +32,13 @@ Imports:
 Remotes:
   hansenlab/minfi,
   isglobal-brge/methylclock,
-  bioc::0.3.0/IlluminaHumanMethylationEPICmanifest,
-  bioc::0.4.0/IlluminaHumanMethylation450kmanifest,
-  bioc::0.4.0/IlluminaHumanMethylation27kmanifest,
-  bioc::1.28.0/FlowSorted.CordBlood.450k,
-  bioc::0.6.1/IlluminaHumanMethylation450kanno.ilmn12.hg19,
-  bioc::0.6.0/IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
-  bioc::0.6.0/IlluminaHumanMethylation27kanno.ilmn12.hg19,
+  bioc::release/IlluminaHumanMethylationEPICmanifest,
+  bioc::release/IlluminaHumanMethylation450kmanifest,
+  bioc::release/IlluminaHumanMethylation27kmanifest,
+  bioc::release/FlowSorted.CordBlood.450k,
+  bioc::release/IlluminaHumanMethylation450kanno.ilmn12.hg19,
+  bioc::release/IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
+  bioc::release/IlluminaHumanMethylation27kanno.ilmn12.hg19,
   yiluyucheng/dnaMethyAge,
   danbelsky/DunedinPACE
 RoxygenNote: 7.2.3
