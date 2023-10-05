@@ -37,7 +37,7 @@ Remotes:
   bioc::0.4.0/IlluminaHumanMethylation27kmanifest,
   bioc::1.28.0/FlowSorted.CordBlood.450k,
   bioc::0.6.1/IlluminaHumanMethylation450kanno.ilmn12.hg19,
-  bioc::0.6.0/IlluminaHumanMethylationEPICanno.ilm10b4.hg19
+  bioc::0.6.0/IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
   bioc::0.6.0/IlluminaHumanMethylation27kanno.ilmn12.hg19,
   yiluyucheng/dnaMethyAge,
   danbelsky/DunedinPACE
