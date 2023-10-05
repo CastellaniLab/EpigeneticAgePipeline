@@ -78,6 +78,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       BiocManager::install("yiluyucheng/dnaMethyAge")
     }
   }
+
   installPackages()
 
   #function for processing IDAT files, returns df of beta values
