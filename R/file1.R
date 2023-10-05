@@ -1,9 +1,6 @@
 main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K")
 {
   setwd(directory)
-  print(directory)
-  start <- Sys.time()
-  print(getwd())
   if (!file.exists("output.txt")) {
     file.create("output.txt")
   }
@@ -11,90 +8,82 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if (normalize == TRUE) shouldNormalize <- FALSE else shouldNormalize <- TRUE
 
   bVals <- NULL
+  rgSet <- NULL
+  listofCors <- c()
+  corsToRemove <- c()
 
-  #installing packages
+  #function for installing packages
+  installPackages <- function()
+  {
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+      install.packages("BiocManager")
+    }
 
-  if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+    if (!requireNamespace("minfi", quietly = TRUE)) {
+      BiocManager::install("minfi")
+    }
 
-  if (!requireNamespace("minfi", quietly = TRUE))
-    BiocManager::install("minfi")
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+      install.packages("ggplot2")
+    }
 
-  if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
+    if (!requireNamespace("readr", quietly = TRUE)) {
+      install.packages("readr")
+    }
 
-  if (!requireNamespace("tidyverse", quietly = TRUE))
-    install.packages("tidyverse")
+    if (!requireNamespace("ggpubr", quietly = TRUE)) {
+      install.packages("ggpubr")
+    }
 
-  if (!requireNamespace("ggplot2", quietly = TRUE))
-    install.packages("ggplot2")
+    if (!requireNamespace("methylclock", quietly = TRUE)) {
+      BiocManager::install("methylclock")
+    }
 
-  if (!requireNamespace("ggpubr", quietly = TRUE))
-    install.packages("ggpubr")
+    if (!requireNamespace("DunedinPACE", quietly = TRUE)) {
+      remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
+    }
 
-  if (!requireNamespace("umap", quietly = TRUE))
-    install.packages("umap")
+    if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE)) {
+      BiocManager::install("IlluminaHumanMethylationEPICmanifest")
+      IlluminaHumanMethylationEPICmanifest::IlluminaHumanMethylationEPICmanifest
+    }
 
-  if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylationEPICmanifest")
+    if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE)) {
+      BiocManager::install("IlluminaHumanMethylation450kmanifest")
+      IlluminaHumanMethylation450kmanifest::IlluminaHumanMethylation450kmanifest
+    }
 
-  if (!requireNamespace("methylclock", quietly = TRUE))
-    BiocManager::install("methylclock")
+    if (!requireNamespace("IlluminaHumanMethylation27kmanifest", quietly = TRUE)) {
+      BiocManager::install("IlluminaHumanMethylation27kmanifest")
+      IlluminaHumanMethylation27kmanifest::IlluminaHumanMethylation27kmanifest
+    }
 
-  if (!requireNamespace("DunedinPACE", quietly = TRUE))
-    remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
+    if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE)) {
+      BiocManager::install("FlowSorted.CordBlood.450k")
+    }
 
-  if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE))
-    BiocManager::install("FlowSorted.CordBlood.450k")
+    if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE)) {
+      BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+    }
 
-  if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylation450kmanifest")
+    if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE)) {
+      BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
+    }
 
-  if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+    if (!requireNamespace("IlluminaHumanMethylation27kanno.ilmn12.hg19", quietly = TRUE)) {
+      BiocManager::install("IlluminaHumanMethylation27kanno.ilmn12.hg19")
+    }
 
-  if (!requireNamespace("lme4", quietly = TRUE))
-    install.packages("lme4")
-
-  if (!requireNamespace("dnaMethyAge", quietly = TRUE))
-    BiocManager::install("yiluyucheng/dnaMethyAge")
-
-  #if (!require("BiocManager", quietly = TRUE))
-  #install.packages("BiocManager")
-  #BiocManager::install("minfi")
-  #BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
-  #install.packages(c("tidyverse", "ggplot2", "ggpubr", "umap"))
-  #BiocManager::install("IlluminaHumanMethylationEPICmanifest")
-  #BiocManager::install("methylclock")
-  #devtools::install_github("danbelsky/DunedinPACE")
-  #BiocManager::install("FlowSorted.CordBlood.450k")
-  #BiocManager::install("IlluminaHumanMethylation450kmanifest")
-  #BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
-  #install.packages("lme4")
-  #BiocManager::install("yiluyucheng/dnaMethyAge")
-  #BiocManager::install("FlowSorted.CordBlood.450k")
-
-  #Load packages
-  suppressMessages(library(minfi))
-  suppressMessages(library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19))
-  suppressMessages(library(IlluminaHumanMethylationEPICmanifest))
-  suppressMessages(library(IlluminaHumanMethylation450kmanifest))
-  suppressMessages(library(IlluminaHumanMethylation450kanno.ilmn12.hg19))
-  suppressMessages(library(methylclock))
-  suppressMessages(library("DunedinPACE"))
-  suppressMessages(library(FlowSorted.CordBlood.450k))
-  suppressMessages(library(tidyverse))
-  suppressMessages(library(ggplot2))
-  suppressMessages(library(ggpubr))
-  suppressMessages(library(umap))
-  suppressMessages(library(lme4))
-  suppressMessages(library('dnaMethyAge'))
-  suppressMessages(library(glmmTMB))
+    if (!requireNamespace("dnaMethyAge", quietly = TRUE)) {
+      BiocManager::install("yiluyucheng/dnaMethyAge")
+    }
+  }
+  installPackages()
 
   #function for processing IDAT files, returns df of beta values
   processIDAT <- function(){
     dataDirectory <-  directory
-    pdata <- read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
+    pdata <- minfi::read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
     pdata$Basename <- pdata$Sample_Name
 
     #Give the samples descriptive names
@@ -106,37 +95,33 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     write.csv(pdata, file = "Sample_Sheet.csv", row.names = FALSE)
 
     #Read in the raw data from the IDAT files
-    rgSet <- read.metharray.exp(targets=pdata)
-    sampleNames(rgSet) <- pdata$ID
-
+    rgSet <- minfi::read.metharray.exp(targets=pdata)
+    minfi::sampleNames(rgSet) <- pdata$ID
     #Calculate the detection p-values
-    detP <- suppressMessages(detectionP(rgSet))
+    detP <- suppressMessages(minfi::detectionP(rgSet))
 
     #Track how many samples were removed due to poor quality
     samples_before <- dim(rgSet)[2]
 
     #Remove poor quality samples
     keep <- colMeans(detP) < 0.05
-    rgSet <<- rgSet[,keep]
+    rgSet <- rgSet[,keep]
 
     #Print out number of samples removed due to poor quality
     samples_removed <- samples_before - dim(detP)[2]
     message("----- ", samples_removed, " sample(s) removed due to poor quality") #----- 0 sample(s) removed due to poor quality
 
-    #Normalize the data *** REMOVING THIS STEP ***
-    #mSetSq <- suppressMessages(preprocessFunnorm(rgSet))
-
     mSetSq <- rgSet
-    #class(mSetSq)
-    mSetSq <- preprocessRaw(mSetSq) #does not perform normalization
-    #class(mSetSq)
-    mSetSq <- mapToGenome(mSetSq)
-    #class(mSetSq)
-    mSetSq <- ratioConvert(mSetSq)
-    #class(mSetSq)
+
+    mSetSq <- minfi::preprocessRaw(mSetSq) #does not perform normalization
+
+    mSetSq <- minfi::mapToGenome(mSetSq)
+
+    mSetSq <- minfi::ratioConvert(mSetSq)
+
 
     #Ensure probes are in the same order in the mSetSq and detP objects
-    detP <- detP[match(featureNames(mSetSq),rownames(detP)),]
+    detP <- detP[match(minfi::featureNames(mSetSq),rownames(detP)),]
 
     #Remove any probes that have failed in one or more samples
     probes_before <- dim(mSetSq)[1]
@@ -149,7 +134,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     probes_before <- dim(mSetSqFlt)[1]
 
     #Remove probes with SNPs at CpG site
-    mSetSqFlt <- dropLociWithSnps(mSetSqFlt)
+    mSetSqFlt <- minfi::dropLociWithSnps(mSetSqFlt)
 
     #Print out number of probes removed for having SNPs at CpG site
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
@@ -176,7 +161,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
                                              sep="/"), stringsAsFactors=FALSE)
     }
 
-    keep <- !(featureNames(mSetSqFlt) %in% xReactiveProbes$TargetID)
+    keep <- !(minfi::featureNames(mSetSqFlt) %in% xReactiveProbes$TargetID)
     mSetSqFlt <- mSetSqFlt[keep,]
 
     #Print out number of probes removed for being cross reactive
@@ -185,9 +170,21 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     probes_before <- dim(mSetSqFlt)[1]
 
     #Remove Sex Probes
-    ann <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+    if (arrayType == "EPIC")
+    {
+      ann <- IlluminaHumanMethylationEPICanno.ilm10b4.hg19::Manifest
+    }
+    else if(arrayType == "450K")
+    {
+      ann <- IlluminaHumanMethylation450kanno.ilmn12.hg19::Manifest
+    }
+    else
+    {
+      ann <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Manifest
+    }
+
     sexProbes <- ann[which(ann$chr %in% c("chrX", "chrY")),]
-    keep <- !(featureNames(mSetSqFlt) %in% sexProbes$Name)
+    keep <- !(minfi::featureNames(mSetSqFlt) %in% sexProbes$Name)
     mSetSqFlt <- mSetSqFlt[keep,]
 
     #Print out number of probes removed for being cross reactive
@@ -198,7 +195,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     message("----- ", dim(mSetSqFlt)[1], " probe(s) remaining for analysis") #----- 787849 probe(s) remaining for analysis
 
     #Calculate methylation beta values
-    bVals <<- getBeta(mSetSqFlt)
+    rgSet <<- rgSet
+    bVals <<- minfi::getBeta(mSetSqFlt)
   }
 
   panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...){
@@ -294,7 +292,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     runlme <- function(formula) {
-      lme1 <- glmmTMB(formula, data = pdata, family = "gaussian")
+      lme1 <- glmmTMB::glmmTMB(formula, data = pdata, family = "gaussian", control = glmmTMB::glmmTMBControl(optCtrl=list(iter.max=10000,eval.max=10000)))
       smodel <- lme1
       return(smodel)
     }
@@ -349,9 +347,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   processAgeType <- function(data, age_type, output) {
     pdataSVs$Clock <- as.numeric(data[[age_type]])
     diag.labels[1] <- age_type
-    cairo_pdf(paste("matrixplot", age_type, ".pdf", sep = ""), width = 14, height = 14, fallback_resolution = 1000)
+    grDevices::cairo_pdf(paste("matrixplot", age_type, ".pdf", sep = ""), width = 14, height = 14, fallback_resolution = 1000)
     print(pairs(plot.formula, data = pdataSVs, upper.panel = twolines, labels = diag.labels, diag.panel = mydiag.panel, lower.panel = panel.cor, label.pos = 0.5, main = ""))
-    dev.off()
+    grDevices::dev.off()
 
     finalOutput <- paste(output, "\n", age_type, "Covariates\n")
     finalOutput <- corCovariates(finalOutput)
@@ -365,8 +363,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
     finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
 
-    assign("listofCors", c(), envir = .GlobalEnv)
-    assign("corsToRemove", c(), envir = .GlobalEnv)
+    listofCors <<- c()
+    corsToRemove <<- c()
 
     return(finalOutput)
   }
@@ -375,26 +373,26 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
     custom_palette <- c("age" = "red", "horvath" = "#66c2a5", "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine"="#3288dd")
 
-    plot <- ggplot(data = melted_df, aes_string(x = x, y = y, fill = fill)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(x = x, y = "Age", title = title) +
-      scale_fill_manual(values = custom_palette) +  # Apply the custom palette
-      theme_minimal()
+    plot <- ggplot2::ggplot(data = melted_df, ggplot2::aes_string(x = x, y = y, fill = fill)) +
+      ggplot2::geom_bar(stat = "identity", position = "dodge") +
+      ggplot2::labs(x = x, y = "Age", title = title) +
+      ggplot2::scale_fill_manual(values = custom_palette) +  # Apply the custom palette
+      ggplot2::theme_minimal()
 
-    plot <- plot + theme(plot.background = element_rect(fill = "white"))
+    plot <- plot + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white"))
 
-    ggsave("SampleIDandAge.png", plot = plot, width = 10000, height = 1000, units = "px", dpi = 300)
+    ggplot2::ggsave("SampleIDandAge.png", plot = plot, width = 10000, height = 1000, units = "px", dpi = 300)
 
     for (i in 2:(ncol(data) - 1))
     {
-      plot <- ggscatter(data, x = "age", y = colnames(data)[i],
-                        add = "reg.line",  #
-                        add.params = list(color = "blue", fill = "lightgray"))
-      plot <- plot + stat_cor(method = "pearson")
-      ggsave(filename = paste0("plot_", colnames(data)[i], ".png"),
-             plot = plot,
-             width = 1000, height = 1000,
-             units = "px")
+      plot <- ggpubr::ggscatter(data, x = "age", y = colnames(data)[i],
+                                add = "reg.line",  #
+                                add.params = list(color = "blue", fill = "lightgray"))
+      plot <- plot + ggpubr::stat_cor(method = "pearson")
+      ggplot2::ggsave(filename = paste0("plot_", colnames(data)[i], ".png"),
+                      plot = plot,
+                      width = 1000, height = 1000,
+                      units = "px")
     }
 
   }
@@ -412,10 +410,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     processIDAT()
   }
 
-  print(bVals)
-  #PCA Generation####################################
-  #Remove NAs
-  #which(is.na(bVals)) # no NA values in data frame
+
+  #PCA Generation ####
+
   bVals <- na.omit(bVals)
 
   bValst <- NULL
@@ -458,21 +455,21 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   pca_scores <- as.data.frame(bpca$x)
 
 
-  #Cell Type Composition
-
-  if (exists("rgSet"))
+  #determining cell composition
+  if (exists("rgSet") & arrayType != "27K")
   {
-    library(FlowSorted.CordBlood.450k)
-    CC <- estimateCellCounts(rgSet, compositeCellType = "CordBlood",
-                             processMethod = "auto", probeSelect = "auto",
-                             cellTypes = c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC"),
-                             referencePlatform = "IlluminaHumanMethylation450k",
-                             returnAll = FALSE, meanPlot = FALSE, verbose = TRUE)
+    FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
+
+    CC <- minfi::estimateCellCounts(rgSet, compositeCellType = "CordBlood",
+                                    processMethod = "auto", probeSelect = "auto",
+                                    cellTypes = c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC"),
+                                    referencePlatform = c("IlluminaHumanMethylation450k"),
+                                    returnAll = FALSE, meanPlot = FALSE, verbose = TRUE)
 
     CC <- removeOutliers(CC)
   }
 
-  #Correlation Matrix##########################
+  #Correlation Matrix Construction ####
 
   sampleData <- read.csv("Sample_Sheet.csv")
   sampleData <- removeOutliers(sampleData, TRUE)
@@ -493,7 +490,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("Smoking_Status" %in% names(sampleData)) pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status)
   if ("Batch" %in% names(sampleData)) pdataSVs$Batch <- as.factor(sampleData$Batch)
   if ("Slide" %in% names(sampleData)) pdataSVs$Slide <- as.factor(sampleData$Slide)
-  if (exists("rgSet"))
+  if (exists("rgSet") & arrayType != "27K")
   {
     pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
     pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
@@ -516,24 +513,23 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
   if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
 
-  pdataSVs <- pdataSVs %>%
-    select_if(~n_distinct(.) >= 2)
-  numRemoved <- ncol(pdataSVs) - ncol(sampleData)
-  warning(paste(numRemoved," variables were removed because you either did not follow proper naming conventions or your variable had only 1 level "))
 
-  assign("listofCors", c(), envir = .GlobalEnv)
-  assign("corsToRemove", c(), envir = .GlobalEnv)
+  pdataSVs <- pdataSVs[, sapply(pdataSVs, function(col) length(unique(col)) >= 2)]
+  print(pdataSVs)
+  print(sampleData)
 
   diag.labels=colnames(pdataSVs)
   pdataColumns <- names(pdataSVs)
   plot.formula=as.formula(paste("~", paste(pdataColumns, collapse = "+")))
 
 
-  #Clock Output#######################################
+  #Clock Output####
 
   results <- NULL
 
-  if (shouldNormalize == TRUE) results <- DNAmAge(bVals, normalize = TRUE, age = sampleData$Age) else results <- DNAmAge(bVals, normalize = FALSE, age = sampleData$Age)
+  if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE, age = sampleData$Age) else results <- methylclock::DNAmAge(bVals, normalize = FALSE, age = sampleData$Age)
+  print(results)
+  print(results$Hannum)
 
   finalOutput <- "Raw Clock Results\n"
   finalOutput <- paste(finalOutput, "SampleID", "\t", "Horvath", "\t", "        SkinHorvath", "\t", "        Hannum", "\t", "        PhenoAge","\n" )
@@ -567,7 +563,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     bVals <- bVals[,-1]
   }
 
-  results <- PACEProjector(as.matrix(bVals), proportionOfProbesRequired = 0.8)
+  results <- DunedinPACE::PACEProjector(as.matrix(bVals), proportionOfProbesRequired = 0.8)
   results <- as.data.frame(results)
   for (i in 1:nrow(results))
   {
@@ -587,7 +583,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
   clockname <- "PCGrimAge"
-  grimage <- methyAge(bVals, clock = clockname, age_info = grimDf)
+  grimage <- dnaMethyAge::methyAge(bVals, clock = clockname, age_info = grimDf, do_plot = FALSE)
   grimage$id <- grimage$Sample
   exportDf <- merge(exportDf, grimage, by="id")
   for (i in 1:nrow(results))
@@ -599,14 +595,11 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   outputString <- paste(finalOutput, collapse = "\n")
 
-  write_file(outputString, file = "output.txt")
-
-  print(Sys.time() - start)
+  readr::write_file(outputString, file = "output.txt")
 
 }
 
-
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE, arrayType = "EPIC")
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K")
 
 
 

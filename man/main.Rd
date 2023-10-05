@@ -8,7 +8,7 @@
 }
 
 \usage{
-  main(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450k")
+  main(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K")
 }
 
 \arguments{
@@ -73,10 +73,12 @@
 
 \references{
   % Put references to the literature/web site here
+  asdf
 }
 
 \author{
   % Author information
+  asdf
 }
 
 \note{
@@ -85,10 +87,4 @@
   main(directory = "path/to/data", normalize = TRUE, useBeta = FALSE, arrayType = "450K")
 }
 
-\seealso{
-  % Objects to See Also as \code{\link{help}}
-}
 
-\examples{
-
-}
