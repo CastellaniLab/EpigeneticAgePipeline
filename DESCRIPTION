@@ -30,15 +30,15 @@ Imports:
   readr,
   glmmTMB
 Remotes:
-  BiocManager::install("minfi"),
-  BiocManager::install("methylclock"),
-  BiocManager::install("IlluminaHumanMethylationEPICmanifest"),
-  BiocManager::install("IlluminaHumanMethylation450kmanifest"),
-  BiocManager::install("IlluminaHumanMethylation27kmanifest"),
-  BiocManager::install("FlowSorted.CordBlood.450k"),
-  BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19"),
-  BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19"),
-  BiocManager::install("IlluminaHumanMethylation27kanno.ilmn12.hg19"),
+  remotes::install_bioc("minfi"),
+  remotes::install_bioc("methylclock"),
+  remotes::install_bioc("IlluminaHumanMethylationEPICmanifest"),
+  remotes::install_bioc("IlluminaHumanMethylation450kmanifest"),
+  remotes::install_bioc("IlluminaHumanMethylation27kmanifest"),
+  remotes::install_bioc("FlowSorted.CordBlood.450k"),
+  remotes::install_bioc("IlluminaHumanMethylation450kanno.ilmn12.hg19"),
+  remotes::install_bioc("IlluminaHumanMethylationEPICanno.ilm10b4.hg19"),
+  remotes::install_bioc("IlluminaHumanMethylation27kanno.ilmn12.hg19"),
+  remotes::install_bioc("yiluyucheng/dnaMethyAge")
   remotes::install_github("danbelsky/DunedinPACE"),
-  BiocManager::install("yiluyucheng/dnaMethyAge")
 RoxygenNote: 7.2.3
