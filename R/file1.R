@@ -7,8 +7,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   if (normalize == TRUE) shouldNormalize <- FALSE else shouldNormalize <- TRUE
 
-  bVals <- NULL
-  rgSet <- NULL
+  bVals <- 0
+  rgSet <- 0
   listofCors <- c()
   corsToRemove <- c()
 
@@ -457,7 +457,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 
   #determining cell composition
-  if (rgSet != NULL & arrayType != "27K")
+  if (rgSet != 0 & arrayType != "27K")
   {
     FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
 
