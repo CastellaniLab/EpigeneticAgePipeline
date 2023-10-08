@@ -39,6 +39,11 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       BiocManager::install("methylclock")
     }
 
+    if (!requireNamespace("methylclockData", quietly = TRUE)) {
+      install.packages("methylclockData")
+      methylclockData::get_MethylationDataExample()
+    }
+
     if (!requireNamespace("DunedinPACE", quietly = TRUE)) {
       remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
     }

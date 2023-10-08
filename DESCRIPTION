@@ -17,7 +17,8 @@ Imports:
   remotes,
   reshape2,
   readr,
-  glmmTMB
+  glmmTMB,
+  methylclockData
 Suggests:
   IlluminaHumanMethylationEPICmanifest,
   IlluminaHumanMethylation450kmanifest,
