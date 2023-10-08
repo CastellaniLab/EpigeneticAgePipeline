@@ -80,7 +80,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     if (!requireNamespace("dnaMethyAge", quietly = TRUE)) {
-      BiocManager::install("yiluyucheng/dnaMethyAge")
+      remotes::install_github("yiluyucheng/dnaMethyAge")
     }
   }
 
@@ -589,6 +589,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
   clockname <- "PCGrimAge"
+  dnaMethyAge::availableClock()
   grimage <- dnaMethyAge::methyAge(bVals, clock = clockname, age_info = grimDf, do_plot = FALSE)
   grimage$id <- grimage$Sample
   exportDf <- merge(exportDf, grimage, by="id")
