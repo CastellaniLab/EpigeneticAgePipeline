@@ -17,8 +17,7 @@ Imports:
   remotes,
   reshape2,
   readr,
-  glmmTMB,
-  methylclockData
+  glmmTMB
 Suggests:
   IlluminaHumanMethylationEPICmanifest,
   IlluminaHumanMethylation450kmanifest,
@@ -30,5 +29,6 @@ Suggests:
   minfi,
   methylclock,
   dnaMethyAge,
-  DunedinPACE
+  DunedinPACE,
+  methylclockData
 RoxygenNote: 7.2.3

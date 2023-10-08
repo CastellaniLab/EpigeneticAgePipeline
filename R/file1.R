@@ -40,7 +40,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     if (!requireNamespace("methylclockData", quietly = TRUE)) {
-      install.packages("methylclockData")
+      BiocManager::install("methylclockData")
       methylclockData::get_MethylationDataExample()
     }
 
