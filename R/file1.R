@@ -491,7 +491,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("Smoking_Status" %in% names(sampleData)) pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status)
   if ("Batch" %in% names(sampleData)) pdataSVs$Batch <- as.factor(sampleData$Batch)
   if ("Slide" %in% names(sampleData)) pdataSVs$Slide <- as.factor(sampleData$Slide)
-  if (exists("rgSet") & arrayType != "27K")
+  if (rgSet != 0 & arrayType != "27K")
   {
     pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
     pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
