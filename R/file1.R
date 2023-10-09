@@ -606,7 +606,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 }
 
 
-main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K")
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K")
 
 
 
