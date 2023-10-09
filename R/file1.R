@@ -6,12 +6,12 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   }
 
   if (normalize == TRUE) shouldNormalize <- FALSE else shouldNormalize <- TRUE
-
   bVals <- 0
   rgSet <- 0
   listofCors <- c()
   corsToRemove <- c()
-
+  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/PC-clocks.rda"), envir = .GlobalEnv)
+  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/golden_ref.rda"), envir = .GlobalEnv)
   #function for installing packages
   installPackages <- function()
   {
@@ -462,7 +462,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 
   #determining cell composition
-  if (rgSet != 0 & arrayType != "27K")
+  if (class(rgSet) != "numeric" & arrayType != "27K")
   {
     FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
 
@@ -496,7 +496,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("Smoking_Status" %in% names(sampleData)) pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status)
   if ("Batch" %in% names(sampleData)) pdataSVs$Batch <- as.factor(sampleData$Batch)
   if ("Slide" %in% names(sampleData)) pdataSVs$Slide <- as.factor(sampleData$Slide)
-  if (rgSet != 0 & arrayType != "27K")
+  if (class(rgSet) != "numeric" & arrayType != "27K")
   {
     pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
     pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
@@ -589,8 +589,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
   clockname <- "PCGrimAge"
-  dnaMethyAge::availableClock()
-  grimage <- dnaMethyAge::methyAge(bVals, clock = clockname, age_info = grimDf, do_plot = FALSE)
+  grimage <- dnaMethyAge::methyAge(beta = bVals, clock = clockname, age_info = as.data.frame(grimDf), do_plot = FALSE)
   grimage$id <- grimage$Sample
   exportDf <- merge(exportDf, grimage, by="id")
   for (i in 1:nrow(results))
@@ -606,7 +605,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 }
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K")
+
+main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K")
+
 
 
 
