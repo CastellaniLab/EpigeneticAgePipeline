@@ -10,8 +10,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   rgSet <- 0
   listofCors <- c()
   corsToRemove <- c()
-  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/PC-clocks.rda"), envir = .GlobalEnv)
-  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/golden_ref.rda"), envir = .GlobalEnv)
+  load(paste0(directory, "/PC-clocks.rda"), envir = .GlobalEnv)
+  load(paste0(directory, "/golden_ref.rda"), envir = .GlobalEnv)
   #function for installing packages
   installPackages <- function()
   {
