@@ -1,4 +1,4 @@
-main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K")
+main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", residuals = TRUE)
 {
   setwd(directory)
   if (!file.exists("output.txt")) {
@@ -10,8 +10,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   rgSet <- 0
   listofCors <- c()
   corsToRemove <- c()
-  load(paste0(directory, "/PC-clocks.rda"), envir = .GlobalEnv)
-  load(paste0(directory, "/golden_ref.rda"), envir = .GlobalEnv)
+  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/PC-clocks.rda"), envir = .GlobalEnv)
+  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/golden_ref.rda"), envir = .GlobalEnv)
   #function for installing packages
   installPackages <- function()
   {
@@ -361,13 +361,15 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     finalOutput <- corCovariates(finalOutput)
     covariate_data <- pdataSVs
 
-    covariate_data <- removeCovariates(covariate_data)
-
-    finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age", "\n")
-    finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
-    finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age Acceleration", "\n")
-    covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
-    finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
+    if (residuals == TRUE)
+    {
+      covariate_data <- removeCovariates(covariate_data)
+      finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age", "\n")
+      finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
+      finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age Acceleration", "\n")
+      covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
+      finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
+    }
 
     listofCors <<- c()
     corsToRemove <<- c()
@@ -462,7 +464,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 
   #determining cell composition
-  if (class(rgSet) != "numeric" & arrayType != "27K")
+  if (!is.numeric(rgSet) & arrayType != "27K")
   {
     FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
 
@@ -496,7 +498,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("Smoking_Status" %in% names(sampleData)) pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status)
   if ("Batch" %in% names(sampleData)) pdataSVs$Batch <- as.factor(sampleData$Batch)
   if ("Slide" %in% names(sampleData)) pdataSVs$Slide <- as.factor(sampleData$Slide)
-  if (class(rgSet) != "numeric" & arrayType != "27K")
+  if (!is.numeric(rgSet) & arrayType != "27K")
   {
     pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
     pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
@@ -606,7 +608,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 }
 
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K")
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K", residuals = FALSE)
 
 
 
