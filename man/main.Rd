@@ -12,7 +12,7 @@
   normalize = TRUE,
   useBeta = FALSE,
   arrayType = "450K",
-  residuals = TRUE)
+  generateResiduals = TRUE)
 }
 
 \arguments{
@@ -32,7 +32,7 @@
     Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
   }
 
-  \item{residuals}{
+  \item{generateResiduals}{
     Whether or not to generate residuals.
   }
 }
