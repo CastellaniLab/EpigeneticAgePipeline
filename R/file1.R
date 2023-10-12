@@ -1,4 +1,4 @@
-main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", residuals = TRUE)
+main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE)
 {
   setwd(directory)
   if (!file.exists("output.txt")) {
@@ -10,8 +10,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   rgSet <- 0
   listofCors <- c()
   corsToRemove <- c()
-  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/PC-clocks.rda"), envir = .GlobalEnv)
-  load(paste0("C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", "/golden_ref.rda"), envir = .GlobalEnv)
+  load(paste0(directory, "/PC-clocks.rda"), envir = .GlobalEnv)
+  load(paste0(directory, "/golden_ref.rda"), envir = .GlobalEnv)
   #function for installing packages
   installPackages <- function()
   {
@@ -239,7 +239,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     corDf <- corDf[-nrow(corDf),]
-    print(corDf)
 
     counter <- 1
     for (i in 1:ncol(corDf))
@@ -361,7 +360,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     finalOutput <- corCovariates(finalOutput)
     covariate_data <- pdataSVs
 
-    if (residuals == TRUE)
+    if (generateResiduals == TRUE)
     {
       covariate_data <- removeCovariates(covariate_data)
       finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age", "\n")
@@ -481,23 +480,41 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   sampleData <- read.csv("Sample_Sheet.csv")
   sampleData <- removeOutliers(sampleData, TRUE)
-  pdataSVs <- data.frame(Clock = 1:nrow(sampleData), Age = 1:nrow(sampleData), Sex = 1:nrow(sampleData), Smoking_Status = 1:nrow(sampleData), Batch = 1:nrow(sampleData), Slide = 1:nrow(sampleData), Row = 1:nrow(sampleData), Column = 1:nrow(sampleData),
-                         Bcell = 1:nrow(sampleData), CD4T = 1:nrow(sampleData), CD8T = 1:nrow(sampleData), Gran = 1:nrow(sampleData), Mono = 1:nrow(sampleData), nRBC = 1:nrow(sampleData),
-                         P1 = 1:nrow(sampleData), P2 = 1:nrow(sampleData), P3 = 1:nrow(sampleData), P4 = 1:nrow(sampleData), P5 = 1:nrow(sampleData))
-  pdataSVs[,-1] <- NA
-  if ("Array" %in% names(sampleData))
+  pdataSVs <- data.frame(Clock = 1:nrow(sampleData))
+
+  for (i in colnames(sampleData))
   {
-    row <- gsub("R(\\d+).*", "\\1", sampleData$Array)
-    column <- gsub(".*C(\\d+)", "\\1", sampleData$Array)
-    pdataSVs$Row <- as.factor(row)
-    pdataSVs$Column <- as.factor(column)
+    switch(i,
+           Age = pdataSVs$Age <- as.numeric(sampleData$Age),
+           Sex = pdataSVs$Sex <- as.factor(sampleData$Sex),
+           Smoking_Status = pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status),
+           Batch = pdataSVs$Batch <- as.factor(sampleData$Batch),
+           Slide = pdataSVs$Slide <- as.factor(sampleData$Slide),
+           Bcell = pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
+           CD4T = pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
+           CD8T = pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
+           Gran = pdataSVs$Gran <- as.numeric(sampleData$Gran),
+           Mono = pdataSVs$Mono <- as.numeric(sampleData$Mono),
+           nRBC = pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
+           Array = {
+             row <- as.factor(gsub("R(\\d+).*", "\\1", sampleData$Array))
+             column <- as.factor(gsub(".*C(\\d+)", "\\1", sampleData$Array))
+             pdataSVs$Row <- row
+             pdataSVs$Column <- column
+           },
+           {
+             print(paste0("Looks like you have a custom covariate ", " ", i))
+             print("Enter 0 if this is a numerical variable, or 1 if this a factor, or 2 to ignore")
+             userInput <- scan(file = "", nmax = 1)
+             if (userInput == 0) {
+               pdataSVs[[i]] <- as.numeric(sampleData[[i]])
+             } else if(userInput == 1) {
+               pdataSVs[[i]] <- as.factor(sampleData[[i]])
+             }
+           }
+    )
   }
 
-  if ("Age" %in% names(sampleData)) pdataSVs$Age <- as.numeric(sampleData$Age)
-  if ("Sex" %in% names(sampleData)) pdataSVs$Sex <- as.factor(sampleData$Sex)
-  if ("Smoking_Status" %in% names(sampleData)) pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status)
-  if ("Batch" %in% names(sampleData)) pdataSVs$Batch <- as.factor(sampleData$Batch)
-  if ("Slide" %in% names(sampleData)) pdataSVs$Slide <- as.factor(sampleData$Slide)
   if (!is.numeric(rgSet) & arrayType != "27K")
   {
     pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
@@ -506,14 +523,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     pdataSVs$Gran <- as.numeric(CC[, "Gran"])
     pdataSVs$Mono <- as.numeric(CC[, "Mono"])
     pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
-  } else
-  {
-    if ("Bcell" %in% names(sampleData)) pdataSVs$Bcell <- as.numeric(sampleData$Bcell)
-    if ("CD4T" %in% names(sampleData)) pdataSVs$CD4T <- as.numeric(sampleData$CD4T)
-    if ("CD8T" %in% names(sampleData)) pdataSVs$CD8T <- as.numeric(sampleData$CD8T)
-    if ("Gran" %in% names(sampleData)) pdataSVs$Gran <- as.numeric(sampleData$Gran)
-    if ("Mono" %in% names(sampleData)) pdataSVs$Mono <- as.numeric(sampleData$Mono)
-    if ("nRBC" %in% names(sampleData)) pdataSVs$nRBC <- as.numeric(sampleData$nRBC)
   }
   if ("PC1" %in% names(pca_scores)) pdataSVs$P1 <- as.numeric(pca_scores$PC1)
   if ("PC2" %in% names(pca_scores)) pdataSVs$P2 <- as.numeric(pca_scores$PC2)
@@ -523,8 +532,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 
   pdataSVs <- pdataSVs[, sapply(pdataSVs, function(col) length(unique(col)) >= 2)]
-  print(pdataSVs)
-  print(sampleData)
 
   diag.labels=colnames(pdataSVs)
   pdataColumns <- names(pdataSVs)
@@ -536,8 +543,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   results <- NULL
 
   if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE, age = sampleData$Age) else results <- methylclock::DNAmAge(bVals, normalize = FALSE, age = sampleData$Age)
-  print(results)
-  print(results$Hannum)
 
   finalOutput <- "Raw Clock Results\n"
   finalOutput <- paste(finalOutput, "SampleID", "\t", "Horvath", "\t", "        SkinHorvath", "\t", "        Hannum", "\t", "        PhenoAge","\n" )
@@ -608,7 +613,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 }
 
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K", residuals = FALSE)
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K", generateResiduals = TRUE)
 
 
 
