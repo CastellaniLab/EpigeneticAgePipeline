@@ -1,4 +1,4 @@
-main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE)
+main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE, useSampleSheet = FALSE)
 {
   setwd(directory)
   if (!file.exists("output.txt")) {
@@ -89,20 +89,32 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   #function for processing IDAT files, returns df of beta values
   processIDAT <- function(){
     dataDirectory <-  directory
-    pdata <- minfi::read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
-    pdata$Basename <- pdata$Sample_Name
 
-    #Give the samples descriptive names
-    pdata$ID <- paste(pdata$Phenotype, pdata$Title,sep=".")
 
-    #Clean up slide names
-    pdata$Slide <- gsub("X", "", pdata$Slide)
+    if (useSampleSheet == TRUE)
+    {
+      pdata <- minfi::read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
 
-    write.csv(pdata, file = "Sample_Sheet.csv", row.names = FALSE)
+      pdata$Basename <- pdata$Sample_Name
 
-    #Read in the raw data from the IDAT files
-    rgSet <- minfi::read.metharray.exp(targets=pdata)
-    minfi::sampleNames(rgSet) <- pdata$ID
+      #Give the samples descriptive names
+      pdata$ID <- paste(pdata$Phenotype, pdata$Title,sep=".")
+
+      #Clean up slide names
+      pdata$Slide <- gsub("X", "", pdata$Slide)
+
+      write.csv(pdata, file = "Sample_Sheet.csv", row.names = FALSE)
+
+      #Read in the raw data from the IDAT files
+      rgSet <- minfi::read.metharray.exp(targets=pdata)
+      minfi::sampleNames(rgSet) <- pdata$ID
+    }
+    else
+    {
+      rgSet <- minfi::read.metharray.exp(dataDirectory)
+    }
+
+
     #Calculate the detection p-values
     detP <- suppressMessages(minfi::detectionP(rgSet))
 
@@ -239,6 +251,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
 
     corDf <- corDf[-nrow(corDf),]
+    print(corDf)
 
     counter <- 1
     for (i in 1:ncol(corDf))
@@ -296,6 +309,11 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       formula_string <- paste(columns[1], "~", string, " + ", "(1 | Slide)",  " + ",  "(Row + Column | Slide)", " + ",  "(1 | Batch)")
     }
 
+    if (!("Row" %in% columnsUsed) & !("Batch" %in% columnsUsed))
+    {
+      formula_string <- paste(columns[1], "~", string)
+    }
+
     runlme <- function(formula) {
       lme1 <- glmmTMB::glmmTMB(formula, data = pdata, family = "gaussian", control = glmmTMB::glmmTMBControl(optCtrl=list(iter.max=10000,eval.max=10000)))
       smodel <- lme1
@@ -313,7 +331,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
     for (i in 1:length(resids))
     {
-      output <- paste(output, resids[i], "\n")
+      output <- paste(output, rownames(pdata)[i], "\t", resids[i], "\n")
     }
 
     return(output)
@@ -365,9 +383,12 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       covariate_data <- removeCovariates(covariate_data)
       finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age", "\n")
       finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
-      finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age Acceleration", "\n")
-      covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
-      finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
+      if (useSampleSheet == TRUE)
+      {
+        finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age Acceleration", "\n")
+        covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
+        finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
+      }
     }
 
     listofCors <<- c()
@@ -478,71 +499,121 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   #Correlation Matrix Construction ####
 
-  sampleData <- read.csv("Sample_Sheet.csv")
-  sampleData <- removeOutliers(sampleData, TRUE)
-  pdataSVs <- data.frame(Clock = 1:nrow(sampleData))
-
-  for (i in colnames(sampleData))
+  if (useSampleSheet == TRUE)
   {
-    switch(i,
-           Age = pdataSVs$Age <- as.numeric(sampleData$Age),
-           Sex = pdataSVs$Sex <- as.factor(sampleData$Sex),
-           Smoking_Status = pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status),
-           Batch = pdataSVs$Batch <- as.factor(sampleData$Batch),
-           Slide = pdataSVs$Slide <- as.factor(sampleData$Slide),
-           Bcell = pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
-           CD4T = pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
-           CD8T = pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
-           Gran = pdataSVs$Gran <- as.numeric(sampleData$Gran),
-           Mono = pdataSVs$Mono <- as.numeric(sampleData$Mono),
-           nRBC = pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
-           Array = {
-             row <- as.factor(gsub("R(\\d+).*", "\\1", sampleData$Array))
-             column <- as.factor(gsub(".*C(\\d+)", "\\1", sampleData$Array))
-             pdataSVs$Row <- row
-             pdataSVs$Column <- column
-           },
-           {
-             print(paste0("Looks like you have a custom covariate ", " ", i))
-             print("Enter 0 if this is a numerical variable, or 1 if this a factor, or 2 to ignore")
-             userInput <- scan(file = "", nmax = 1)
-             if (userInput == 0) {
-               pdataSVs[[i]] <- as.numeric(sampleData[[i]])
-             } else if(userInput == 1) {
-               pdataSVs[[i]] <- as.factor(sampleData[[i]])
+    sampleData <- read.csv("Sample_Sheet.csv")
+    sampleData <- removeOutliers(sampleData, TRUE)
+    pdataSVs <- data.frame(Clock = 1:nrow(sampleData))
+    rownames(pdataSVs) <- sampleData$ID
+
+    for (i in colnames(sampleData))
+    {
+      switch(i,
+             Age = pdataSVs$Age <- as.numeric(sampleData$Age),
+             Sex = pdataSVs$Sex <- as.factor(sampleData$Sex),
+             Smoking_Status = pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status),
+             Batch = pdataSVs$Batch <- as.factor(sampleData$Batch),
+             Slide = pdataSVs$Slide <- as.factor(sampleData$Slide),
+             Bcell = pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
+             CD4T = pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
+             CD8T = pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
+             Gran = pdataSVs$Gran <- as.numeric(sampleData$Gran),
+             Mono = pdataSVs$Mono <- as.numeric(sampleData$Mono),
+             nRBC = pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
+             Array = {
+               row <- as.factor(gsub("R(\\d+).*", "\\1", sampleData$Array))
+               column <- as.factor(gsub(".*C(\\d+)", "\\1", sampleData$Array))
+               pdataSVs$Row <- row
+               pdataSVs$Column <- column
+             },
+             {
+               print(paste0("Looks like you have a custom covariate ", " ", i))
+               print("Enter 0 if this is a numerical variable, or 1 if this a factor, or 2 to ignore")
+               userInput <- scan(file = "", nmax = 1)
+               print(userInput)
+               print(class(userInput))
+               if (userInput == 0) {
+                 pdataSVs[[i]] <- as.numeric(sampleData[[i]])
+                 print("Ran 0")
+               } else if(userInput == 1) {
+                 pdataSVs[[i]] <- as.factor(sampleData[[i]])
+                 print("Ran 1")
+               }
              }
-           }
-    )
-  }
+      )
+    }
 
-  if (!is.numeric(rgSet) & arrayType != "27K")
+    if (!is.numeric(rgSet) & arrayType != "27K")
+    {
+      pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
+      pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
+      pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
+      pdataSVs$Gran <- as.numeric(CC[, "Gran"])
+      pdataSVs$Mono <- as.numeric(CC[, "Mono"])
+      pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
+    }
+    if ("PC1" %in% names(pca_scores)) pdataSVs$P1 <- as.numeric(pca_scores$PC1)
+    if ("PC2" %in% names(pca_scores)) pdataSVs$P2 <- as.numeric(pca_scores$PC2)
+    if ("PC3" %in% names(pca_scores)) pdataSVs$P3 <- as.numeric(pca_scores$PC3)
+    if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
+    if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+
+
+    pdataSVs <- pdataSVs[, sapply(pdataSVs, function(col) length(unique(col)) >= 2)]
+    print(pdataSVs)
+
+    diag.labels=colnames(pdataSVs)
+    pdataColumns <- names(pdataSVs)
+    plot.formula=as.formula(paste("~", paste(pdataColumns, collapse = "+")))
+  }
+  else
   {
-    pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
-    pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
-    pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
-    pdataSVs$Gran <- as.numeric(CC[, "Gran"])
-    pdataSVs$Mono <- as.numeric(CC[, "Mono"])
-    pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
+    print(bVals)
+    if (colnames(bVals)[1] == "X")
+    {
+      pdataSVs <- data.frame(Clock = 1:(ncol(bVals) - 1))
+      rownames(pdataSVs) <- colnames(bVals)[-1]
+    }
+    else
+    {
+      pdataSVs <- data.frame(Clock = 1:(ncol(bVals)))
+      rownames(pdataSVs) <- colnames(bVals)
+    }
+    if (!is.numeric(rgSet) & arrayType != "27K")
+    {
+      pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
+      pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
+      pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
+      pdataSVs$Gran <- as.numeric(CC[, "Gran"])
+      pdataSVs$Mono <- as.numeric(CC[, "Mono"])
+      pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
+    }
+    if ("PC1" %in% names(pca_scores)) pdataSVs$P1 <- as.numeric(pca_scores$PC1)
+    if ("PC2" %in% names(pca_scores)) pdataSVs$P2 <- as.numeric(pca_scores$PC2)
+    if ("PC3" %in% names(pca_scores)) pdataSVs$P3 <- as.numeric(pca_scores$PC3)
+    if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
+    if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+    print(pdataSVs)
+    diag.labels=colnames(pdataSVs)
+    pdataColumns <- names(pdataSVs)
+    plot.formula=as.formula(paste("~", paste(pdataColumns, collapse = "+")))
   }
-  if ("PC1" %in% names(pca_scores)) pdataSVs$P1 <- as.numeric(pca_scores$PC1)
-  if ("PC2" %in% names(pca_scores)) pdataSVs$P2 <- as.numeric(pca_scores$PC2)
-  if ("PC3" %in% names(pca_scores)) pdataSVs$P3 <- as.numeric(pca_scores$PC3)
-  if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
-  if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
 
-
-  pdataSVs <- pdataSVs[, sapply(pdataSVs, function(col) length(unique(col)) >= 2)]
-
-  diag.labels=colnames(pdataSVs)
-  pdataColumns <- names(pdataSVs)
-  plot.formula=as.formula(paste("~", paste(pdataColumns, collapse = "+")))
 
 
   #Clock Output####
 
   results <- NULL
-
-  if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE, age = sampleData$Age) else results <- methylclock::DNAmAge(bVals, normalize = FALSE, age = sampleData$Age)
+  if (useSampleSheet == TRUE)
+  {
+    if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE, age = pdataSVs$Age) else results <- methylclock::DNAmAge(bVals, normalize = FALSE, age = pdataSVs$Age)
+  }
+  else
+  {
+    if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE) else results <- methylclock::DNAmAge(bVals, normalize = FALSE)
+  }
+  print(results)
+  print(results$Hannum)
 
   finalOutput <- "Raw Clock Results\n"
   finalOutput <- paste(finalOutput, "SampleID", "\t", "Horvath", "\t", "        SkinHorvath", "\t", "        Hannum", "\t", "        PhenoAge","\n" )
@@ -555,19 +626,28 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   finalOutput <- processAgeType(results, "Hannum", finalOutput)
   finalOutput <- processAgeType(results, "Levine", finalOutput)
 
-  plotDf <- data.frame(
-    sample = sampleData$ID,
-    horvath = results$Horvath,
-    skinhorvath = results$skinHorvath,
-    hannum = results$Hannum,
-    levine = results$Levine,
-    age = sampleData$Age
-  )
+  if (useSampleSheet == TRUE)
+  {
+    plotDf <- data.frame(
+      sample = sampleData$ID,
+      horvath = results$Horvath,
+      skinhorvath = results$skinHorvath,
+      hannum = results$Hannum,
+      levine = results$Levine,
+      age = sampleData$Age
+    )
 
+    createGroupedBarChart(plotDf, "sample", "value", "Age_Measure", "Sample ID and Type of Age Measure")
+  }
 
-  exportDf <- results[,c("id", "Horvath", "Hannum", "Levine", "skinHorvath","age")]
-
-  createGroupedBarChart(plotDf, "sample", "value", "Age_Measure", "Sample ID and Type of Age Measure")
+  if (useSampleSheet == TRUE)
+  {
+    exportDf <- results[,c("id", "Horvath", "Hannum", "Levine", "skinHorvath","age")]
+  }
+  else
+  {
+    exportDf <- results[,c("id", "Horvath", "Hannum", "Levine", "skinHorvath")]
+  }
 
   finalOutput <- paste(finalOutput, "\n\nDunedinPACE\n")
 
@@ -586,22 +666,24 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   results$id <- rownames(results)
 
   exportDf <- merge(exportDf, results, by="id")
-
-  finalOutput <- paste(finalOutput, "\n\nGrimAGE\n")
-  grimDf <- data.frame(
-    Sample = sampleData$ID,
-    Age = sampleData$Age,
-    Sex = sampleData$Sex
-  )
-
-  grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
-  clockname <- "PCGrimAge"
-  grimage <- dnaMethyAge::methyAge(beta = bVals, clock = clockname, age_info = as.data.frame(grimDf), do_plot = FALSE)
-  grimage$id <- grimage$Sample
-  exportDf <- merge(exportDf, grimage, by="id")
-  for (i in 1:nrow(results))
+  if (useSampleSheet == TRUE)
   {
-    finalOutput <- paste(finalOutput, grimage[i,1], "\t", grimage$Age_Acceleration[i], "\n")
+    finalOutput <- paste(finalOutput, "\n\nGrimAGE\n")
+    grimDf <- data.frame(
+      Sample = sampleData$ID,
+      Age = sampleData$Age,
+      Sex = sampleData$Sex
+    )
+
+    grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
+    clockname <- "PCGrimAge"
+    grimage <- dnaMethyAge::methyAge(beta = bVals, clock = clockname, age_info = as.data.frame(grimDf), do_plot = FALSE)
+    grimage$id <- grimage$Sample
+    exportDf <- merge(exportDf, grimage, by="id")
+    for (i in 1:nrow(results))
+    {
+      finalOutput <- paste(finalOutput, grimage[i,1], "\t", grimage$Age_Acceleration[i], "\n")
+    }
   }
 
   write.table(as.data.frame(exportDf), file = "epigeneticAge.txt")
@@ -613,7 +695,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 }
 
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = TRUE, arrayType = "450K", generateResiduals = TRUE)
+#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE, useSampleSheet = TRUE)
 
 
 
