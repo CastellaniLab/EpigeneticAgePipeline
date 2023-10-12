@@ -12,7 +12,9 @@
   normalize = TRUE,
   useBeta = FALSE,
   arrayType = "450K",
-  generateResiduals = TRUE)
+  generateResiduals = TRUE,
+  useSampleSheet = FALSE)
+
 }
 
 \arguments{
@@ -34,6 +36,10 @@
 
   \item{generateResiduals}{
     Whether or not to generate residuals.
+  }
+
+  \item{useSampleSheet}{
+    Whether or not to use Sample_Sheet.csv.
   }
 }
 
