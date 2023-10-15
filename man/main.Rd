@@ -4,7 +4,7 @@
 \title{main}
 
 \description{
-  The `DNAm-Age Pipeline` is a comprehensive function designed for processing and analyzing DNA methylation data. It performs data normalization and analysis using specified parameters and input files.
+  A comprehensive function designed for processing and analyzing DNA methylation data. It's goal is to provide a simple solution for generating epigenetic age and performing covariate analysis.
 }
 
 \usage{
@@ -13,7 +13,7 @@
   useBeta = FALSE,
   arrayType = "450K",
   generateResiduals = TRUE,
-  useSampleSheet = FALSE)
+  useSampleSheet = TRUE)
 
 }
 
@@ -23,11 +23,11 @@
   }
 
   \item{normalize}{
-    Logical. Perform data normalization if `TRUE`.
+    Logical. Perform normalization of beta values if 'TRUE'.
   }
 
   \item{useBeta}{
-    Logical. If `TRUE`, expect input data as beta values (scaled between 0 and 1). If `FALSE`, process raw intensity data.
+    Logical. If 'TRUE', expect a .csv containing beta values (scaled between 0 and 1). If 'FALSE', process raw intensity data (IDAT).
   }
 
   \item{arrayType}{
@@ -35,7 +35,7 @@
   }
 
   \item{generateResiduals}{
-    Whether or not to generate residuals.
+    Whether or not to generate residuals. (options to be specified during runtime)
   }
 
   \item{useSampleSheet}{
@@ -46,59 +46,85 @@
 \details{
   Input Files:
 
-  `Sample_Sheet.csv`:
+  'Sample_Sheet.csv':
   .csv file containing phenotypic data for each sample
 
-  `IDAT Files`:
+  'IDAT Files':
   IDAT files containing methylation data for each sample
 
-  `betaValues.csv`:
+  'betaValues.csv':
   If IDAT files are not available, processed beta values can be provided
+
+  'ChenEtAllList':
+  .csv file used for removing cross reactive probes. (450K array platform)
+
+  'PidsleyCrossReactiveProbesEPIC.csv':
+  .csv file used for removing cross reactive probes. (EPIC array platform)
+
+  'non-specific-probes-Illumina27k':
+  .csv file used for removing cross reactive probes. (27K array platform)
+
+  'PC-clocks.rda' and 'golden_ref.rda':
+  Prerequesite data for generating GrimAge age acceleration data.
 
   Naming Conventions for Data in "Sample_Sheet.csv":
 
-  `Array`:
+  'ID':
+  Variable containing the ID's of each sample. Note: Although optional in most circumstances adding an ID variable will significanlty reduce the chances of encountering a runtime error.
+
+  'Array':
   Array plate name in format "RXCY" (X: row number, Y: column number).
 
   "Array" column should be in "RXCY" format for row and column data extraction.
 
-  `Age`:
+  'Age':
   Age values of samples.
 
-  `Sex`:
+  'Sex':
   Gender information of samples (M or F, 0 or 1)
 
-  `Smoking_Status`:
+  'Smoking_Status':
   Smoking status of samples.
 
-  `Batch`:
+  'Batch':
   Batch information of samples.
 
-  `Slide`:
+  'Slide':
   Slide information of samples.
 
-  `Bcell`, `CD4T`, `CD8T`, `Gran`, `Mono`, `nRBC`:
+  'Bcell', 'CD4T', 'CD8T', 'Gran', 'Mono', 'nRBC':
   Optional* cell type proportions if IDAT files are not available
+
+  *If phenotypic data is not following the guidelines listed above, all non-obliging variables will be treated as custom variables, whose specification will be determined by the user during runtime.
 }
 
 \value{
-  The function returns results and analysis plots.
+  The function will return the follwing:
+
+  'output.txt': A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
+
+  'matrixplot"Clockname".pdf': A set of .pdf files illustrating a the correaltions between a specific epigenetic age estimate and covariates.
+
+  'epigeneticAge.txt': A .txt file showing epigenetic age/acceleration estimates, as well as some covariate data. This file is better suited for importing generated data into a spreadsheet program.
+
+  'plot_"Clockname".png': A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
+
+  'SampleIDandAge.png': A .png file containing a grouped bar chart showing each sample and their assocaited epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using smaller sample sizes.
+
 }
 
 \references{
-  % Put references to the literature/web site here
-  asdf
+  WIP
 }
 
 \author{
-  % Author information
-  asdf
+  WIP
 }
 
 \note{
   Example Usage:
 
-  main(directory = "path/to/data", normalize = TRUE, useBeta = FALSE, arrayType = "450K")
+  main(directory = "path/to/data", normalize = TRUE, useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE, useSampleSheet = FALSE)
 }
 
 

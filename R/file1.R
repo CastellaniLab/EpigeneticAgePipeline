@@ -1,4 +1,4 @@
-main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE, useSampleSheet = FALSE)
+main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE, useSampleSheet = TRUE)
 {
   setwd(directory)
   if (!file.exists("output.txt")) {
@@ -89,9 +89,14 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   #function for processing IDAT files, returns df of beta values
   processIDAT <- function(){
     dataDirectory <-  directory
-
-
+    containsSampleNames <- FALSE
     if (useSampleSheet == TRUE)
+    {
+      testDf <- read.csv("Sample_Sheet.csv", header = TRUE)
+      if ("Sample_Name" %in% colnames(testDf)) containsSampleNames <- TRUE
+    }
+
+    if (containsSampleNames == TRUE)
     {
       pdata <- minfi::read.metharray.sheet(dataDirectory, pattern="Sample_Sheet.csv")
 
@@ -106,12 +111,12 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       write.csv(pdata, file = "Sample_Sheet.csv", row.names = FALSE)
 
       #Read in the raw data from the IDAT files
-      rgSet <- minfi::read.metharray.exp(targets=pdata)
+      rgSet <- minfi::read.metharray.exp(targets=pdata, force = TRUE)
       minfi::sampleNames(rgSet) <- pdata$ID
     }
     else
     {
-      rgSet <- minfi::read.metharray.exp(dataDirectory)
+      rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
     }
 
 
@@ -383,7 +388,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       covariate_data <- removeCovariates(covariate_data)
       finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age", "\n")
       finalOutput <- residGeneration(pdata = covariate_data, output = finalOutput)
-      if (useSampleSheet == TRUE)
+      if ("Age" %in% colnames(pdataSVs))
       {
         finalOutput <- paste(finalOutput, "\n", age_type, "Residuals Based on Epigenetic Age Acceleration", "\n")
         covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
@@ -471,6 +476,14 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     sample_outliers=c()
   }
   outlier<-unique(alloutliers)
+  outlierIndexes <- c()
+  for (i in 1:ncol(bVals))
+  {
+    if (colnames(bVals)[i] %in% outlier)
+    {
+      outlierIndexes <- append(outlierIndexes, i)
+    }
+  }
   bVals <- bVals[,!( colnames(bVals) %in% outlier)]
   if (useBeta == TRUE)
   {
@@ -501,10 +514,36 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   if (useSampleSheet == TRUE)
   {
-    sampleData <- read.csv("Sample_Sheet.csv")
-    sampleData <- removeOutliers(sampleData, TRUE)
-    pdataSVs <- data.frame(Clock = 1:nrow(sampleData))
-    rownames(pdataSVs) <- sampleData$ID
+    sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
+    if ("ID" %in% colnames(sampleData))
+    {
+      sampleData <- removeOutliers(sampleData, TRUE)
+    }
+    else
+    {
+      if (colnames(bVals)[1] == "X")
+      {
+        if (!length(outlierIndexes) == 0) sampleData <- sampleData[-(outlierIndexes - 1),]
+      }
+      else
+      {
+        if (!length(outlierIndexes) == 0) sampleData <- sampleData[-outlierIndexes,]
+      }
+    }
+    if (colnames(bVals)[1] == "X")
+    {
+      pdataSVs <- data.frame(Clock = 1:(ncol(bVals) - 1))
+      rownames(pdataSVs) <- colnames(bVals)[-1]
+    }
+    else
+    {
+      pdataSVs <- data.frame(Clock = 1:(ncol(bVals)))
+      rownames(pdataSVs) <- colnames(bVals)
+    }
+
+    sampleData <- as.data.frame(sampleData)
+    columnData <- read.csv("Sample_Sheet.csv", header = TRUE)
+    colnames(sampleData) <- colnames(columnData)
 
     for (i in colnames(sampleData))
     {
@@ -534,10 +573,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
                print(class(userInput))
                if (userInput == 0) {
                  pdataSVs[[i]] <- as.numeric(sampleData[[i]])
-                 print("Ran 0")
                } else if(userInput == 1) {
                  pdataSVs[[i]] <- as.factor(sampleData[[i]])
-                 print("Ran 1")
                }
              }
       )
@@ -568,7 +605,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   }
   else
   {
-    print(bVals)
     if (colnames(bVals)[1] == "X")
     {
       pdataSVs <- data.frame(Clock = 1:(ncol(bVals) - 1))
@@ -604,7 +640,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   #Clock Output####
 
   results <- NULL
-  if (useSampleSheet == TRUE)
+  if ("Age" %in% colnames(pdataSVs))
   {
     if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE, age = pdataSVs$Age) else results <- methylclock::DNAmAge(bVals, normalize = FALSE, age = pdataSVs$Age)
   }
@@ -613,7 +649,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE) else results <- methylclock::DNAmAge(bVals, normalize = FALSE)
   }
   print(results)
-  print(results$Hannum)
 
   finalOutput <- "Raw Clock Results\n"
   finalOutput <- paste(finalOutput, "SampleID", "\t", "Horvath", "\t", "        SkinHorvath", "\t", "        Hannum", "\t", "        PhenoAge","\n" )
@@ -626,8 +661,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   finalOutput <- processAgeType(results, "Hannum", finalOutput)
   finalOutput <- processAgeType(results, "Levine", finalOutput)
 
-  if (useSampleSheet == TRUE)
+  if ("Age" %in% colnames(pdataSVs))
   {
+
     plotDf <- data.frame(
       sample = sampleData$ID,
       horvath = results$Horvath,
@@ -640,7 +676,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     createGroupedBarChart(plotDf, "sample", "value", "Age_Measure", "Sample ID and Type of Age Measure")
   }
 
-  if (useSampleSheet == TRUE)
+  if ("Age" %in% colnames(pdataSVs))
   {
     exportDf <- results[,c("id", "Horvath", "Hannum", "Levine", "skinHorvath","age")]
   }
@@ -666,7 +702,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   results$id <- rownames(results)
 
   exportDf <- merge(exportDf, results, by="id")
-  if (useSampleSheet == TRUE)
+  if ("Age" %in% colnames(pdataSVs))
   {
     finalOutput <- paste(finalOutput, "\n\nGrimAGE\n")
     grimDf <- data.frame(
@@ -695,7 +731,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 }
 
 
-#main(directory = "C:/Users/stanl/Desktop/Development/R/DNAm-age-pipeline/data", useBeta = FALSE, arrayType = "450K", generateResiduals = TRUE, useSampleSheet = TRUE)
+#main(directory = "C:/Users/stanl/Desktop/Development/R/ThesisprojectGSE201872_RAW/data", useBeta = FALSE, arrayType = "450K", generateResiduals = FALSE, useSampleSheet = TRUE)
 
 
 

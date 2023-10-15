@@ -1,57 +1,86 @@
-# Epigenetic Age Pipeline 
+# Epigenetic Age Pipeline
 
-## Installation 
+'EpigeneticAgePipeline' is a comprehensive package designed for processing and analyzing DNA methylation data. The package provides a variety of epigenetic age measures, epigenetic age acceleration measures, residual generation, cell-count generation and provides a set of plots and tables used for further analysis.
 
-1. Install "remotes" package in order to install R pacakges hosted on remote repositories.
+## Installation and Use
+
+1. Install 'remotes' package in order to install R pacakges hosted on remote repositories, as well as Bioconducter which will support some associated packages.
+
 ```
-install.packages("remotes")
-```
-2. Use the "remotes" package congruently with "install_github".
-```
-remotes::install_github("StanRaye/myEpigeneticAgePipeline")
+install.packages('remotes')
+install.packages("BiocManager")
 ```
 
-## Function
+2. Use the 'remotes' package congruently with 'install_github', or load using library().
 
-### main(normalize = TRUE, useBeta = FALSE, directory = getwd(), arrayType = "450K")
-
-## Description
-
-The DNAm-Age Pipeline is a comprehensive function designed for processing and analyzing DNA methylation data. It performs data normalization and analysis using specified parameters and input files.
-
-## Function Parameters
-
-- **normalize:** Logical. Perform data normalization if TRUE.
-- **useBeta:** Logical. If TRUE, expect input data as beta values (scaled between 0 and 1). If FALSE, process raw intensity data.
-- **directory:** Directory containing input data files (default: current working directory).
-- **arrayType:** Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
-
-## Input Files
-
-The following input files are required:
-
-- **Sample_Sheet.csv:** A CSV file containing phenotypic data for each sample.
-- **IDAT Files:** IDAT files containing methylation data for each sample.
-- **betaValues.csv:** If IDAT files are not available, processed beta values can be provided.
-
-## Naming Conventions for Data in "Sample_Sheet.csv"
-
-Ensure that the "Sample_Sheet.csv" file follows these naming conventions:
-
-- "Array": Array plate name in format "RXCY" (X: row number, Y: column number).
-- "Age": Age values of samples.
-- "Sex": Gender information of samples (M or F, 0 or 1).
-- "Smoking_Status": Smoking status of samples.
-- "Batch": Batch information of samples.
-- "Slide": Slide information of samples.
-- "Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC": Optional\* cell type proportions if IDAT files are not available.
-
-## Output
-
-The function generates "output.txt" and analysis plots. Be sure to install the necessary R packages. Input CSV files must follow the provided naming conventions.
-
-## Example Usage
-
-```R
-main(normalize = TRUE, useBeta = FALSE, directory = "path/to/data", arrayType = "450K")
 ```
+remotes::install_github('CastellaniLab/myEpigeneticAgePipeline')
+```
+
+3. Once installed, you can use the package in the following ways:
+
+```
+library(EpigeneticAgePipeline)
+main(...)
+```
+
+```
+EpigeneticAgePipeline::main(...)
+```
+
+## Description:
+
+### Epigenetic Age and Acceleration Measures Provided:
+
+**_ Horvath Clock: _**
+
+- Description: Provides DNAm age.
+- CpG Sites: It uses a set of 353 CpG sites.
+- Array Type: It was originally trained on Illumina 27K and 450K arrays.
+- Cell Type: This clock is designed to work with a variety of tissues and cell types.
+
+**_ Horvath2/skinHorvath: _**
+
+- Description: Provides DNAm age.
+- CpG Sites: It uses a set of 391 CpG sites.
+- Array Type: It was originally trained on Illumina 450K arrays.
+- Cell Type: Primarly designed for skin/blood tissue.
+
+**_ Hannum Clock: _**
+
+- Description: Provides DNAm age.
+- CpG Sites: It relies on a set of 71 CpG sites.
+- Array Type: This clock was trained on Illumina 450K arrays.
+- Cell Type: Designed primarly for blood samples.
+
+**_ Levine/PhenoAge Clock: _**
+
+- Description: Provides DNAm age.
+- CpG Sites: Uses 513 CpG sites.
+- Array Type: This clock was trained on Illumina 27K, 450K and EPIC array types.
+- Cell Type: Designed primarly for blood samples.
+
+**_ DunedinPACE: _**
+
+- Description: Provides the estimated rate of biological aging.
+- CpG Sites: Uses 173 CpG sites.
+- Array Type: Trained using Illumina 450K and EPIC array types.
+- Cell Type: Designed primarly for blood samples.
+
+**_ GrimAge: _**
+
+- Description: Provides a measure of epigenetic age acceleration.
+- CpG Sites: Uses 1030 CpG sites.
+- Array Type: Trained using Illumina 450K and EPIC array types.
+- Cell Type: Designed primarly for blood samples.
+
+### Cell Counts
+
+If IDAT files are provided, methylation data can be used to determine cell counts of the following cell types.
+
+- B Cells
+- CD4T Cells
+- CD8T Cells
+- Granulocytes
+- Monocytes
+- Nucleated Red Blood cells
