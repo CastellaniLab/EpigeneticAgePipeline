@@ -88,24 +88,19 @@ If IDAT files are provided, methylation data can be used to determine cell count
 
 ### Output
 
-**output.txt:**
-\n
+**output.txt:**  
 A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
 
-**matrixplot{Clockname}.pdf:**
-\n
+**matrixplot{Clockname}.pdf:**  
 A set of .pdf files illustrating a the correaltions between a specific epigenetic age estimate and covariates.
 
-**epigeneticAge.txt:**
-\n
+**epigeneticAge.txt:**  
 A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing  into a spreadsheet program than output.txt.
 
-**plot{Clockname}.pdf:**
-\n
+**plot{Clockname}.pdf:**  
 A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
 
-**SampleIDandAge.png:**
-\n
+**SampleIDandAge.png:**  
 A .png file containing a grouped bar chart showing each sample and their assocaited epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using smaller sample sizes.
 
 
