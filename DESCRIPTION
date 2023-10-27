@@ -1,24 +1,27 @@
 Package: EpigeneticAgePipeline
 Type: Package
-Title: Package designed for processing and analyzing DNA methylation data.
+Title: Package designed for processing and analyzing DNA methylation data
 Version: 0.1.0
-Author: Stanislav Rayevskiy
-Maintainer: srayevsk@uwo.ca
-Description: 'EpigeneticAgePipeline' is a comprehensive package designed for processing and analyzing DNA methylation data.
-    The package provides a variety of epigenetic age measures, epigenetic age acceleration measures, residual generation, cell-count generation and provides a set of plots and tables used for further analysis.
+Authors@R: person("Stanislav", "Rayevskiy", email = "srayevsk@uwo.ca", role = c("aut", "cre"))
+biocViews: DNAMethylation, Epigenetics, MethylationArray, Normalization
+Description: EpigeneticAgePipeline is a comprehensive package designed for processing and analyzing DNA methylation data.
+    The package provides a variety of epigenetic age measures, epigenetic age acceleration measures, residual generation, and cell-count generation.
+    The package also provides a set of plots and tables used for further analysis.
 License: GPL-2
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2023-09-26 16:33:54 UTC; stanl
 Imports:
-  BiocManager,
   ggplot2,
   ggpubr,
-  remotes,
   reshape2,
   readr,
-  glmmTMB
+  glmmTMB,
+  graphics,
+  stats,
+  utils
 Suggests:
+  BiocManager,
   IlluminaHumanMethylationEPICmanifest,
   IlluminaHumanMethylation450kmanifest,
   IlluminaHumanMethylation27kmanifest,
@@ -29,6 +32,5 @@ Suggests:
   minfi,
   methylclock,
   dnaMethyAge,
-  DunedinPACE,
-  methylclockData
+  DunedinPACE
 RoxygenNote: 7.2.3
