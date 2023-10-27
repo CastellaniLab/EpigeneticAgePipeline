@@ -12,79 +12,6 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   corsToRemove <- c()
   load(paste0(directory, "/PC-clocks.rda"), envir = .GlobalEnv)
   load(paste0(directory, "/golden_ref.rda"), envir = .GlobalEnv)
-  #function for installing packages
-  installPackages <- function()
-  {
-    if (!requireNamespace("BiocManager", quietly = TRUE)) {
-      install.packages("BiocManager")
-    }
-
-    if (!requireNamespace("minfi", quietly = TRUE)) {
-      remotes::install_bioc("minfi")
-    }
-
-    if (!requireNamespace("ggplot2", quietly = TRUE)) {
-      install.packages("ggplot2")
-    }
-
-    if (!requireNamespace("readr", quietly = TRUE)) {
-      install.packages("readr")
-    }
-
-    if (!requireNamespace("ggpubr", quietly = TRUE)) {
-      install.packages("ggpubr")
-    }
-
-    if (!requireNamespace("methylclock", quietly = TRUE)) {
-      BiocManager::install("methylclock")
-    }
-
-    if (!requireNamespace("methylclockData", quietly = TRUE)) {
-      BiocManager::install("methylclockData")
-      methylclockData::get_MethylationDataExample()
-    }
-
-    if (!requireNamespace("DunedinPACE", quietly = TRUE)) {
-      remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
-    }
-
-    if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylationEPICmanifest")
-      IlluminaHumanMethylationEPICmanifest::IlluminaHumanMethylationEPICmanifest
-    }
-
-    if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation450kmanifest")
-      IlluminaHumanMethylation450kmanifest::IlluminaHumanMethylation450kmanifest
-    }
-
-    if (!requireNamespace("IlluminaHumanMethylation27kmanifest", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation27kmanifest")
-      IlluminaHumanMethylation27kmanifest::IlluminaHumanMethylation27kmanifest
-    }
-
-    if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE)) {
-      BiocManager::install("FlowSorted.CordBlood.450k")
-    }
-
-    if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
-    }
-
-    if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
-    }
-
-    if (!requireNamespace("IlluminaHumanMethylation27kanno.ilmn12.hg19", quietly = TRUE)) {
-      BiocManager::install("IlluminaHumanMethylation27kanno.ilmn12.hg19")
-    }
-
-    if (!requireNamespace("dnaMethyAge", quietly = TRUE)) {
-      remotes::install_github("yiluyucheng/dnaMethyAge")
-    }
-  }
-
-  installPackages()
 
   #function for processing IDAT files, returns df of beta values
   processIDAT <- function(){
@@ -121,7 +48,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
 
     #Calculate the detection p-values
-    detP <- suppressMessages(minfi::detectionP(rgSet))
+    detP <- minfi::detectionP(rgSet)
 
     #Track how many samples were removed due to poor quality
     samples_before <- dim(rgSet)[2]
@@ -218,15 +145,15 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     message("----- ", dim(mSetSqFlt)[1], " probe(s) remaining for analysis") #----- 787849 probe(s) remaining for analysis
 
     #Calculate methylation beta values
-    rgSet <<- rgSet
-    bVals <<- minfi::getBeta(mSetSqFlt)
+    .GlobalEnv$rgSet <- rgSet
+    .GlobalEnv$bVals <- minfi::getBeta(mSetSqFlt)
   }
 
   panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...){
     usr <- par("usr"); on.exit(par(usr))
     par(usr = c(0, 1, 0, 1))
     r <- abs(cor(x, y, use="complete.obs"))
-    listofCors <<- append(listofCors, r)
+    .GlobalEnv$listofCors <- append(listofCors, r)
     txt <- format(c(r, 0.123456789), digits = digits)[1]
     txt <- paste0(prefix, txt)
     if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
@@ -241,27 +168,31 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   #function for finding the correlation between covariates
   corCovariates = function(x){
     corDf <- pdataSVs
-    corDf <- corDf[1:ncol(pdataSVs),]
+
+    corDf <- corDf[seq.default(from = 1, to = (ncol(pdataSVs))),]
+
     row.names(corDf) <- colnames(corDf)
+
     corDf[,] <- 0
 
+
     counter <- 1
-    for (i in 1:ncol(corDf))
+    for (i in seq.default(from = 1, to = (ncol(corDf))))
     {
-      for (j in i:(ncol(corDf) - 1)) #rows
+      for (j in seq.default(from = i, to = (ncol(corDf)) - 1)) #rows
       {
         corDf[j + 1, i] <- listofCors[counter]
         counter <- counter + 1
       }
     }
 
+
     corDf <- corDf[-nrow(corDf),]
-    print(corDf)
 
     counter <- 1
-    for (i in 1:ncol(corDf))
+    for (i in seq.default(from = 1, to = (ncol(corDf))))
     {
-      for (j in i:(ncol(corDf) - 1))
+      for (j in seq.default(from = i, to = (ncol(corDf)) - 1))
       {
         if (!is.na(corDf[j + 1, i]))
         {
@@ -270,14 +201,16 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
             covariate1 <- rownames(corDf)[j+1]
             covariate2 <- colnames(corDf)[i]
             x <- paste(x, "\n", covariate1, " and ", covariate2, " are highly correlated: ",corDf[j + 1, i],"\n" )
-            print(paste("\n", covariate1, " and ", covariate2, " are highly correlated: ",corDf[j + 1, i],"\n"))
+            message("\n")
+            message(covariate1, " and ", covariate2, " are highly correlated: ", corDf[j + 1, i])
+            message("\n")
             if (!(covariate1 %in% corsToRemove))
             {
-              corsToRemove <<- append(corsToRemove, covariate1)
+              .GlobalEnv$corsToRemove <- append(corsToRemove, covariate1)
             }
             if (!(covariate2 %in% corsToRemove))
             {
-              corsToRemove <<- append(corsToRemove, covariate2)
+              .GlobalEnv$corsToRemove <- append(corsToRemove, covariate2)
             }
           }
         }
@@ -295,7 +228,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   residGeneration <- function(pdata, output) {
     columns <- colnames(pdata)
-    columnsUsed <- columns[1:length(columns)]
+    columnsUsed <- columns[seq.default(from = 1, to = length(columns))]
     string <- paste(columnsUsed[-1], collapse = " + ")
 
     rowIndex <- which(columns == "Row")
@@ -327,14 +260,14 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
     lme_formula <- formula_string
     lme_formula <- as.formula(lme_formula)
-    print(lme_formula)
+    message(lme_formula)
 
     lme_summary <- try(runlme(lme_formula), silent = FALSE)
 
     resids <- residuals(lme_summary)
-    print(resids)
+    message(resids)
 
-    for (i in 1:length(resids))
+    for (i in seq.default(from = 1, to = length(resids)))
     {
       output <- paste(output, rownames(pdata)[i], "\t", resids[i], "\n")
     }
@@ -343,19 +276,21 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   }
 
   removeCovariates <- function(df) {
-    print("The following covariates were found to be highly correlated: \n")
-    print(corsToRemove)
-    print("\nTo remove one of the covariates or several, enter 1 for each index want to remove, 0 to keep")
+    message("The following covariates were found to be highly correlated: \n")
+    for (i in corsToRemove)
+    {
+      message(i)
+    }
+    message("\nTo remove one of the covariates or several, enter 1 for each index want to remove, 0 to keep")
     userInput <- scan(file = "", n = length(corsToRemove))
     userInput <- as.numeric(userInput)
-    print(userInput)
-    for (i in 1:length(userInput)){
+    for (i in seq.default(from = 1, to = length(userInput))){
       if (userInput[i] == 1) {
         column <- corsToRemove[i]
-        print(column)
+        message(column)
         df <- df[, !grepl(column, names(df))]
       }
-      print(i)
+      message(i)
     }
     return(df)
   }
@@ -376,12 +311,13 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     pdataSVs$Clock <- as.numeric(data[[age_type]])
     diag.labels[1] <- age_type
     grDevices::cairo_pdf(paste("matrixplot", age_type, ".pdf", sep = ""), width = 14, height = 14, fallback_resolution = 1000)
-    print(pairs(plot.formula, data = pdataSVs, upper.panel = twolines, labels = diag.labels, diag.panel = mydiag.panel, lower.panel = panel.cor, label.pos = 0.5, main = ""))
+    pairs(plot.formula, data = pdataSVs, upper.panel = twolines, labels = diag.labels, diag.panel = mydiag.panel, lower.panel = panel.cor, label.pos = 0.5, main = "")
     grDevices::dev.off()
 
     finalOutput <- paste(output, "\n", age_type, "Covariates\n")
     finalOutput <- corCovariates(finalOutput)
     covariate_data <- pdataSVs
+
 
     if (generateResiduals == TRUE)
     {
@@ -396,8 +332,8 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
       }
     }
 
-    listofCors <<- c()
-    corsToRemove <<- c()
+    .GlobalEnv$listofCors <- c()
+    .GlobalEnv$corsToRemove <- c()
 
     return(finalOutput)
   }
@@ -461,23 +397,22 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   pca_scores <- as.data.frame(bpca$x)
 
-  constant = 3
+  constant <-  3
 
   sample_outliers=c()
   alloutliers=c()
-  for(i in 1:5){
+  for(i in seq.default(from = 1, to = 5))
+  {
     a<-subset(rownames(bpca$x), bpca$x[,i] > (mean(bpca$x[,i])+constant*sd(bpca$x[,i])))
     b<-subset(rownames(bpca$x), bpca$x[,i] < (mean(bpca$x[,i])-constant*sd(bpca$x[,i])))
     out<-c(a,b)
     sample_outliers <- c(sample_outliers,out)
-    print(paste("outliers in PCA",i,":",sep=""))
-    print(sample_outliers)
-    alloutliers=c(alloutliers,sample_outliers)
-    sample_outliers=c()
+    alloutliers <- c(alloutliers,sample_outliers)
+    sample_outliers <- c()
   }
   outlier<-unique(alloutliers)
   outlierIndexes <- c()
-  for (i in 1:ncol(bVals))
+  for (i in seq.default(from = 1, to = ncol(bVals)))
   {
     if (colnames(bVals)[i] %in% outlier)
     {
@@ -532,12 +467,12 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     }
     if (colnames(bVals)[1] == "X")
     {
-      pdataSVs <- data.frame(Clock = 1:(ncol(bVals) - 1))
+      pdataSVs <- data.frame(Clock = seq.default(from = 1, to = ncol(bVals) - 1))
       rownames(pdataSVs) <- colnames(bVals)[-1]
     }
     else
     {
-      pdataSVs <- data.frame(Clock = 1:(ncol(bVals)))
+      pdataSVs <- data.frame(Clock = seq.default(from = 1, to = ncol(bVals)))
       rownames(pdataSVs) <- colnames(bVals)
     }
 
@@ -566,11 +501,12 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
                pdataSVs$Column <- column
              },
              {
-               print(paste0("Looks like you have a custom covariate ", " ", i))
-               print("Enter 0 if this is a numerical variable, or 1 if this a factor, or 2 to ignore")
+               message("Looks like you have a custom covariate")
+               message(i)
+               message("Enter 0 if this is a numerical variable, or 1 if this a factor, or 2 to ignore")
                userInput <- scan(file = "", nmax = 1)
-               print(userInput)
-               print(class(userInput))
+               message(userInput)
+               message(class(userInput))
                if (userInput == 0) {
                  pdataSVs[[i]] <- as.numeric(sampleData[[i]])
                } else if(userInput == 1) {
@@ -596,23 +532,20 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
 
 
-    pdataSVs <- pdataSVs[, sapply(pdataSVs, function(col) length(unique(col)) >= 2)]
-    print(pdataSVs)
-
-    diag.labels=colnames(pdataSVs)
+    pdataSVs <- pdataSVs[, vapply(pdataSVs, function(col) length(unique(col)) >= 2, logical(1))]
+    diag.labels <- colnames(pdataSVs)
     pdataColumns <- names(pdataSVs)
-    plot.formula=as.formula(paste("~", paste(pdataColumns, collapse = "+")))
-  }
-  else
+    plot.formula <- as.formula(paste("~", paste(pdataColumns, collapse = "+")))
+  } else
   {
     if (colnames(bVals)[1] == "X")
     {
-      pdataSVs <- data.frame(Clock = 1:(ncol(bVals) - 1))
+      pdataSVs <- data.frame(Clock = seq.default(from = 1, to = ncol(bVals) - 1))
       rownames(pdataSVs) <- colnames(bVals)[-1]
     }
     else
     {
-      pdataSVs <- data.frame(Clock = 1:(ncol(bVals)))
+      pdataSVs <- data.frame(Clock = seq.default(from = 1, to = ncol(bVals)))
       rownames(pdataSVs) <- colnames(bVals)
     }
     if (!is.numeric(rgSet) & arrayType != "27K")
@@ -629,10 +562,9 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     if ("PC3" %in% names(pca_scores)) pdataSVs$P3 <- as.numeric(pca_scores$PC3)
     if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
     if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
-    print(pdataSVs)
-    diag.labels=colnames(pdataSVs)
+    diag.labels <- colnames(pdataSVs)
     pdataColumns <- names(pdataSVs)
-    plot.formula=as.formula(paste("~", paste(pdataColumns, collapse = "+")))
+    plot.formula <- as.formula(paste("~", paste(pdataColumns, collapse = "+")))
   }
 
 
@@ -643,16 +575,14 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("Age" %in% colnames(pdataSVs))
   {
     if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE, age = pdataSVs$Age) else results <- methylclock::DNAmAge(bVals, normalize = FALSE, age = pdataSVs$Age)
-  }
-  else
+  } else
   {
     if (shouldNormalize == TRUE) results <- methylclock::DNAmAge(bVals, normalize = TRUE) else results <- methylclock::DNAmAge(bVals, normalize = FALSE)
   }
-  print(results)
 
   finalOutput <- "Raw Clock Results\n"
   finalOutput <- paste(finalOutput, "SampleID", "\t", "Horvath", "\t", "        SkinHorvath", "\t", "        Hannum", "\t", "        PhenoAge","\n" )
-  for (i in 1:nrow(results)) {
+  for (i in seq.default(from = 1, to = nrow(results))) {
     finalOutput <- paste(finalOutput, results[i, 1], "\t", results$Horvath[i], "\t", results$skinHorvath[i], "\t", results$Hannum[i], "\t", results$Levine[i], "\n")
   }
 
@@ -679,8 +609,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
   if ("Age" %in% colnames(pdataSVs))
   {
     exportDf <- results[,c("id", "Horvath", "Hannum", "Levine", "skinHorvath","age")]
-  }
-  else
+  } else
   {
     exportDf <- results[,c("id", "Horvath", "Hannum", "Levine", "skinHorvath")]
   }
@@ -694,7 +623,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
 
   results <- DunedinPACE::PACEProjector(as.matrix(bVals), proportionOfProbesRequired = 0.8)
   results <- as.data.frame(results)
-  for (i in 1:nrow(results))
+  for (i in seq.default(from = 1, to = nrow(results)))
   {
     finalOutput <- paste(finalOutput, rownames(results)[i], "\t", results$DunedinPACE[i], "\n")
   }
@@ -716,7 +645,7 @@ main <- function(directory = getwd(), normalize = TRUE, useBeta = FALSE, arrayTy
     grimage <- dnaMethyAge::methyAge(beta = bVals, clock = clockname, age_info = as.data.frame(grimDf), do_plot = FALSE)
     grimage$id <- grimage$Sample
     exportDf <- merge(exportDf, grimage, by="id")
-    for (i in 1:nrow(results))
+    for (i in seq.default(from = 1, to = nrow(results)))
     {
       finalOutput <- paste(finalOutput, grimage[i,1], "\t", grimage$Age_Acceleration[i], "\n")
     }

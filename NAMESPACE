@@ -5,3 +5,7 @@ importFrom("stats", "as.formula", "cor", "lm", "na.omit", "prcomp",
                "residuals", "sd")
 importFrom("utils", "install.packages", "read.csv", "write.csv",
                "write.table")
+import(ggplot2)
+import(ggpubr)
+import(reshape2)
+import(readr)
