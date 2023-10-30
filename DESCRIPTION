@@ -2,35 +2,42 @@ Package: EpigeneticAgePipeline
 Type: Package
 Title: Package designed for processing and analyzing DNA methylation data
 Version: 0.1.0
-Authors@R: person("Stanislav", "Rayevskiy", email = "srayevsk@uwo.ca", role = c("aut", "cre"))
+Authors@R: person("Stanislav", 
+    "Rayevskiy", 
+    email = "srayevsk@uwo.ca", 
+    role = c("aut", "cre"))
 biocViews: DNAMethylation, Epigenetics, MethylationArray, Normalization
-Description: EpigeneticAgePipeline is a comprehensive package designed for processing and analyzing DNA methylation data.
-    The package provides a variety of epigenetic age measures, epigenetic age acceleration measures, residual generation, and cell-count generation.
-    The package also provides a set of plots and tables used for further analysis.
-License: GPL-2
+Description: EpigeneticAgePipeline is a comprehensive package designed 
+    for processing and analyzing DNA methylation data.
+    The package provides a variety of epigenetic age measures,
+    epigenetic age acceleration measures, residual generation, 
+    and cell-count generation.
+    The package also provides a set of 
+    plots and tables used for further analysis.
+License: GPL-2 
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2023-09-26 16:33:54 UTC; stanl
 Imports:
-  ggplot2,
-  ggpubr,
-  reshape2,
-  readr,
-  glmmTMB,
-  graphics,
-  stats,
-  utils
+    ggplot2,
+    ggpubr,
+    reshape2,
+    readr,
+    glmmTMB,
+    graphics,
+    stats,
+    utils
 Suggests:
-  BiocManager,
-  IlluminaHumanMethylationEPICmanifest,
-  IlluminaHumanMethylation450kmanifest,
-  IlluminaHumanMethylation27kmanifest,
-  FlowSorted.CordBlood.450k,
-  IlluminaHumanMethylation450kanno.ilmn12.hg19,
-  IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
-  IlluminaHumanMethylation27kanno.ilmn12.hg19,
-  minfi,
-  methylclock,
-  dnaMethyAge,
-  DunedinPACE
+    BiocManager,
+    IlluminaHumanMethylationEPICmanifest,
+    IlluminaHumanMethylation450kmanifest,
+    IlluminaHumanMethylation27kmanifest,
+    FlowSorted.CordBlood.450k,
+    IlluminaHumanMethylation450kanno.ilmn12.hg19,
+    IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
+    IlluminaHumanMethylation27kanno.ilmn12.hg19,
+    minfi,
+    methylclock,
+    dnaMethyAge,
+    DunedinPACE
 RoxygenNote: 7.2.3
