@@ -4,9 +4,9 @@
 \title{main}
 
 \description{
-A comprehensive function designed for 
+A comprehensive function designed for
 processing and analyzing DNA methylation data.
-Its goal is to provide a simple solution 
+Its goal is to provide a simple solution
 for generating epigenetic age and performing covariate analysis.
 }
 
@@ -41,7 +41,7 @@ Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 }
 
 \item{generateResiduals}{
-Whether or not to generate residuals. 
+Whether or not to generate residuals.
 (options to be specified during runtime)
 }
 
@@ -99,7 +99,7 @@ plot_{Clockname}.png: A set of
 plot of an epigenetic age
 estimate against chronological age.
 
-SampleIDandAge.png: 
+SampleIDandAge.png:
 A .png file containing a grouped bar chart showing each
 sample and their assocaited epigenetic age
 estimates as well as chronological age.
@@ -109,22 +109,13 @@ analysis tool when using smaller sample sizes.
 }
 
 
-\examples{
-#main(directory = getwd(),
-#normalize = TRUE,
-#useBeta = FALSE,
-#arrayType = "450K",
-#generateResiduals = TRUE,
-#useSampleSheet = TRUE)
-}
-
 \note{
 Naming Conventions for Data in "Sample_Sheet.csv":
 
 ID:
 Variable containing the IDs of each sample.
 Note: Although optional in most circumstances
-adding an ID variable will significanlty
+adding an ID variable will significantly
 reduce the chances of encountering a runtime error.
 
 Array:
@@ -151,6 +142,10 @@ Optional* cell type proportions if IDAT files are not available
 *If data is not following the guidelines listed above,
 all non-obliging variables will be treated as custom variables,
 whose specification will be determined by the user during runtime.
+}
+
+\examples{
+print("Hello")
 }
 
 

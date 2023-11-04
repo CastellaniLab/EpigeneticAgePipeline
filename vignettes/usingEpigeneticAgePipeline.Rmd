@@ -1,0 +1,128 @@
+---
+title: "Example of using the EpigeneticAgePipeline Package"
+output:
+    rmarkdown::html_vignette
+vignette: >
+    %\VignetteIndexEntry{"Example of using the EpigeneticAgePipeline Package"}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+Let's say we have a set of 450K array IDAT files with provided phenotypic data 
+about each sample, and we would like to generate and analyze the samples 
+epigenetic age measures.
+
+**Step 1:** Firstly, make sure to put all IDAT files and penotypic data 
+(Sample_Sheet.csv) into the same directory (as well as all required 
+input files, more info on this in the documentation) .We will need to 
+provide this directory to the main() function. This directory will also be 
+where all output files will be generated to.
+
+```{R}
+
+# "C:/Users/user1/Documents/Analysis/data", the directory
+
+# containing IDAT files and \# Sample_Sheet.csv
+
+# library(EpigeneticAgePipeline)
+
+# main(directory = "C:/Users/user1/Documents/Analysis/data",
+# normalize=,
+# useBeta=, arrayType=,
+# generateResiduals=,
+# useSampleSheet=)
+
+```
+**Step 2:** After beta values are generated from the provided IDAT files,
+it is common practice to normalize the values before being used to generate
+epigenetic age. So in this case we want specify that the generated beta values
+should be normalized.
+
+```{R}
+# library(EpigeneticAgePipeline
+
+# main(directory = "C:/Users/user1/Documents/Analysis/data", 
+# normalize= TRUE, 
+# useBeta=, 
+# arrayType=, 
+# generateResiduals=, 
+# useSampleSheet=)
+```
+
+**Step 3:** In this example we specified that the methylation data we are 
+providing is via IDAT files, so we need to specify that we are not using
+already provided beta values.
+
+```{R}   
+# library(EpigeneticAgePipeline)
+
+# main(directory = "C:/Users/user1/Documents/Analysis/data", 
+# normalize= TRUE, 
+# useBeta= FALSE, 
+# arrayType=, 
+# generateResiduals=, 
+# useSampleSheet=)
+```
+
+**Step 4:** We also specified that are IDAT file contain methylation data
+that was collected using the 450K array platform, so we will specify that.
+
+```{R}      
+# library(EpigeneticAgePipeline)
+
+# main(directory = "C:/Users/user1/Documents/Analysis/data", 
+# normalize= TRUE, 
+# useBeta= FALSE, 
+# arrayType="450K", 
+# generateResiduals=, 
+# useSampleSheet=)
+
+#make sure to use a capital K
+```
+
+**Step 5:** Let's say we want epigenetic age residuals for each sample adjusted
+for a set of variables provided in our Sample_Sheet.csv. We would need to
+specify that as well.
+
+```{R}      
+# library(EpigeneticAgePipeline)
+
+# main(directory = "C:/Users/user1/Documents/Analysis/data", 
+# normalize= TRUE, 
+# useBeta= FALSE, 
+# arrayType="450K", 
+# generateResiduals= TRUE, 
+# useSampleSheet=)
+
+#NOTE: the variables that will be adjusted for are provided during runtime
+```
+
+**Step 6:** Lastly, we have to specify that we do in fact have a sample
+sheet available.
+
+```{R}      
+# library(EpigeneticAgePipeline)
+
+# main(directory = "C:/Users/user1/Documents/Analysis/data", 
+# normalize= TRUE, 
+# useBeta= FALSE, 
+# arrayType="450K", 
+# generateResiduals= TRUE, 
+# useSampleSheet=)
+```
+
+**Optional Step:** If you would like to make sure that you are following all
+the guidelines in terms of providing variables in Sample_Sheet.csv and are
+providing all required files for analysis, the documentation for the main()
+function specifies all this information. A quick way to view the documentation
+from the console:
+
+```{R}       
+# ?EpigeneticAgePipeline::main
+```
+
+```{R echo=FALSE}
+sessionInfo()
+```
+
+

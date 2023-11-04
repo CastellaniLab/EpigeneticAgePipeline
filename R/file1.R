@@ -1,15 +1,19 @@
     main <- function(directory = getwd(),
-                     normalize = TRUE,
-                     useBeta = FALSE,
-                     arrayType = "450K",
-                     generateResiduals = TRUE,
-                     useSampleSheet = TRUE) {
+                    normalize = TRUE,
+                    useBeta = FALSE,
+                    arrayType = "450K",
+                    generateResiduals = TRUE,
+                    useSampleSheet = TRUE) {
         setwd(directory)
         if (!file.exists("output.txt")) {
             file.create("output.txt")
         }
 
-        if (normalize == TRUE) shouldNormalize <- FALSE else shouldNormalize <- TRUE
+        if (normalize == TRUE) {
+            shouldNormalize <- FALSE
+        } else {
+            shouldNormalize <- TRUE
+        }
         bVals <- 0
         rgSet <- 0
         listofCors <- c()
@@ -22,7 +26,10 @@
             containsSampleNames <- FALSE
             if (useSampleSheet == TRUE) {
                 testDf <- read.csv("Sample_Sheet.csv", header = TRUE)
-                if ("Sample_Name" %in% colnames(testDf)) containsSampleNames <- TRUE
+                if ("Sample_Name" %in% colnames(testDf))
+                {
+                    containsSampleNames <- TRUE
+                }
             }
 
             if (containsSampleNames == TRUE) {
@@ -39,7 +46,8 @@
                 write.csv(pdata, file = "Sample_Sheet.csv", row.names = FALSE)
 
 
-                rgSet <- minfi::read.metharray.exp(targets = pdata, force = TRUE)
+                rgSet <-
+                    minfi::read.metharray.exp(targets = pdata, force = TRUE)
                 minfi::sampleNames(rgSet) <- pdata$ID
             } else {
                 rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
@@ -49,14 +57,11 @@
             #    Calculate    the    detection    p-values
             detP <- minfi::detectionP(rgSet)
 
-            #    Track    how    many    samples    were    removed    due    to    poor    quality
             samples_before <- dim(rgSet)[2]
 
-            #    Remove    poor    quality    samples
             keep <- colMeans(detP) < 0.05
             rgSet <- rgSet[, keep]
 
-            #    Print    out    number    of    samples    removed    due    to    poor    quality
             samples_removed <- samples_before - dim(detP)[2]
             message(
                 "-----    ",
@@ -66,39 +71,36 @@
 
             mSetSq <- rgSet
 
-            mSetSq <- minfi::preprocessRaw(mSetSq) #    does    not    perform    normalization
+            mSetSq <- minfi::preprocessRaw(mSetSq)
 
             mSetSq <- minfi::mapToGenome(mSetSq)
 
             mSetSq <- minfi::ratioConvert(mSetSq)
 
-
-            #    Ensure    probes    are    in    the    same    order    in    the    mSetSq    and    detP    objects
             detP <- detP[match(minfi::featureNames(mSetSq), rownames(detP)), ]
 
-            #    Remove    any    probes    that    have    failed    in    one    or    more    samples
             probes_before <- dim(mSetSq)[1]
             keep <- rowSums(detP < 0.01) == ncol(mSetSq)
             mSetSqFlt <- mSetSq[keep, ]
 
-            #    Print    out    number    of    probes    removed    for    failing    in    one    or    more    samples
             probes_removed <- probes_before - dim(mSetSqFlt)[1]
             message(
                 "-----    ",
                 probes_removed,
-                "    probe(s)    removed    for    failing    in    one    or    more    samples"
+                "probe(s)  removed  for  failing  in
+                one  or  more  samples"
             )
             probes_before <- dim(mSetSqFlt)[1]
 
             #    Remove    probes    with    SNPs    at    CpG    site
             mSetSqFlt <- minfi::dropLociWithSnps(mSetSqFlt)
 
-            #    Print    out    number    of    probes    removed    for    having    SNPs    at    CpG    site
             probes_removed <- probes_before - dim(mSetSqFlt)[1]
             message(
                 "-----    ",
                 probes_removed,
-                "    probe(s)    removed    for    having    SNPs    at    CpG    site"
+                "probe(s)  removed
+                for   having  SNPs  at  CpG  site"
             )
             probes_before <- dim(mSetSqFlt)[1]
 
@@ -120,10 +122,11 @@
                 ), stringsAsFactors = FALSE)
             }
 
-            keep <- !(minfi::featureNames(mSetSqFlt) %in% xReactiveProbes$TargetID)
+            keep <-
+                !(minfi::featureNames(mSetSqFlt)
+                %in% xReactiveProbes$TargetID)
             mSetSqFlt <- mSetSqFlt[keep, ]
 
-            #    Print    out    number    of    probes    removed    for    being    cross    reactive
             probes_removed <- probes_before - dim(mSetSqFlt)[1]
             message(
                 "-----    ",
@@ -145,12 +148,12 @@
             keep <- !(minfi::featureNames(mSetSqFlt) %in% sexProbes$Name)
             mSetSqFlt <- mSetSqFlt[keep, ]
 
-            #    Print    out    number    of    probes    removed    for    being    cross    reactive
             probes_removed <- probes_before - dim(mSetSqFlt)[1]
             message(
                 "-----    ",
                 probes_removed,
-                "    probe(s)    removed    for    being    on    sex    chromosomes"
+                "probe(s)  removed
+                for  being  on  sex  chromosomes"
             )
 
             #    Print    out    the    number    of    probes    remaining
@@ -182,7 +185,6 @@
             rect(ll[1], ll[3], ll[2], ll[4], col = "#CC7178")
         }
 
-        #    function    for    finding    the    correlation    between    covariates
         corCovariates <- function(x) {
             corDf <- pdataSVs
 
@@ -194,9 +196,10 @@
 
 
             counter <- 1
-            for    (i in seq.default(from = 1, to = (ncol(corDf))))
+            for (i in seq.default(from = 1, to = (ncol(corDf))))
             {
-                for    (j in seq.default(from = i, to = (ncol(corDf)) - 1)) #    rows
+                for (j in seq.default(from = i,
+                to = (ncol(corDf)) - 1))
                 {
                     corDf[j + 1, i] <- listofCors[counter]
                     counter <- counter + 1
@@ -207,9 +210,9 @@
             corDf <- corDf[-nrow(corDf), ]
 
             counter <- 1
-            for    (i in seq.default(from = 1, to = (ncol(corDf))))
+            for (i in seq.default(from = 1, to = (ncol(corDf))))
             {
-                for    (j in seq.default(from = i, to = (ncol(corDf)) - 1))
+                for (j in seq.default(from = i, to = (ncol(corDf)) - 1))
                 {
                     if (!is.na(corDf[j + 1, i])) {
                         if (corDf[j + 1, i] > 0.6) {
@@ -235,10 +238,12 @@
                             )
                             message("\n")
                             if (!(covariate1 %in% corsToRemove)) {
-                                .GlobalEnv$corsToRemove <- append(corsToRemove, covariate1)
+                                .GlobalEnv$corsToRemove <- append(corsToRemove,
+                                                                    covariate1)
                             }
                             if (!(covariate2 %in% corsToRemove)) {
-                                .GlobalEnv$corsToRemove <- append(corsToRemove, covariate2)
+                                .GlobalEnv$corsToRemove <- append(corsToRemove,
+                                                                    covariate2)
                             }
                         }
                     }
@@ -247,7 +252,6 @@
             return(x)
         }
 
-        #    function    for    plotting    correlation    line    between    matrix
         twolines <- function(x, y) {
             points(x, y, pch = 20)
             abline(lm(y ~ x), col = "#CC7178")
@@ -323,26 +327,33 @@
             resids <- residuals(lme_summary)
             message(resids)
 
-            for    (i in seq.default(from = 1, to = length(resids)))
+            for (i in seq.default(from = 1, to = length(resids)))
             {
-                output <- paste(output, rownames(pdata)[i], "\t", resids[i], "\n")
+                output <- paste(output,
+                                rownames(pdata)[i],
+                                "\t",
+                                resids[i],
+                                "\n")
             }
 
             return(output)
         }
 
         removeCovariates <- function(df) {
-            message("The    following    covariates    were    found    to    be    highly    correlated:    \n")
-            for    (i in corsToRemove)
+            message("The following covariates
+                    were found to be highly correlated: \n")
+            for (i in corsToRemove)
             {
                 message(i)
             }
-            message("\nTo    remove    one    of    the    covariates    or    several,
-                                                enter    1    for    each    index    want    to    remove,
-                                                0    to    keep")
+            message("\nTo remove
+            one of the covariates  or  several,
+                                                enter 1 for
+                                                each index  want to  remove,
+                                                0   to  keep")
             userInput <- scan(file = "", n = length(corsToRemove))
             userInput <- as.numeric(userInput)
-            for    (i in seq.default(from = 1, to = length(userInput))) {
+            for (i in seq.default(from = 1, to = length(userInput))) {
                 if (userInput[i] == 1) {
                     column <- corsToRemove[i]
                     message(column)
@@ -410,10 +421,12 @@
                         finalOutput,
                         "\n",
                         age_type,
-                        "Residuals    Based    on    Epigenetic    Age    Acceleration",
+                        "Residuals Based on Epigenetic Age
+                        Acceleration",
                         "\n"
                     )
-                    covariate_data$Clock <- covariate_data$Clock - covariate_data$Age
+                    covariate_data$Clock <-
+                        covariate_data$Clock - covariate_data$Age
                     finalOutput <- residGeneration(
                         pdata = covariate_data,
                         output = finalOutput
@@ -451,7 +464,8 @@
                 ggplot2::theme_minimal()
 
             plot <- plot +
-                ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white"))
+                ggplot2::theme(plot.background =
+                    ggplot2::element_rect(fill = "white"))
 
             ggplot2::ggsave("SampleIDandAge.png",
                 plot = plot,
@@ -461,7 +475,7 @@
                 dpi = 300
             )
 
-            for    (i in 2:(ncol(data) - 1))
+            for (i in 2:(ncol(data) - 1))
             {
                 plot <- ggpubr::ggscatter(data,
                     x = "age", y = colnames(data)[i],
@@ -508,7 +522,7 @@
 
         sample_outliers <- c()
         alloutliers <- c()
-        for    (i in seq.default(from = 1, to = 5))
+        for (i in seq.default(from = 1, to = 5))
         {
             a <- subset(
                 rownames(bpca$x),
@@ -525,7 +539,7 @@
         }
         outlier <- unique(alloutliers)
         outlierIndexes <- c()
-        for    (i in seq.default(from = 1, to = ncol(bVals)))
+        for (i in seq.default(from = 1, to = ncol(bVals)))
         {
             if (colnames(bVals)[i] %in% outlier) {
                 outlierIndexes <- append(outlierIndexes, i)
@@ -582,7 +596,8 @@
                 ))
                 rownames(pdataSVs) <- colnames(bVals)[-1]
             } else {
-                pdataSVs <- data.frame(Clock = seq.default(from = 1, to = ncol(bVals)))
+                pdataSVs <- data.frame(Clock = seq.default(from = 1,
+                to = ncol(bVals)))
                 rownames(pdataSVs) <- colnames(bVals)
             }
 
@@ -590,13 +605,14 @@
             columnData <- read.csv("Sample_Sheet.csv", header = TRUE)
             colnames(sampleData) <- colnames(columnData)
 
-            for    (i in colnames(sampleData))
+            for (i in colnames(sampleData))
             {
                 switch(i,
                     Age = pdataSVs$Age <- as.numeric(sampleData$Age),
                     Sex = pdataSVs$Sex <- as.factor(sampleData$Sex),
                     Smoking_Status =
-                        pdataSVs$Smoking_Status <- as.factor(sampleData$Smoking_Status),
+                    pdataSVs$Smoking_Status <-
+                        as.factor(sampleData$Smoking_Status),
                     Batch = pdataSVs$Batch <- as.factor(sampleData$Batch),
                     Slide = pdataSVs$Slide <- as.factor(sampleData$Slide),
                     Bcell = pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
@@ -606,17 +622,21 @@
                     Mono = pdataSVs$Mono <- as.numeric(sampleData$Mono),
                     nRBC = pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
                     Array = {
-                        row <- as.factor(gsub("R(\\d+).*", "\\1", sampleData$Array))
-                        column <- as.factor(gsub(".*C(\\d+)", "\\1", sampleData$Array))
+                        row <- as.factor(gsub("R(\\d+).*",
+                                                "\\1",
+                                                sampleData$Array))
+                        column <- as.factor(gsub(".*C(\\d+)",
+                                                "\\1",
+                                                sampleData$Array))
                         pdataSVs$Row <- row
                         pdataSVs$Column <- column
                     },
                     {
-                        message("Looks    like    you    have    a    custom    covariate")
+                        message("Looks like you have a custom covariate")
                         message(i)
-                        message("Enter    0    if    this    is    a    numerical    variable,
-                                                                        or    1    if    this    a    factor,
-                                                                        or    2    to    ignore")
+                        message("Enter 0 if this is a numerical variable,",
+                            "or 1 if this is a factor,",
+                            "or 2 to ignore")
                         userInput <- scan(file = "", nmax = 1)
                         message(userInput)
                         message(class(userInput))
@@ -637,11 +657,21 @@
                 pdataSVs$Mono <- as.numeric(CC[, "Mono"])
                 pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
             }
-            if ("PC1" %in% names(pca_scores)) pdataSVs$P1 <- as.numeric(pca_scores$PC1)
-            if ("PC2" %in% names(pca_scores)) pdataSVs$P2 <- as.numeric(pca_scores$PC2)
-            if ("PC3" %in% names(pca_scores)) pdataSVs$P3 <- as.numeric(pca_scores$PC3)
-            if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
-            if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+            if ("PC1" %in% names(pca_scores)) {
+                pdataSVs$P1 <- as.numeric(pca_scores$PC1)
+            }
+            if ("PC2" %in% names(pca_scores)) {
+                pdataSVs$P2 <- as.numeric(pca_scores$PC2)
+            }
+            if ("PC3" %in% names(pca_scores)) {
+                pdataSVs$P3 <- as.numeric(pca_scores$PC3)
+            }
+            if ("PC4" %in% names(pca_scores)) {
+                pdataSVs$P4 <- as.numeric(pca_scores$PC4)
+            }
+            if ("PC5" %in% names(pca_scores)) {
+                pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+            }
 
 
             pdataSVs <- pdataSVs[
@@ -654,7 +684,9 @@
             ]
             diag.labels <- colnames(pdataSVs)
             pdataColumns <- names(pdataSVs)
-            plot.formula <- as.formula(paste("~", paste(pdataColumns, collapse = "+")))
+            plot.formula <- as.formula(paste("~",
+                                            paste(pdataColumns,
+                                            collapse = "+")))
         } else {
             if (colnames(bVals)[1] == "X") {
                 pdataSVs <- data.frame(Clock = seq.default(
@@ -663,7 +695,8 @@
                 ))
                 rownames(pdataSVs) <- colnames(bVals)[-1]
             } else {
-                pdataSVs <- data.frame(Clock = seq.default(from = 1, to = ncol(bVals)))
+                pdataSVs <- data.frame(Clock = seq.default(from = 1,
+                to = ncol(bVals)))
                 rownames(pdataSVs) <- colnames(bVals)
             }
             if (!is.numeric(rgSet) & arrayType != "27K") {
@@ -674,14 +707,35 @@
                 pdataSVs$Mono <- as.numeric(CC[, "Mono"])
                 pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
             }
-            if ("PC1" %in% names(pca_scores)) pdataSVs$P1 <- as.numeric(pca_scores$PC1)
-            if ("PC2" %in% names(pca_scores)) pdataSVs$P2 <- as.numeric(pca_scores$PC2)
-            if ("PC3" %in% names(pca_scores)) pdataSVs$P3 <- as.numeric(pca_scores$PC3)
-            if ("PC4" %in% names(pca_scores)) pdataSVs$P4 <- as.numeric(pca_scores$PC4)
-            if ("PC5" %in% names(pca_scores)) pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+            if ("PC1" %in% names(pca_scores))
+            {
+                pdataSVs$P1 <- as.numeric(pca_scores$PC1)
+            }
+
+            if ("PC2" %in% names(pca_scores))
+            {
+                pdataSVs$P2 <- as.numeric(pca_scores$PC2)
+            }
+
+            if ("PC3" %in% names(pca_scores))
+            {
+                pdataSVs$P3 <- as.numeric(pca_scores$PC3)
+            }
+            if ("PC4" %in% names(pca_scores))
+            {
+                pdataSVs$P4 <- as.numeric(pca_scores$PC4)
+            }
+
+            if ("PC5" %in% names(pca_scores))
+            {
+                pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+            }
+
             diag.labels <- colnames(pdataSVs)
             pdataColumns <- names(pdataSVs)
-            plot.formula <- as.formula(paste("~", paste(pdataColumns, collapse = "+")))
+            plot.formula <- as.formula(paste("~",
+                                                paste(pdataColumns,
+                                                collapse = "+")))
         }
 
 
@@ -723,7 +777,7 @@
             "                                PhenoAge",
             "\n"
         )
-        for    (i in seq.default(from = 1, to = nrow(results))) {
+        for (i in seq.default(from = 1, to = nrow(results))) {
             finalOutput <- paste(
                 finalOutput,
                 results[i, 1],
@@ -773,7 +827,12 @@
                 "age"
             )]
         } else {
-            exportDf <- results[, c("id", "Horvath", "Hannum", "Levine", "skinHorvath")]
+            exportDf <- results[,
+                                c("id",
+                                "Horvath",
+                                "Hannum",
+                                "Levine",
+                                "skinHorvath")]
         }
 
         finalOutput <- paste(finalOutput, "\n\nDunedinPACE\n")
@@ -787,7 +846,7 @@
             proportionOfProbesRequired = 0.8
         )
         results <- as.data.frame(results)
-        for    (i in seq.default(from = 1, to = nrow(results)))
+        for (i in seq.default(from = 1, to = nrow(results)))
         {
             finalOutput <- paste(
                 finalOutput,
@@ -819,7 +878,7 @@
             )
             grimage$id <- grimage$Sample
             exportDf <- merge(exportDf, grimage, by = "id")
-            for    (i in seq.default(from = 1, to = nrow(results)))
+            for (i in seq.default(from = 1, to = nrow(results)))
             {
                 finalOutput <- paste(
                     finalOutput,

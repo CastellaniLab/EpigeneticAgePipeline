@@ -4,11 +4,55 @@
 
 ## Installation and Use
 
-1. Install 'remotes' package in order to install R pacakges hosted on remote repositories, as well as Bioconducter which will support some associated packages.
+1. Install the following packages which act as dependencies for the pipeline.
 
 ```
 install.packages('remotes')
-install.packages("BiocManager")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+if (!requireNamespace("minfi", quietly = TRUE))
+    BiocManager::install("minfi")
+
+if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE))
+    BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
+
+if (!requireNamespace("tidyverse", quietly = TRUE))
+    install.packages("tidyverse")
+
+if (!requireNamespace("ggplot2", quietly = TRUE))
+    install.packages("ggplot2")
+
+if (!requireNamespace("ggpubr", quietly = TRUE))
+    install.packages("ggpubr")
+
+if (!requireNamespace("umap", quietly = TRUE))
+    install.packages("umap")
+
+ if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE))
+    BiocManager::install("IlluminaHumanMethylationEPICmanifest")
+
+if (!requireNamespace("methylclock", quietly = TRUE))
+    BiocManager::install("methylclock")
+
+if (!requireNamespace("DunedinPACE", quietly = TRUE))
+    remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
+
+if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE))
+    BiocManager::install("FlowSorted.CordBlood.450k")
+
+if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE))
+    BiocManager::install("IlluminaHumanMethylation450kmanifest")
+
+if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE))
+    BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+
+if (!requireNamespace("lme4", quietly = TRUE))
+    install.packages("lme4")
+
+if (!requireNamespace("dnaMethyAge", quietly = TRUE))
+    BiocManager::install("yiluyucheng/dnaMethyAge")
 ```
 
 2. Use the 'remotes' package congruently with 'install_github', or load using library().
@@ -65,7 +109,7 @@ EpigeneticAgePipeline::main(...)
 - Description: Provides the estimated rate of biological aging.
 - CpG Sites: Uses 173 CpG sites.
 - Array Type: Trained using Illumina 450K and EPIC array types.
-- Cell Type: Designed primarly for blood samples. 
+- Cell Type: Designed primarly for blood samples.
 
 **GrimAge:**
 
@@ -85,7 +129,6 @@ If IDAT files are provided, methylation data can be used to determine cell count
 - Monocytes
 - Nucleated Red Blood cells
 
-
 ### Output
 
 **output.txt:**  
@@ -95,12 +138,10 @@ A .txt file containing epigenetic age/acceleration estimates, covariate data and
 A set of .pdf files illustrating a the correaltions between a specific epigenetic age estimate and covariates.
 
 **epigeneticAge.txt:**  
-A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing  into a spreadsheet program than output.txt.
+A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing into a spreadsheet program than output.txt.
 
 **plot{Clockname}.pdf:**  
 A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
 
 **SampleIDandAge.png:**  
 A .png file containing a grouped bar chart showing each sample and their assocaited epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using smaller sample sizes.
-
-

@@ -5,7 +5,8 @@ Version: 0.1.0
 Authors@R: person("Stanislav", 
     "Rayevskiy", 
     email = "srayevsk@uwo.ca", 
-    role = c("aut", "cre"))
+    role = c("aut", "cre"),
+    comment = c(ORCID = ""))
 biocViews: DNAMethylation, Epigenetics, MethylationArray, Normalization
 Description: EpigeneticAgePipeline is a comprehensive package designed 
     for processing and analyzing DNA methylation data.
@@ -17,6 +18,7 @@ Description: EpigeneticAgePipeline is a comprehensive package designed
 License: GPL-2 
 Encoding: UTF-8
 NeedsCompilation: no
+VignetteBuilder: knitr
 Packaged: 2023-09-26 16:33:54 UTC; stanl
 Imports:
     ggplot2,
@@ -39,5 +41,6 @@ Suggests:
     minfi,
     methylclock,
     dnaMethyAge,
-    DunedinPACE
+    DunedinPACE,
+    knitr
 RoxygenNote: 7.2.3
