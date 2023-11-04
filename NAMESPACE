@@ -1,25 +1,25 @@
 exportPattern("^[[:alpha:]]+")
-importFrom("graphics", 
-           "abline", 
-           "pairs", 
-           "par", 
-           "points", 
-           "rect", 
-           "strwidth", 
-           "text")
-importFrom("stats", 
-           "as.formula", 
-           "cor", 
-           "lm", 
-           "na.omit", 
-           "prcomp", 
-           "residuals", 
-           "sd")
-importFrom("utils", 
-           "install.packages", 
-           "read.csv", 
-           "write.csv",
-           "write.table")
+importFrom("graphics",
+            "abline",
+            "pairs",
+            "par",
+            "points",
+            "rect",
+            "strwidth",
+            "text")
+importFrom("stats",
+            "as.formula",
+            "cor",
+            "lm",
+            "na.omit",
+            "prcomp",
+            "residuals",
+            "sd")
+importFrom("utils",
+            "install.packages",
+            "read.csv",
+            "write.csv",
+            "write.table")
 import(ggplot2)
 import(ggpubr)
 import(reshape2)
