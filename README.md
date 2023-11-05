@@ -36,6 +36,9 @@ if (!requireNamespace("umap", quietly = TRUE))
 if (!requireNamespace("methylclock", quietly = TRUE))
     BiocManager::install("methylclock")
 
+if (!requireNamespace("methylclockData", quietly = TRUE))
+    BiocManager::install("methylclockData")
+
 if (!requireNamespace("DunedinPACE", quietly = TRUE))
     remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
 

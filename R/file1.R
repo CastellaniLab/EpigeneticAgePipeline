@@ -1,3 +1,6 @@
+    utils::globalVariables(c("bVals", "rgSet", "listofCors", "corsToRemove"))
+
+
     main <- function(directory = getwd(),
                     normalize = TRUE,
                     useBeta = FALSE,
@@ -14,10 +17,12 @@
         } else {
             shouldNormalize <- TRUE
         }
-        bVals <- 0
-        rgSet <- 0
-        listofCors <- c()
-        corsToRemove <- c()
+
+        base::assign("bVals", 0, envir = .GlobalEnv)
+        base::assign("rgSet", 0, envir = .GlobalEnv)
+        base::assign("listofCors", c(), envir = .GlobalEnv)
+        base::assign("corsToRemove", c(), envir = .GlobalEnv)
+
         load(paste0(directory, "/PC-clocks.rda"), envir = .GlobalEnv)
         load(paste0(directory, "/golden_ref.rda"), envir = .GlobalEnv)
 
@@ -194,7 +199,6 @@
 
             corDf[, ] <- 0
 
-
             counter <- 1
             for (i in seq.default(from = 1, to = (ncol(corDf))))
             {
@@ -222,18 +226,18 @@
                                 x,
                                 "\n",
                                 covariate1,
-                                "    and    ",
+                                " and ",
                                 covariate2,
-                                "    are    highly    correlated:    ",
+                                " are highly correlated: ",
                                 corDf[j + 1, i],
                                 "\n"
                             )
                             message("\n")
                             message(
                                 covariate1,
-                                "    and    ",
+                                " and ",
                                 covariate2,
-                                "    are    highly    correlated:    ",
+                                " are highly correlated: ",
                                 corDf[j + 1, i]
                             )
                             message("\n")
@@ -325,7 +329,6 @@
             lme_summary <- try(runlme(lme_formula), silent = FALSE)
 
             resids <- residuals(lme_summary)
-            message(resids)
 
             for (i in seq.default(from = 1, to = length(resids)))
             {
@@ -346,11 +349,11 @@
             {
                 message(i)
             }
-            message("\nTo remove
-            one of the covariates  or  several,
-                                                enter 1 for
-                                                each index  want to  remove,
-                                                0   to  keep")
+            message("\nTo remove",
+            "one of the covariates or several,",
+            "enter 1 for",
+            "each index  want to  remove,",
+            "0   to  keep")
             userInput <- scan(file = "", n = length(corsToRemove))
             userInput <- as.numeric(userInput)
             for (i in seq.default(from = 1, to = length(userInput))) {
@@ -436,7 +439,6 @@
 
             .GlobalEnv$listofCors <- c()
             .GlobalEnv$corsToRemove <- c()
-
             return(finalOutput)
         }
 
@@ -762,7 +764,6 @@
                 results <- methylclock::DNAmAge(bVals, normalize = FALSE)
             }
         }
-
         finalOutput <- "Raw    Clock    Results\n"
         finalOutput <- paste(
             finalOutput,
@@ -841,7 +842,6 @@
             rownames(bVals) <- bVals[, 1]
             bVals <- bVals[, -1]
         }
-
         results <- DunedinPACE::PACEProjector(as.matrix(bVals),
             proportionOfProbesRequired = 0.8
         )
