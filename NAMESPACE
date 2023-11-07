@@ -15,12 +15,9 @@ importFrom("stats",
             "prcomp",
             "residuals",
             "sd")
-importFrom("utils",
-            "install.packages",
-            "read.csv",
-            "write.csv",
-            "write.table")
+import(utils)
 import(ggplot2)
 import(ggpubr)
 import(reshape2)
 import(readr)
+import(glmmTMB)

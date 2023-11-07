@@ -18,6 +18,20 @@
             shouldNormalize <- TRUE
         }
 
+        downloadDirectory <- "EpigeneticAgePipelineDataset-main"
+        downloadURL <- "https://github.com/StanRaye/EpigeneticAgePipelineDataset
+        /archive/refs/heads/main.zip"
+        if (!file.exists(file.path(getwd(), downloadDirectory))) {
+            utils::download.file(url = downloadURL, destfile = "asdf.zip")
+            files_in_extracted_dir <- list.files(paste0(directory,
+                                                        "/",
+                                                        downloadDirectory),
+                                                        full.names = TRUE)
+            for (file in files_in_extracted_dir) {
+                target_file <- file.path(directory, basename(file))
+                file.rename(file, target_file)
+            }
+        }
         base::assign("bVals", 0, envir = .GlobalEnv)
         base::assign("rgSet", 0, envir = .GlobalEnv)
         base::assign("listofCors", c(), envir = .GlobalEnv)
@@ -412,7 +426,7 @@
                     finalOutput,
                     "\n",
                     age_type,
-                    "Residuals    Based    on    Epigenetic    Age",
+                    "Residuals Based on Epigenetic Age",
                     "\n"
                 )
                 finalOutput <- residGeneration(
