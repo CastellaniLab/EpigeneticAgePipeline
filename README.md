@@ -4,58 +4,32 @@
 
 ## Installation and Use
 
+1.
+
 1. Install the following packages which act as dependencies for the pipeline.
 
 ```
-install.packages('remotes')
-
-if (!requireNamespace("BiocManager", quietly = TRUE))
+if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-if (!requireNamespace("minfi", quietly = TRUE))
-    BiocManager::install("minfi")
+packages_to_install <- c(
+  "minfi",
+  "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+  "IlluminaHumanMethylationEPICmanifest",
+  "methylclock",
+  "methylclockData",
+  "danbelsky/DunedinPACE",
+  "FlowSorted.CordBlood.450k",
+  "IlluminaHumanMethylation450kmanifest",
+  "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+  "yiluyucheng/dnaMethyAge"
+)
 
-if (!requireNamespace("IlluminaHumanMethylationEPICanno.ilm10b4.hg19", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
-
-if (!requireNamespace("tidyverse", quietly = TRUE))
-    install.packages("tidyverse")
-
-if (!requireNamespace("ggplot2", quietly = TRUE))
-    install.packages("ggplot2")
-
-if (!requireNamespace("ggpubr", quietly = TRUE))
-    install.packages("ggpubr")
-
-if (!requireNamespace("umap", quietly = TRUE))
-    install.packages("umap")
-
- if (!requireNamespace("IlluminaHumanMethylationEPICmanifest", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylationEPICmanifest")
-
-if (!requireNamespace("methylclock", quietly = TRUE))
-    BiocManager::install("methylclock")
-
-if (!requireNamespace("methylclockData", quietly = TRUE))
-    BiocManager::install("methylclockData")
-
-if (!requireNamespace("DunedinPACE", quietly = TRUE))
-    remotes::install_github("danbelsky/DunedinPACE")  # Use 'remotes' for devtools::install_github()
-
-if (!requireNamespace("FlowSorted.CordBlood.450k", quietly = TRUE))
-    BiocManager::install("FlowSorted.CordBlood.450k")
-
-if (!requireNamespace("IlluminaHumanMethylation450kmanifest", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylation450kmanifest")
-
-if (!requireNamespace("IlluminaHumanMethylation450kanno.ilmn12.hg19", quietly = TRUE))
-    BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
-
-if (!requireNamespace("lme4", quietly = TRUE))
-    install.packages("lme4")
-
-if (!requireNamespace("dnaMethyAge", quietly = TRUE))
-    BiocManager::install("yiluyucheng/dnaMethyAge")
+for (package in packages_to_install) {
+    if (!requireNamespace(package, quietly = TRUE)) {
+        BiocManager::install(package)
+    }
+}
 ```
 
 2. Use the 'remotes' package congruently with 'install_github', or load using library().
