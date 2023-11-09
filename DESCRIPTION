@@ -28,7 +28,8 @@ Imports:
     glmmTMB,
     graphics,
     stats,
-    utils
+    utils,
+    devtools
 Suggests:
     BiocManager,
     IlluminaHumanMethylationEPICmanifest,
@@ -40,7 +41,5 @@ Suggests:
     IlluminaHumanMethylation27kanno.ilmn12.hg19,
     minfi,
     methylclock,
-    dnaMethyAge,
-    DunedinPACE,
     knitr
 RoxygenNote: 7.2.3
