@@ -4,8 +4,6 @@
 
 ## Installation and Use
 
-1.
-
 1. Install the following packages which act as dependencies for the pipeline.
 
 ```
@@ -18,11 +16,11 @@ packages_to_install <- c(
   "IlluminaHumanMethylationEPICmanifest",
   "methylclock",
   "methylclockData",
-  "danbelsky/DunedinPACE",
   "FlowSorted.CordBlood.450k",
   "IlluminaHumanMethylation450kmanifest",
   "IlluminaHumanMethylation450kanno.ilmn12.hg19",
-  "yiluyucheng/dnaMethyAge"
+  "IlluminaHumanMethylation27kmanifest",
+  "IlluminaHumanMethylation27kanno.ilmn12.hg19"
 )
 
 for (package in packages_to_install) {

@@ -1,4 +1,4 @@
-    utils::globalVariables(c("bVals", "rgSet", "listofCors", "corsToRemove"))
+    utils::globalVariables(c("bVals", "rgSet", "listofCors", "corsToRemove", "methyAge"))
 
 
     main <- function(directory = getwd(),
@@ -19,10 +19,12 @@
         }
 
         downloadDirectory <- "EpigeneticAgePipelineDataset-main"
-        downloadURL <- "https://github.com/StanRaye/EpigeneticAgePipelineDataset
-        /archive/refs/heads/main.zip"
+        downloadURL <- paste0("https://github.com/StanRaye/",
+            "EpigeneticAgePipelineDataset",
+            "/archive/refs/heads/main.zip")
         if (!file.exists(file.path(getwd(), downloadDirectory))) {
             utils::download.file(url = downloadURL, destfile = "asdf.zip")
+            utils::unzip("asdf.zip")
             files_in_extracted_dir <- list.files(paste0(directory,
                                                         "/",
                                                         downloadDirectory),
@@ -31,6 +33,9 @@
                 target_file <- file.path(directory, basename(file))
                 file.rename(file, target_file)
             }
+            devtools::load_all(paste0(directory,
+                "/EpigeneticAgePipelineDataset-main/",
+                "dnaMethyAge-main"))
         }
         base::assign("bVals", 0, envir = .GlobalEnv)
         base::assign("rgSet", 0, envir = .GlobalEnv)
@@ -856,17 +861,20 @@
             rownames(bVals) <- bVals[, 1]
             bVals <- bVals[, -1]
         }
-        results <- DunedinPACE::PACEProjector(as.matrix(bVals),
-            proportionOfProbesRequired = 0.8
+        clockname <- "DunedinPACE"
+        results <- methyAge(
+            betas = bVals,
+            clock = clockname,
+            do_plot = FALSE
         )
         results <- as.data.frame(results)
         for (i in seq.default(from = 1, to = nrow(results)))
         {
             finalOutput <- paste(
                 finalOutput,
-                rownames(results)[i],
+                results[i, 1],
                 "\t",
-                results$DunedinPACE[i],
+                results[i, 2],
                 "\n"
             )
         }
@@ -884,8 +892,8 @@
 
             grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
             clockname <- "PCGrimAge"
-            grimage <- dnaMethyAge::methyAge(
-                beta = bVals,
+            grimage <- methyAge(
+                betas = bVals,
                 clock = clockname,
                 age_info = as.data.frame(grimDf),
                 do_plot = FALSE
