@@ -33,10 +33,9 @@
                 target_file <- file.path(directory, basename(file))
                 file.rename(file, target_file)
             }
-            devtools::load_all(paste0(directory,
-                "/EpigeneticAgePipelineDataset-main/",
-                "dnaMethyAge-main"))
         }
+        devtools::load_all(paste0(directory,
+                            "/dnaMethyAge-main"))
         base::assign("bVals", 0, envir = .GlobalEnv)
         base::assign("rgSet", 0, envir = .GlobalEnv)
         base::assign("listofCors", c(), envir = .GlobalEnv)
@@ -513,12 +512,9 @@
             }
         }
 
-        if (file.exists("betaValues.csv")) {
-            if (useBeta == TRUE) {
-                bVals <- read.csv("betaValues.csv")
-            } else {
-                processIDAT()
-            }
+
+        if (useBeta == TRUE) {
+            bVals <- read.csv("betaValues.csv")
         } else {
             processIDAT()
         }
