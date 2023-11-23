@@ -1,4 +1,5 @@
-    utils::globalVariables(c("bVals", "rgSet", "listofCors", "corsToRemove", "methyAge"))
+    utils::globalVariables(c("bVals", "rgSet", "listofCors", "corsToRemove",
+                             "methyAge", "pdataSVs", "exportDf"))
 
 
     main <- function(directory = getwd(),
@@ -18,31 +19,22 @@
             shouldNormalize <- TRUE
         }
 
-        downloadDirectory <- "EpigeneticAgePipelineDataset-main"
-        downloadURL <- paste0("https://github.com/StanRaye/",
-            "EpigeneticAgePipelineDataset",
-            "/archive/refs/heads/main.zip")
-        if (!file.exists(file.path(getwd(), downloadDirectory))) {
-            utils::download.file(url = downloadURL, destfile = "asdf.zip")
-            utils::unzip("asdf.zip")
-            files_in_extracted_dir <- list.files(paste0(directory,
-                                                        "/",
-                                                        downloadDirectory),
-                                                        full.names = TRUE)
-            for (file in files_in_extracted_dir) {
-                target_file <- file.path(directory, basename(file))
-                file.rename(file, target_file)
-            }
+        installDirectory <- paste0(path.package("EpigeneticAgePipeline"),
+                                                "/extdata/")
+
+        devtools::load_all(paste0(installDirectory, "/dnaMethyAge-main"))
+
+        if (!exists("bVals")) {
+            base::assign("bVals", 0, envir = .GlobalEnv)
         }
-        devtools::load_all(paste0(directory,
-                            "/dnaMethyAge-main"))
-        base::assign("bVals", 0, envir = .GlobalEnv)
         base::assign("rgSet", 0, envir = .GlobalEnv)
         base::assign("listofCors", c(), envir = .GlobalEnv)
         base::assign("corsToRemove", c(), envir = .GlobalEnv)
+        base::assign("pdataSVs", 0, envir = .GlobalEnv)
+        base::assign("exportDf", 0, envir = .GlobalEnv)
 
-        load(paste0(directory, "/PC-clocks.rda"), envir = .GlobalEnv)
-        load(paste0(directory, "/golden_ref.rda"), envir = .GlobalEnv)
+        load(paste0(installDirectory, "/PC-clocks.rda"), envir = .GlobalEnv)
+        load(paste0(installDirectory, "/golden_ref.rda"), envir = .GlobalEnv)
 
         processIDAT <- function() {
             dataDirectory <- directory
@@ -89,7 +81,7 @@
             message(
                 "-----    ",
                 samples_removed,
-                "    sample(s)    removed    due    to    poor    quality"
+                " sample(s) removed due to poor quality"
             )
 
             mSetSq <- rgSet
@@ -110,8 +102,8 @@
             message(
                 "-----    ",
                 probes_removed,
-                "probe(s)  removed  for  failing  in
-                one  or  more  samples"
+                " probe(s) removed for failing in",
+                "one or more samples"
             )
             probes_before <- dim(mSetSqFlt)[1]
 
@@ -122,27 +114,27 @@
             message(
                 "-----    ",
                 probes_removed,
-                "probe(s)  removed
-                for   having  SNPs  at  CpG  site"
+                " probe(s)  removed",
+                "for having SNPs at CpG site"
             )
             probes_before <- dim(mSetSqFlt)[1]
 
             #    Exclude    cross    reactive    probes
             if (arrayType == "450K") {
-                xReactiveProbes <- read.csv(file = paste(dataDirectory,
+                xReactiveProbes <- read.csv(file = paste(installDirectory,
                     "ChenEtAlList.csv",
                     sep = "/"
-                ), stringsAsFactors = FALSE)
+                ))
             } else if (arrayType == "27K") {
-                xReactiveProbes <- read.csv(file = paste(dataDirectory,
+                xReactiveProbes <- read.csv(file = paste(installDirectory,
                     "non-specific-probes-Illumina27k.csv",
                     sep = "/"
-                ), stringsAsFactors = FALSE)
+                ))
             } else {
-                xReactiveProbes <- read.csv(file = paste(dataDirectory,
+                xReactiveProbes <- read.csv(file = paste(installDirectory,
                     "PidsleyCrossReactiveProbesEPIC.csv",
                     sep = "/"
-                ), stringsAsFactors = FALSE)
+                ))
             }
 
             keep <-
@@ -154,7 +146,7 @@
             message(
                 "-----    ",
                 probes_removed,
-                "    probe(s)    removed    for    being    cross    reactive"
+                " probe(s) removed for being cross reactive"
             )
             probes_before <- dim(mSetSqFlt)[1]
 
@@ -175,15 +167,15 @@
             message(
                 "-----    ",
                 probes_removed,
-                "probe(s)  removed
-                for  being  on  sex  chromosomes"
+                " probe(s)  removed",
+                "for  being  on  sex  chromosomes"
             )
 
             #    Print    out    the    number    of    probes    remaining
             message(
                 "-----    ",
                 dim(mSetSqFlt)[1],
-                "    probe(s)    remaining    for    analysis"
+                " probe(s) remaining for analysis"
             )
 
             #    Calculate    methylation    beta    values
@@ -193,7 +185,7 @@
 
         panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...) {
             usr <- par("usr")
-            on.exit(par(usr))
+            on.exit(par(usr = usr))
             par(usr = c(0, 1, 0, 1))
             r <- abs(cor(x, y, use = "complete.obs"))
             .GlobalEnv$listofCors <- append(listofCors, r)
@@ -230,6 +222,7 @@
 
 
             corDf <- corDf[-nrow(corDf), ]
+
 
             counter <- 1
             for (i in seq.default(from = 1, to = (ncol(corDf))))
@@ -323,7 +316,7 @@
                 )
             }
 
-            if (!("Row" %in% columnsUsed) & !("Batch" %in% columnsUsed)) {
+            if (!("Row" %in% columnsUsed) | !("Batch" %in% columnsUsed)) {
                 formula_string <- paste(columns[1], "~", string)
             }
 
@@ -396,7 +389,14 @@
         }
 
         processAgeType <- function(data, age_type, output) {
-            pdataSVs$Clock <- as.numeric(data[[age_type]])
+            .GlobalEnv$pdataSVs$Clock <- as.numeric(data[[age_type]])
+            for (i in 1:ncol(pdataSVs))
+            {
+                if(length(unique(pdataSVs[,i])) == 1)
+                {
+                    .GlobalEnv$pdataSVs[,i] <- jitter(pdataSVs[,i], factor = 0.00001, amount = 0.1)
+                }
+            }
             diag.labels[1] <- age_type
             grDevices::cairo_pdf(
                 paste("matrixplot",
@@ -442,8 +442,7 @@
                         finalOutput,
                         "\n",
                         age_type,
-                        "Residuals Based on Epigenetic Age
-                        Acceleration",
+                        "Residuals Based on Epigenetic Age Acceleration",
                         "\n"
                     )
                     covariate_data$Clock <-
@@ -454,7 +453,6 @@
                     )
                 }
             }
-
             .GlobalEnv$listofCors <- c()
             .GlobalEnv$corsToRemove <- c()
             return(finalOutput)
@@ -514,7 +512,9 @@
 
 
         if (useBeta == TRUE) {
-            bVals <- read.csv("betaValues.csv")
+            if (typeof(bVals) != "list") {
+                bVals <- read.csv("betaValues.csv")
+            }
         } else {
             processIDAT()
         }
@@ -539,7 +539,15 @@
 
         sample_outliers <- c()
         alloutliers <- c()
-        for (i in seq.default(from = 1, to = 5))
+        if (ncol(pca_scores) < 5)
+        {
+            loopNum <- ncol(pca_scores)
+        }
+        else
+        {
+            loopNum <- 5
+        }
+        for (i in seq.default(from = 1, to = loopNum))
         {
             a <- subset(
                 rownames(bpca$x),
@@ -607,15 +615,15 @@
                 }
             }
             if (colnames(bVals)[1] == "X") {
-                pdataSVs <- data.frame(Clock = seq.default(
+                .GlobalEnv$pdataSVs <- data.frame(Clock = seq.default(
                     from = 1,
                     to = ncol(bVals) - 1
                 ))
-                rownames(pdataSVs) <- colnames(bVals)[-1]
+                rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)[-1]
             } else {
-                pdataSVs <- data.frame(Clock = seq.default(from = 1,
+                .GlobalEnv$pdataSVs <- data.frame(Clock = seq.default(from = 1,
                 to = ncol(bVals)))
-                rownames(pdataSVs) <- colnames(bVals)
+                rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
             }
 
             sampleData <- as.data.frame(sampleData)
@@ -625,19 +633,19 @@
             for (i in colnames(sampleData))
             {
                 switch(i,
-                    Age = pdataSVs$Age <- as.numeric(sampleData$Age),
-                    Sex = pdataSVs$Sex <- as.factor(sampleData$Sex),
+                    Age = .GlobalEnv$pdataSVs$Age <- as.numeric(sampleData$Age),
+                    Sex = .GlobalEnv$pdataSVs$Sex <- as.factor(sampleData$Sex),
                     Smoking_Status =
-                    pdataSVs$Smoking_Status <-
+                        .GlobalEnv$pdataSVs$Smoking_Status <-
                         as.factor(sampleData$Smoking_Status),
-                    Batch = pdataSVs$Batch <- as.factor(sampleData$Batch),
-                    Slide = pdataSVs$Slide <- as.factor(sampleData$Slide),
-                    Bcell = pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
-                    CD4T = pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
-                    CD8T = pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
-                    Gran = pdataSVs$Gran <- as.numeric(sampleData$Gran),
-                    Mono = pdataSVs$Mono <- as.numeric(sampleData$Mono),
-                    nRBC = pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
+                    Batch = .GlobalEnv$pdataSVs$Batch <- as.factor(sampleData$Batch),
+                    Slide = .GlobalEnv$pdataSVs$Slide <- as.factor(sampleData$Slide),
+                    Bcell = .GlobalEnv$pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
+                    CD4T = .GlobalEnv$pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
+                    CD8T = .GlobalEnv$pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
+                    Gran = .GlobalEnv$pdataSVs$Gran <- as.numeric(sampleData$Gran),
+                    Mono = .GlobalEnv$pdataSVs$Mono <- as.numeric(sampleData$Mono),
+                    nRBC = .GlobalEnv$pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
                     Array = {
                         row <- as.factor(gsub("R(\\d+).*",
                                                 "\\1",
@@ -645,8 +653,8 @@
                         column <- as.factor(gsub(".*C(\\d+)",
                                                 "\\1",
                                                 sampleData$Array))
-                        pdataSVs$Row <- row
-                        pdataSVs$Column <- column
+                        .GlobalEnv$pdataSVs$Row <- row
+                        .GlobalEnv$pdataSVs$Column <- column
                     },
                     {
                         message("Looks like you have a custom covariate")
@@ -658,40 +666,40 @@
                         message(userInput)
                         message(class(userInput))
                         if (userInput == 0) {
-                            pdataSVs[[i]] <- as.numeric(sampleData[[i]])
+                            .GlobalEnv$pdataSVs[[i]] <- as.numeric(sampleData[[i]])
                         } else if (userInput == 1) {
-                            pdataSVs[[i]] <- as.factor(sampleData[[i]])
+                            .GlobalEnv$pdataSVs[[i]] <- as.factor(sampleData[[i]])
                         }
                     }
                 )
             }
 
             if (!is.numeric(rgSet) & arrayType != "27K") {
-                pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
-                pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
-                pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
-                pdataSVs$Gran <- as.numeric(CC[, "Gran"])
-                pdataSVs$Mono <- as.numeric(CC[, "Mono"])
-                pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
+                .GlobalEnv$pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
+                .GlobalEnv$pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
+                .GlobalEnv$pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
+                .GlobalEnv$pdataSVs$Gran <- as.numeric(CC[, "Gran"])
+                .GlobalEnv$pdataSVs$Mono <- as.numeric(CC[, "Mono"])
+                .GlobalEnv$pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
             }
             if ("PC1" %in% names(pca_scores)) {
-                pdataSVs$P1 <- as.numeric(pca_scores$PC1)
+                .GlobalEnv$pdataSVs$P1 <- as.numeric(pca_scores$PC1)
             }
             if ("PC2" %in% names(pca_scores)) {
-                pdataSVs$P2 <- as.numeric(pca_scores$PC2)
+                .GlobalEnv$pdataSVs$P2 <- as.numeric(pca_scores$PC2)
             }
             if ("PC3" %in% names(pca_scores)) {
-                pdataSVs$P3 <- as.numeric(pca_scores$PC3)
+                .GlobalEnv$pdataSVs$P3 <- as.numeric(pca_scores$PC3)
             }
             if ("PC4" %in% names(pca_scores)) {
-                pdataSVs$P4 <- as.numeric(pca_scores$PC4)
+                .GlobalEnv$pdataSVs$P4 <- as.numeric(pca_scores$PC4)
             }
             if ("PC5" %in% names(pca_scores)) {
-                pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+                .GlobalEnv$pdataSVs$P5 <- as.numeric(pca_scores$PC5)
             }
 
 
-            pdataSVs <- pdataSVs[
+            .GlobalEnv$pdataSVs <- pdataSVs[
                 ,
                 vapply(
                     pdataSVs,
@@ -706,46 +714,46 @@
                                             collapse = "+")))
         } else {
             if (colnames(bVals)[1] == "X") {
-                pdataSVs <- data.frame(Clock = seq.default(
+                .GlobalEnv$pdataSVs <- data.frame(Clock = seq.default(
                     from = 1,
                     to = ncol(bVals) - 1
                 ))
-                rownames(pdataSVs) <- colnames(bVals)[-1]
+                rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)[-1]
             } else {
-                pdataSVs <- data.frame(Clock = seq.default(from = 1,
+                .GlobalEnv$pdataSVs <- data.frame(Clock = seq.default(from = 1,
                 to = ncol(bVals)))
-                rownames(pdataSVs) <- colnames(bVals)
+                rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
             }
             if (!is.numeric(rgSet) & arrayType != "27K") {
-                pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
-                pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
-                pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
-                pdataSVs$Gran <- as.numeric(CC[, "Gran"])
-                pdataSVs$Mono <- as.numeric(CC[, "Mono"])
-                pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
+                .GlobalEnv$pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
+                .GlobalEnv$pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
+                .GlobalEnv$pdataSVs$CD8T <- as.numeric(CC[, "CD8T"])
+                .GlobalEnv$pdataSVs$Gran <- as.numeric(CC[, "Gran"])
+                .GlobalEnv$pdataSVs$Mono <- as.numeric(CC[, "Mono"])
+                .GlobalEnv$pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
             }
             if ("PC1" %in% names(pca_scores))
             {
-                pdataSVs$P1 <- as.numeric(pca_scores$PC1)
+                .GlobalEnv$pdataSVs$P1 <- as.numeric(pca_scores$PC1)
             }
 
             if ("PC2" %in% names(pca_scores))
             {
-                pdataSVs$P2 <- as.numeric(pca_scores$PC2)
+                .GlobalEnv$pdataSVs$P2 <- as.numeric(pca_scores$PC2)
             }
 
             if ("PC3" %in% names(pca_scores))
             {
-                pdataSVs$P3 <- as.numeric(pca_scores$PC3)
+                .GlobalEnv$pdataSVs$P3 <- as.numeric(pca_scores$PC3)
             }
             if ("PC4" %in% names(pca_scores))
             {
-                pdataSVs$P4 <- as.numeric(pca_scores$PC4)
+                .GlobalEnv$pdataSVs$P4 <- as.numeric(pca_scores$PC4)
             }
 
             if ("PC5" %in% names(pca_scores))
             {
-                pdataSVs$P5 <- as.numeric(pca_scores$PC5)
+                .GlobalEnv$pdataSVs$P5 <- as.numeric(pca_scores$PC5)
             }
 
             diag.labels <- colnames(pdataSVs)
@@ -779,35 +787,23 @@
                 results <- methylclock::DNAmAge(bVals, normalize = FALSE)
             }
         }
+
         finalOutput <- "Raw    Clock    Results\n"
-        finalOutput <- paste(
-            finalOutput,
-            "SampleID",
-            "\t",
-            "Horvath",
-            "\t",
-            "                                SkinHorvath",
-            "\t",
-            "                                Hannum",
-            "\t",
-            "                                PhenoAge",
-            "\n"
-        )
-        for (i in seq.default(from = 1, to = nrow(results))) {
-            finalOutput <- paste(
-                finalOutput,
-                results[i, 1],
-                "\t",
-                results$Horvath[i],
-                "\t",
-                results$skinHorvath[i],
-                "\t",
-                results$Hannum[i],
-                "\t",
-                results$Levine[i],
-                "\n"
-            )
+
+        headers <- c("SampleID", "Horvath", "SkinHorvath", "Hannum", "PhenoAge")
+        finalOutput <- sprintf("%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n", headers[1], headers[2], headers[3], headers[4], headers[5])
+
+
+        for (i in seq_len(nrow(results))) {
+            row <- sprintf("%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n",
+                           results[i, 1],
+                           results$Horvath[i],
+                           results$skinHorvath[i],
+                           results$Hannum[i],
+                           results$Levine[i])
+            finalOutput <- paste0(finalOutput, row)
         }
+
 
         finalOutput <- processAgeType(results, "Horvath", finalOutput)
         finalOutput <- processAgeType(results, "skinHorvath", finalOutput)
@@ -834,7 +830,7 @@
         }
 
         if ("Age" %in% colnames(pdataSVs)) {
-            exportDf <- results[, c(
+            .GlobalEnv$exportDf <- results[, c(
                 "id",
                 "Horvath",
                 "Hannum",
@@ -843,7 +839,7 @@
                 "age"
             )]
         } else {
-            exportDf <- results[,
+            .GlobalEnv$exportDf <- results[,
                                 c("id",
                                 "Horvath",
                                 "Hannum",
@@ -877,7 +873,7 @@
 
         results$id <- rownames(results)
 
-        exportDf <- merge(exportDf, results, by = "id")
+        .GlobalEnv$exportDf$DunedinPACE <- results[,2]
         if ("Age" %in% colnames(pdataSVs)) {
             finalOutput <- paste(finalOutput, "\n\nGrimAGE\n")
             grimDf <- data.frame(
@@ -895,7 +891,7 @@
                 do_plot = FALSE
             )
             grimage$id <- grimage$Sample
-            exportDf <- merge(exportDf, grimage, by = "id")
+            .GlobalEnv$exportDf$Grimage <- grimage$Age_Acceleration
             for (i in seq.default(from = 1, to = nrow(results)))
             {
                 finalOutput <- paste(
@@ -908,6 +904,7 @@
             }
         }
 
+        .GlobalEnv$exportDf <- as.data.frame(exportDf)
         write.table(as.data.frame(exportDf), file = "epigeneticAge.txt")
 
         outputString <- paste(finalOutput, collapse = "\n")

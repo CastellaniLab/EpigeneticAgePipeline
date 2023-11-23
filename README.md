@@ -28,12 +28,26 @@ for (package in packages_to_install) {
         BiocManager::install(package)
     }
 }
+
+library(EpigeneticAgePipeline)
+downloadDirectory <- "EpigeneticAgePipelineDataset-main"
+downloadURL <- paste0("https://github.com/StanRaye/",
+                        "EpigeneticAgePipelineDataset",
+                        "/archive/refs/heads/main.zip")
+installDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+setwd(installDirectory)
+utils::download.file(url = downloadURL, destfile = "asdf.zip")
+utils::unzip("asdf.zip", exdir = installDirectory)
+extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
+                                    full.names = TRUE)
+file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
+            recursive = TRUE)
 ```
 
 2. Use the 'remotes' package congruently with 'install_github', or load using library().
 
 ```
-remotes::install_github('CastellaniLab/myEpigeneticAgePipeline')
+remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 
 3. Once installed, you can use the package in the following ways:
@@ -103,6 +117,30 @@ If IDAT files are provided, methylation data can be used to determine cell count
 - Granulocytes
 - Monocytes
 - Nucleated Red Blood cells
+
+### Residual Generation Linear Model
+
+This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch”.
+
+#### Possible Combinations of Random Effects
+
+The function checks for the presence of these variables in the data and constructs the formula accordingly. Here are the possible combinations of random effects:
+
+If “Column” is not present, the random effects include “Row” nested within “Slide” and “Batch” as a random intercept.
+\_ _EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row|Slide) + (1|Batch)_ \_
+
+If “Slide” is not present, the random effects include an interaction of “Row” and “Column” and “Batch” as a random intercept.
+\_ _EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row & Column) + (1|Batch)_ \_
+
+If both “Column” and “Slide” are present, the random effects include “Slide” as a random intercept, an interaction of “Row” and “Column” nested within “Slide”, and “Batch” as a random intercept.
+\_ _EpigeneticAgeMeasure ~ X<sub>i</sub> + (1|Slide) + (Row + Column|Slide) + (1|Batch)_ \_
+
+If “Row” or “Batch” is not present, no random effects are included.
+\_ _EpigeneticAgeMeasure ~ X<sub>i</sub>_ \_
+
+#### Linear Model Generation
+
+Once the formula is constructed, the linear model is generated using the Gaussian method. The function glmmTMB from the glmmTMB package is used to fit the model. The maximum number of iterations and evaluations for the optimizer are set to 10000 to ensure convergence. The user can specify to remove highly correlated explanatory variables (<0.6) during runtime.
 
 ### Output
 
