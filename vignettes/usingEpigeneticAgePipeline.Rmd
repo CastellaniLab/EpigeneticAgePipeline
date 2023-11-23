@@ -1,5 +1,6 @@
 ---
-title: "Example of using the EpigeneticAgePipeline Package"
+title: "Example of using the EpigeneticAgePipeline Package to Analzye Beta 
+Values"
 output:
     rmarkdown::html_vignette
 vignette: >
@@ -7,118 +8,126 @@ vignette: >
     %\VignetteEngine{knitr::rmarkdown}
     %\VignetteEncoding{UTF-8}
 ---
+# Introduction
 
-Let's say we have a set of 450K array IDAT files with provided phenotypic data 
-about each sample, and we would like to generate and analyze the samples 
-epigenetic age measures.
+Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for
+the comprehensive processing and analysis of DNA methylation data. Our package
+aims to provide an efficient and integrated solution for several key
+functionalities:
 
-**Step 1:** Firstly, make sure to put all IDAT files and penotypic data 
-(Sample_Sheet.csv) into the same directory (as well as all required 
-input files, more info on this in the documentation) .We will need to 
-provide this directory to the main() function. This directory will also be 
-where all output files will be generated to.
+## Key Features
 
+### Epigenetic Age Measures
+
+- **Generate diverse epigenetic age measures** directly from beta values or
+  IDAT files.
+- Includes renowned measures such as the **Horvath Clock**, **Hannum Clock**,
+  **Levine/PhenoAge Clock**, among others.
+- Each clock offers unique sets of CpG sites, array types, and cell type
+  specificities for different tissue types.
+
+### Visualization and Quantitative Analysis
+
+- Presents visual and quantitative mediums to **explore and analyze various
+  epigenetic age measures**.
+- Offers matrix plots, line plots, and grouped bar charts for **easy
+  interpretation and comparison** of age estimates against chronological age and
+  covariates.
+
+### Residual Generation and Linear Modeling
+
+- **Generates residuals using linear models** with varying complexities based
+  on provided variables like "Row," "Column," "Slide," and "Batch."
+- Offers flexibility with **multiple combinations of random effects**, adjusting
+  the model construction accordingly.
+
+### Cell Count Estimation
+
+- Utilizes methylation data from provided IDAT files to **estimate cell
+  counts** for specific cell types including B Cells, CD4T Cells, CD8T Cells,
+  Granulocytes, Monocytes, and Nucleated Red Blood cells.
+
+Explore the diverse functionalities of EpigeneticAgePipeline, from generating
+epigenetic age measures to performing residual analysis and estimating cell
+counts, providing an all-encompassing toolkit for DNA methylation data
+analysis.
+
+
+
+# Installation
+To install the EpigeneticAgePipeline, which will include
+the data used in the upcoming example:
+
+```{R eval = FALSE}
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install()
+
+packages_to_install <- c(
+  "minfi",
+  "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+  "IlluminaHumanMethylationEPICmanifest",
+  "methylclock",
+  "methylclockData",
+  "FlowSorted.CordBlood.450k",
+  "IlluminaHumanMethylation450kmanifest",
+  "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+  "IlluminaHumanMethylation27kmanifest",
+  "IlluminaHumanMethylation27kanno.ilmn12.hg19"
+)
+
+for (package in packages_to_install) {
+    if (!requireNamespace(package, quietly = TRUE)) {
+        BiocManager::install(package)
+    }
+}
+
+BiocManager::install("EpigeneticAgePipeline")
+
+library(EpigeneticAgePipeline)
+options(timeout = 120)
+downloadDirectory <- "EpigeneticAgePipelineDataset-main"
+downloadURL <- paste0("https://github.com/StanRaye/",
+                        "EpigeneticAgePipelineDataset",
+                        "/archive/refs/heads/main.zip")
+installDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+setwd(installDirectory)
+utils::download.file(url = downloadURL, destfile = "asdf.zip")
+utils::unzip("asdf.zip", exdir = installDirectory)
+extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
+                                    full.names = TRUE)
+file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
+            recursive = TRUE)
+
+```
+
+
+# Example
+The following code will analyze a set of beta values with 3 samples,
+and will output the measures of epigenetic age. 
 ```{R}
+library("EpigeneticAgePipeline")
+myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+if (file.exists(paste0(myDirectory, "betaValues.csv")))
+{
+  EpigeneticAgePipeline::main( 
+    directory = myDirectory, #in normal cases, this will be  the directory of 
+                        #where
+                        #you will keep all the input files
+    useBeta = TRUE, #this is true since we are providing a data frame containing
+                    #beta values 
+    arrayType = "450K", #in this case we know that the beta values that we are
+                        #being provided
+    generateResiduals = FALSE, #since the beta values in this example has a
+                               #small number of samples, there not much point in
+                               #generating residuals 
+    useSampleSheet = FALSE #since we are not using a sample sheet
+)  
+    knitr::kable(exportDf) #printing out generated epigenetic age estimates
+}
 
-# "C:/Users/user1/Documents/Analysis/data", the directory
-
-# containing IDAT files and \# Sample_Sheet.csv
-
-# library(EpigeneticAgePipeline)
-
-# main(directory = "C:/Users/user1/Documents/Analysis/data",
-# normalize=,
-# useBeta=, arrayType=,
-# generateResiduals=,
-# useSampleSheet=)
-
-```
-**Step 2:** After beta values are generated from the provided IDAT files,
-it is common practice to normalize the values before being used to generate
-epigenetic age. So in this case we want specify that the generated beta values
-should be normalized.
-
-```{R}
-# library(EpigeneticAgePipeline
-
-# main(directory = "C:/Users/user1/Documents/Analysis/data", 
-# normalize= TRUE, 
-# useBeta=, 
-# arrayType=, 
-# generateResiduals=, 
-# useSampleSheet=)
-```
-
-**Step 3:** In this example we specified that the methylation data we are 
-providing is via IDAT files, so we need to specify that we are not using
-already provided beta values.
-
-```{R}   
-# library(EpigeneticAgePipeline)
-
-# main(directory = "C:/Users/user1/Documents/Analysis/data", 
-# normalize= TRUE, 
-# useBeta= FALSE, 
-# arrayType=, 
-# generateResiduals=, 
-# useSampleSheet=)
-```
-
-**Step 4:** We also specified that are IDAT file contain methylation data
-that was collected using the 450K array platform, so we will specify that.
-
-```{R}      
-# library(EpigeneticAgePipeline)
-
-# main(directory = "C:/Users/user1/Documents/Analysis/data", 
-# normalize= TRUE, 
-# useBeta= FALSE, 
-# arrayType="450K", 
-# generateResiduals=, 
-# useSampleSheet=)
-
-#make sure to use a capital K
-```
-
-**Step 5:** Let's say we want epigenetic age residuals for each sample adjusted
-for a set of variables provided in our Sample_Sheet.csv. We would need to
-specify that as well.
-
-```{R}      
-# library(EpigeneticAgePipeline)
-
-# main(directory = "C:/Users/user1/Documents/Analysis/data", 
-# normalize= TRUE, 
-# useBeta= FALSE, 
-# arrayType="450K", 
-# generateResiduals= TRUE, 
-# useSampleSheet=)
-
-#NOTE: the variables that will be adjusted for are provided during runtime
-```
-
-**Step 6:** Lastly, we have to specify that we do in fact have a sample
-sheet available.
-
-```{R}      
-# library(EpigeneticAgePipeline)
-
-# main(directory = "C:/Users/user1/Documents/Analysis/data", 
-# normalize= TRUE, 
-# useBeta= FALSE, 
-# arrayType="450K", 
-# generateResiduals= TRUE, 
-# useSampleSheet=)
-```
-
-**Optional Step:** If you would like to make sure that you are following all
-the guidelines in terms of providing variables in Sample_Sheet.csv and are
-providing all required files for analysis, the documentation for the main()
-function specifies all this information. A quick way to view the documentation
-from the console:
-
-```{R}       
-# ?EpigeneticAgePipeline::main
 ```
 
 ```{R echo=FALSE}

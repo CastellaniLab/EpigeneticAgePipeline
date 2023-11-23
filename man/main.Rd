@@ -145,7 +145,27 @@ whose specification will be determined by the user during runtime.
 }
 
 \examples{
-print("Hello")
+#Example of using the main function to generate epigenetic age values from
+#IDAT files
+message("Running Example")
+
+library(EpigeneticAgePipeline)
+directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+
+if (file.exists(paste0(directory, "betaValues.csv")))
+{
+    EpigeneticAgePipeline::main(
+        directory = directory,
+        normalize = TRUE,
+        useBeta = FALSE,
+        arrayType = "450K",
+        generateResiduals = FALSE,
+        useSampleSheet = FALSE
+    )
+
+    knitr::kable(exportDf)
+}
+
 }
 
 
