@@ -29,6 +29,7 @@ for (package in packages_to_install) {
     }
 }
 
+remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 library(EpigeneticAgePipeline)
 downloadDirectory <- "EpigeneticAgePipelineDataset-main"
 downloadURL <- paste0("https://github.com/StanRaye/",
@@ -126,20 +127,20 @@ This section describes the proccess of residual generation. The function constru
 
 The function checks for the presence of these variables in the data and constructs the formula accordingly. Here are the possible combinations of random effects:
 
-If “Column” is not present, the random effects include “Row” nested within “Slide” and “Batch” as a random intercept.  
-  
+If “Column” is not present, the random effects include “Row” nested within “Slide” and “Batch” as a random intercept.
+
 _EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row|Slide) + (1|Batch)_
 
-If “Slide” is not present, the random effects include an interaction of “Row” and “Column” and “Batch” as a random intercept.  
-  
+If “Slide” is not present, the random effects include an interaction of “Row” and “Column” and “Batch” as a random intercept.
+
 _EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row & Column) + (1|Batch)_
 
-If both “Column” and “Slide” are present, the random effects include “Slide” as a random intercept, an interaction of “Row” and “Column” nested within “Slide”, and “Batch” as a random intercept.  
-  
+If both “Column” and “Slide” are present, the random effects include “Slide” as a random intercept, an interaction of “Row” and “Column” nested within “Slide”, and “Batch” as a random intercept.
+
 _EpigeneticAgeMeasure ~ X<sub>i</sub> + (1|Slide) + (Row + Column|Slide) + (1|Batch)_
 
-If “Row” or “Batch” is not present, no random effects are included.  
-  
+If “Row” or “Batch” is not present, no random effects are included.
+
 _EpigeneticAgeMeasure ~ X<sub>i</sub>_
 
 #### Linear Model Generation
