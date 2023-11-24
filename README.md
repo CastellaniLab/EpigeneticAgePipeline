@@ -126,21 +126,25 @@ This section describes the proccess of residual generation. The function constru
 
 The function checks for the presence of these variables in the data and constructs the formula accordingly. Here are the possible combinations of random effects:
 
-If “Column” is not present, the random effects include “Row” nested within “Slide” and “Batch” as a random intercept.
-\_ _EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row|Slide) + (1|Batch)_ \_
+If “Column” is not present, the random effects include “Row” nested within “Slide” and “Batch” as a random intercept.  
+  
+_EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row|Slide) + (1|Batch)_
 
-If “Slide” is not present, the random effects include an interaction of “Row” and “Column” and “Batch” as a random intercept.
-\_ _EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row & Column) + (1|Batch)_ \_
+If “Slide” is not present, the random effects include an interaction of “Row” and “Column” and “Batch” as a random intercept.  
+  
+_EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row & Column) + (1|Batch)_
 
-If both “Column” and “Slide” are present, the random effects include “Slide” as a random intercept, an interaction of “Row” and “Column” nested within “Slide”, and “Batch” as a random intercept.
-\_ _EpigeneticAgeMeasure ~ X<sub>i</sub> + (1|Slide) + (Row + Column|Slide) + (1|Batch)_ \_
+If both “Column” and “Slide” are present, the random effects include “Slide” as a random intercept, an interaction of “Row” and “Column” nested within “Slide”, and “Batch” as a random intercept.  
+  
+_EpigeneticAgeMeasure ~ X<sub>i</sub> + (1|Slide) + (Row + Column|Slide) + (1|Batch)_
 
-If “Row” or “Batch” is not present, no random effects are included.
-\_ _EpigeneticAgeMeasure ~ X<sub>i</sub>_ \_
+If “Row” or “Batch” is not present, no random effects are included.  
+  
+_EpigeneticAgeMeasure ~ X<sub>i</sub>_
 
 #### Linear Model Generation
 
-Once the formula is constructed, the linear model is generated using the Gaussian method. The function glmmTMB from the glmmTMB package is used to fit the model. The maximum number of iterations and evaluations for the optimizer are set to 10000 to ensure convergence. The user can specify to remove highly correlated explanatory variables (<0.6) during runtime.
+Once the formula is constructed, the linear model is generated using the Gaussian method. The function glmmTMB from the glmmTMB package is used to fit the model. The maximum number of iterations and evaluations for the optimizer are set to 10000 to ensure convergence. The user can specify to remove highly correlated explanatory variables (greater than 0.6) during runtime.
 
 ### Output
 
