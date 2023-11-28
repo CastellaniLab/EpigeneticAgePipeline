@@ -123,17 +123,17 @@
             if (arrayType == "450K") {
                 xReactiveProbes <- read.csv(file = paste(installDirectory,
                     "ChenEtAlList.csv",
-                    sep = "/"
+                    sep = ""
                 ))
             } else if (arrayType == "27K") {
                 xReactiveProbes <- read.csv(file = paste(installDirectory,
                     "non-specific-probes-Illumina27k.csv",
-                    sep = "/"
+                    sep = ""
                 ))
             } else {
                 xReactiveProbes <- read.csv(file = paste(installDirectory,
                     "PidsleyCrossReactiveProbesEPIC.csv",
-                    sep = "/"
+                    sep = ""
                 ))
             }
 
