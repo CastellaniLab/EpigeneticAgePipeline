@@ -33,8 +33,8 @@
         base::assign("pdataSVs", 0, envir = .GlobalEnv)
         base::assign("exportDf", 0, envir = .GlobalEnv)
 
-        load(paste0(installDirectory, "/PC-clocks.rda"), envir = .GlobalEnv)
-        load(paste0(installDirectory, "/golden_ref.rda"), envir = .GlobalEnv)
+        load(paste0(installDirectory, "PC-clocks.rda"), envir = .GlobalEnv)
+        load(paste0(installDirectory, "golden_ref.rda"), envir = .GlobalEnv)
 
         processIDAT <- function() {
             dataDirectory <- directory
