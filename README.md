@@ -31,6 +31,11 @@ for (package in packages_to_install) {
 
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 library(EpigeneticAgePipeline)
+```
+
+2. Run this code separately from the code above.
+
+```
 downloadDirectory <- "EpigeneticAgePipelineDataset-main"
 downloadURL <- paste0("https://github.com/StanRaye/",
                         "EpigeneticAgePipelineDataset",
@@ -43,12 +48,6 @@ extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
                                     full.names = TRUE)
 file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
             recursive = TRUE)
-```
-
-2. Use the 'remotes' package congruently with 'install_github', or load using library().
-
-```
-remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 
 3. Once installed, you can use the package in the following ways:
