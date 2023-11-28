@@ -22,7 +22,7 @@
         installDirectory <- paste0(path.package("EpigeneticAgePipeline"),
                                                 "/extdata/")
 
-        devtools::load_all(paste0(installDirectory, "/dnaMethyAge-main"))
+        devtools::load_all(paste0(installDirectory, "dnaMethyAge-main"))
 
         if (!exists("bVals")) {
             base::assign("bVals", 0, envir = .GlobalEnv)
