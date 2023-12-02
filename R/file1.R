@@ -555,12 +555,10 @@
 
         sample_outliers <- c()
         alloutliers <- c()
-        if (ncol(pca_scores) < 5)
-        {
+        if (ncol(pca_scores) < 5) {
             loopNum <- ncol(pca_scores)
         }
-        else
-        {
+        else {
             loopNum <- 5
         }
         for (i in seq.default(from = 1, to = loopNum))

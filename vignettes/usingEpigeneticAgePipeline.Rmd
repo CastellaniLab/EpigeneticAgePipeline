@@ -121,6 +121,8 @@ myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
 
 
 ```{R}
+message("The `betaValues.csv` file used in this example was obtained from:\n")
+message("https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi\n\n")
 if (file.exists(paste0(myDirectory, "betaValues.csv")))
 {
     EpigeneticAgePipeline::main( 
