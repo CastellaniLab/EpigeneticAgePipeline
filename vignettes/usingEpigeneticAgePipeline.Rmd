@@ -20,32 +20,32 @@ functionalities:
 ### Epigenetic Age Measures
 
 - **Generate diverse epigenetic age measures** directly from beta values or
-  IDAT files.
+    IDAT files.
 - Includes renowned measures such as the **Horvath Clock**, **Hannum Clock**,
-  **Levine/PhenoAge Clock**, among others.
+    **Levine/PhenoAge Clock**, among others.
 - Each clock offers unique sets of CpG sites, array types, and cell type
-  specificities for different tissue types.
+    specificities for different tissue types.
 
 ### Visualization and Quantitative Analysis
 
 - Presents visual and quantitative mediums to **explore and analyze various
-  epigenetic age measures**.
+    epigenetic age measures**.
 - Offers matrix plots, line plots, and grouped bar charts for **easy
-  interpretation and comparison** of age estimates against chronological age and
-  covariates.
+    interpretation and comparison** of age estimates against chronological age
+    and covariates.
 
 ### Residual Generation and Linear Modeling
 
 - **Generates residuals using linear models** with varying complexities based
-  on provided variables like "Row," "Column," "Slide," and "Batch."
+    on provided variables like "Row," "Column," "Slide," and "Batch."
 - Offers flexibility with **multiple combinations of random effects**, adjusting
-  the model construction accordingly.
+    the model construction accordingly.
 
 ### Cell Count Estimation
 
 - Utilizes methylation data from provided IDAT files to **estimate cell
-  counts** for specific cell types including B Cells, CD4T Cells, CD8T Cells,
-  Granulocytes, Monocytes, and Nucleated Red Blood cells.
+    counts** for specific cell types including B Cells, CD4T Cells, CD8T Cells,
+    Granulocytes, Monocytes, and Nucleated Red Blood cells.
 
 Explore the diverse functionalities of EpigeneticAgePipeline, from generating
 epigenetic age measures to performing residual analysis and estimating cell
@@ -58,7 +58,7 @@ analysis.
 To install the EpigeneticAgePipeline, which will include
 the data used in the upcoming example:
 
-```{R eval = FALSE}
+```r
 
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -66,16 +66,16 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install()
 
 packages_to_install <- c(
-  "minfi",
-  "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
-  "IlluminaHumanMethylationEPICmanifest",
-  "methylclock",
-  "methylclockData",
-  "FlowSorted.CordBlood.450k",
-  "IlluminaHumanMethylation450kmanifest",
-  "IlluminaHumanMethylation450kanno.ilmn12.hg19",
-  "IlluminaHumanMethylation27kmanifest",
-  "IlluminaHumanMethylation27kanno.ilmn12.hg19"
+    "minfi",
+    "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+    "IlluminaHumanMethylationEPICmanifest",
+    "methylclock",
+    "methylclockData",
+    "FlowSorted.CordBlood.450k",
+    "IlluminaHumanMethylation450kmanifest",
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+    "IlluminaHumanMethylation27kmanifest",
+    "IlluminaHumanMethylation27kanno.ilmn12.hg19"
 )
 
 for (package in packages_to_install) {
@@ -84,9 +84,13 @@ for (package in packages_to_install) {
     }
 }
 
-BiocManager::install("EpigeneticAgePipeline")
-
+#BiocManager::install("EpigeneticAgePipeline")
+remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 library(EpigeneticAgePipeline)
+```
+
+Then run the following code:
+```r
 options(timeout = 120)
 downloadDirectory <- "EpigeneticAgePipelineDataset-main"
 downloadURL <- paste0("https://github.com/StanRaye/",
@@ -97,22 +101,29 @@ setwd(installDirectory)
 utils::download.file(url = downloadURL, destfile = "asdf.zip")
 utils::unzip("asdf.zip", exdir = installDirectory)
 extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
-                                    full.names = TRUE)
+                                full.names = TRUE)
 file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
             recursive = TRUE)
-
 ```
 
 
 # Example
 The following code will analyze a set of beta values with 3 samples,
 and will output the measures of epigenetic age. 
+
 ```{R}
 library("EpigeneticAgePipeline")
+```
+
+```{R}
 myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+```
+
+
+```{R}
 if (file.exists(paste0(myDirectory, "betaValues.csv")))
 {
-  EpigeneticAgePipeline::main( 
+    EpigeneticAgePipeline::main( 
     directory = myDirectory, #in normal cases, this will be  the directory of 
                         #where
                         #you will keep all the input files
@@ -121,8 +132,8 @@ if (file.exists(paste0(myDirectory, "betaValues.csv")))
     arrayType = "450K", #in this case we know that the beta values that we are
                         #being provided
     generateResiduals = FALSE, #since the beta values in this example has a
-                               #small number of samples, there not much point in
-                               #generating residuals 
+                            #small number of samples, there not much point in
+                            #generating residuals 
     useSampleSheet = FALSE #since we are not using a sample sheet
 )  
     knitr::kable(exportDf) #printing out generated epigenetic age estimates
@@ -133,5 +144,4 @@ if (file.exists(paste0(myDirectory, "betaValues.csv")))
 ```{R echo=FALSE}
 sessionInfo()
 ```
-
 

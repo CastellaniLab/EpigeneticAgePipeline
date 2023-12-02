@@ -1,7 +1,7 @@
     utils::globalVariables(c("bVals", "rgSet", "listofCors", "corsToRemove",
-                             "methyAge", "pdataSVs", "exportDf"))
+                            "methyAge", "pdataSVs", "exportDf"))
 
-
+    # Main function starts here
     main <- function(directory = getwd(),
                     normalize = TRUE,
                     useBeta = FALSE,
@@ -13,6 +13,7 @@
             file.create("output.txt")
         }
 
+        # Checking the condition for normalization
         if (normalize == TRUE) {
             shouldNormalize <- FALSE
         } else {
@@ -27,15 +28,20 @@
         if (!exists("bVals")) {
             base::assign("bVals", 0, envir = .GlobalEnv)
         }
+
+        # More assignments to global environment variables...
+
         base::assign("rgSet", 0, envir = .GlobalEnv)
         base::assign("listofCors", c(), envir = .GlobalEnv)
         base::assign("corsToRemove", c(), envir = .GlobalEnv)
         base::assign("pdataSVs", 0, envir = .GlobalEnv)
         base::assign("exportDf", 0, envir = .GlobalEnv)
 
+        # Loading necessary data files
         load(paste0(installDirectory, "PC-clocks.rda"), envir = .GlobalEnv)
         load(paste0(installDirectory, "golden_ref.rda"), envir = .GlobalEnv)
 
+        # Definition of processIDAT function starts here
         processIDAT <- function() {
             dataDirectory <- directory
             containsSampleNames <- FALSE
@@ -183,6 +189,7 @@
             .GlobalEnv$bVals <- minfi::getBeta(mSetSqFlt)
         }
 
+        # Definition for function used in matrix generation
         panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...) {
             usr <- par("usr")
             on.exit(par(usr = usr))
@@ -195,11 +202,13 @@
             text(0.5, 0.5, txt, cex = cex.cor)
         }
 
+        # Definition for function used in matrix generation
         mydiag.panel <- function(x, labels, ...) {
             ll <- par("usr")
             rect(ll[1], ll[3], ll[2], ll[4], col = "#CC7178")
         }
 
+        # Definition of function used to find highly correlated covariates
         corCovariates <- function(x) {
             corDf <- pdataSVs
 
@@ -267,11 +276,13 @@
             return(x)
         }
 
+        # Definition for function used in matrix generation
         twolines <- function(x, y) {
             points(x, y, pch = 20)
             abline(lm(y ~ x), col = "#CC7178")
         }
 
+        # Definition for function used for residual generation
         residGeneration <- function(pdata, output) {
             columns <- colnames(pdata)
             columnsUsed <- columns[seq.default(from = 1, to = length(columns))]
@@ -353,6 +364,7 @@
             return(output)
         }
 
+        # Definition for function used for user specified covariate removal
         removeCovariates <- function(df) {
             message("The following covariates
                     were found to be highly correlated: \n")
@@ -378,6 +390,7 @@
             return(df)
         }
 
+        # Definition for function used for removing outlier samples
         removeOutliers <- function(df, isSampleSheet = FALSE) {
             if (isSampleSheet == FALSE) {
                 df <- df[!(rownames(df) %in% outlier), ]
@@ -388,13 +401,15 @@
             }
         }
 
+        # Definition for function used for processing epigenetic age measures
         processAgeType <- function(data, age_type, output) {
             .GlobalEnv$pdataSVs$Clock <- as.numeric(data[[age_type]])
-            for (i in 1:ncol(pdataSVs))
+            for (i in seq.default(from = 1, to = ncol(pdataSVs)))
             {
                 if(length(unique(pdataSVs[,i])) == 1)
                 {
-                    .GlobalEnv$pdataSVs[,i] <- jitter(pdataSVs[,i], factor = 0.00001, amount = 0.1)
+                    .GlobalEnv$pdataSVs[,i] <-
+                        jitter(pdataSVs[,i], factor = 0.00001, amount = 0.1)
                 }
             }
             diag.labels[1] <- age_type
@@ -458,6 +473,7 @@
             return(finalOutput)
         }
 
+        #Definition for function used for generating the grouped bar chart
         createGroupedBarChart <- function(data, x, y, fill, title) {
             melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
             custom_palette <- c(
@@ -595,6 +611,8 @@
             CC <- removeOutliers(CC)
         }
 
+        write.csv(bVals, file = "extractedBetaValues.csv")
+
         #    Correlation    Matrix    Construction    ####
 
         if (useSampleSheet == TRUE) {
@@ -638,14 +656,22 @@
                     Smoking_Status =
                         .GlobalEnv$pdataSVs$Smoking_Status <-
                         as.factor(sampleData$Smoking_Status),
-                    Batch = .GlobalEnv$pdataSVs$Batch <- as.factor(sampleData$Batch),
-                    Slide = .GlobalEnv$pdataSVs$Slide <- as.factor(sampleData$Slide),
-                    Bcell = .GlobalEnv$pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
-                    CD4T = .GlobalEnv$pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
-                    CD8T = .GlobalEnv$pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
-                    Gran = .GlobalEnv$pdataSVs$Gran <- as.numeric(sampleData$Gran),
-                    Mono = .GlobalEnv$pdataSVs$Mono <- as.numeric(sampleData$Mono),
-                    nRBC = .GlobalEnv$pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
+                    Batch =
+                    .GlobalEnv$pdataSVs$Batch <- as.factor(sampleData$Batch),
+                    Slide =
+                    .GlobalEnv$pdataSVs$Slide <- as.factor(sampleData$Slide),
+                    Bcell =
+                    .GlobalEnv$pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
+                    CD4T =
+                    .GlobalEnv$pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
+                    CD8T =
+                    .GlobalEnv$pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
+                    Gran =
+                    .GlobalEnv$pdataSVs$Gran <- as.numeric(sampleData$Gran),
+                    Mono =
+                    .GlobalEnv$pdataSVs$Mono <- as.numeric(sampleData$Mono),
+                    nRBC =
+                    .GlobalEnv$pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
                     Array = {
                         row <- as.factor(gsub("R(\\d+).*",
                                                 "\\1",
@@ -666,9 +692,11 @@
                         message(userInput)
                         message(class(userInput))
                         if (userInput == 0) {
-                            .GlobalEnv$pdataSVs[[i]] <- as.numeric(sampleData[[i]])
+                            .GlobalEnv$pdataSVs[[i]] <-
+                                as.numeric(sampleData[[i]])
                         } else if (userInput == 1) {
-                            .GlobalEnv$pdataSVs[[i]] <- as.factor(sampleData[[i]])
+                            .GlobalEnv$pdataSVs[[i]] <-
+                                as.factor(sampleData[[i]])
                         }
                     }
                 )
@@ -791,16 +819,21 @@
         finalOutput <- "Raw    Clock    Results\n"
 
         headers <- c("SampleID", "Horvath", "SkinHorvath", "Hannum", "PhenoAge")
-        finalOutput <- sprintf("%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n", headers[1], headers[2], headers[3], headers[4], headers[5])
+        finalOutput <- sprintf("%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n",
+                                headers[1],
+                                headers[2],
+                                headers[3],
+                                headers[4],
+                                headers[5])
 
 
         for (i in seq_len(nrow(results))) {
             row <- sprintf("%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n",
-                           results[i, 1],
-                           results$Horvath[i],
-                           results$skinHorvath[i],
-                           results$Hannum[i],
-                           results$Levine[i])
+                            results[i, 1],
+                            results$Horvath[i],
+                            results$skinHorvath[i],
+                            results$Hannum[i],
+                            results$Levine[i])
             finalOutput <- paste0(finalOutput, row)
         }
 
