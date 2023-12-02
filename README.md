@@ -162,3 +162,8 @@ A set of .png files showing a line plot of an epigenetic age estimate against ch
 
 **SampleIDandAge.png:**  
 A .png file containing a grouped bar chart showing each sample and their assocaited epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using smaller sample sizes.
+
+### References
+
+Citation for dnaMethyAge Package:
+Wang, Y., Grant, O. A., Zhai, X., McDonald-Maier, K. D., & Schalkwyk, L. C. (2023). Insights into ageing rates comparison across tissues from recalibrating cerebellum DNA methylation clock. *GeroScience*, 1–18. [Link to article](https://link.springer.com/article/10.1007/s11357-023-00871-w)

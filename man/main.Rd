@@ -147,7 +147,9 @@ whose specification will be determined by the user during runtime.
 \examples{
 #Example of using the main function to generate epigenetic age values from
 #IDAT files
-message("Running Example")
+
+message("The IDAT files used in this example were obtained from:\n")
+message("https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201872\n\n")
 
 library(EpigeneticAgePipeline)
 directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
