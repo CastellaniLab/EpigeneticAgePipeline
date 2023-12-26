@@ -29,6 +29,10 @@ for (package in packages_to_install) {
     }
 }
 
+if (!requireNamespace("S4Vectors", quietly = TRUE)) {
+	BiocManager::install("S4Vectors", force = TRUE)
+}
+
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 library(EpigeneticAgePipeline)
 ```
