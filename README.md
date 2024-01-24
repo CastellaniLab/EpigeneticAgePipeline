@@ -54,15 +54,18 @@ file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
             recursive = TRUE)
 ```
 
-3. Once installed, you can use the package in the following ways:
+3. Once installed, the package is used by invoking the main function with the needed parameters.
 
 ```
 library(EpigeneticAgePipeline)
-main(...)
-```
-
-```
-EpigeneticAgePipeline::main(...)
+main(
+	directory = directory, #directory containing IDAT/beta values/supporting data
+    normalize = TRUE, #should normalize beta values?
+    useBeta = FALSE, #should use beta values contained within a betaValues.csv file?
+    arrayType = "450K", #specification of array type used to geneerate idat files ("450K", "27K", "EPIC)
+    generateResiduals = FALSE, #should generate residuals?
+    useSampleSheet = FALSE #should use phenotypic data found within a Sample_Sheet.csv file?
+)
 ```
 
 ## Description:
@@ -122,31 +125,24 @@ If IDAT files are provided, methylation data can be used to determine cell count
 - Monocytes
 - Nucleated Red Blood cells
 
-### Residual Generation Linear Model
+### Introduction to Residual Generation
 
 This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch”.
 
-#### Possible Combinations of Random Effects
+#### Dynamic Formula Construction for Linear Models
+Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae:
 
-The function checks for the presence of these variables in the data and constructs the formula accordingly. Here are the possible combinations of random effects:
+| Variables Present             | Formula                                                   |
+|-------------------------------|-----------------------------------------------------------|
+| Without “Column”              | `EpigeneticAgeMeasure ~ Xi + (Row\|Slide) + (1\|Batch)`   |
+| Without “Slide”               | `EpigeneticAgeMeasure ~ Xi + (Row & Column) + (1\|Batch)` |
+| Both “Column” and “Slide”     | `EpigeneticAgeMeasure ~ Xi + (1\|Slide) + (Row + Column\|Slide) + (1\|Batch)` |
+| Without “Row” or “Batch”      | `EpigeneticAgeMeasure ~ Xi`                               |
 
-If “Column” is not present, the random effects include “Row” nested within “Slide” and “Batch” as a random intercept.
+*Note: In these formulae, `Xi` represents the independent variables.*
 
-_EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row|Slide) + (1|Batch)_
 
-If “Slide” is not present, the random effects include an interaction of “Row” and “Column” and “Batch” as a random intercept.
-
-_EpigeneticAgeMeasure ~ X<sub>i</sub> + (Row & Column) + (1|Batch)_
-
-If both “Column” and “Slide” are present, the random effects include “Slide” as a random intercept, an interaction of “Row” and “Column” nested within “Slide”, and “Batch” as a random intercept.
-
-_EpigeneticAgeMeasure ~ X<sub>i</sub> + (1|Slide) + (Row + Column|Slide) + (1|Batch)_
-
-If “Row” or “Batch” is not present, no random effects are included.
-
-_EpigeneticAgeMeasure ~ X<sub>i</sub>_
-
-#### Linear Model Generation
+#### Implementation of the Linear Model Generation
 
 Once the formula is constructed, the linear model is generated using the Gaussian method. The function glmmTMB from the glmmTMB package is used to fit the model. The maximum number of iterations and evaluations for the optimizer are set to 10000 to ensure convergence. The user can specify to remove highly correlated explanatory variables (greater than 0.6) during runtime.
 
@@ -165,7 +161,34 @@ A .txt file showing epigenetic age/acceleration estimates. This file is better s
 A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
 
 **SampleIDandAge.png:**  
-A .png file containing a grouped bar chart showing each sample and their assocaited epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using smaller sample sizes.
+A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
+smaller sample sizes.
+
+### Common Erros
+1. If using the package Compute Canada, and are getting a errors such as:
+```
+Error in ExperimentHub::ExperimentHub() :
+  DEFUNCT: As of ExperimentHub (>1.17.2), default caching location has changed.
+  Problematic cache: /users/ccastell/.cache/ExperimentHub
+  See https://bioconductor.org/packages/devel/bioc/vignettes/ExperimentHub/inst/doc/ExperimentHub.html#default-caching-location-update
+```
+Try running:
+```
+library(ExperimentHub)
+oldcache = path.expand(rappdirs::user_cache_dir(appname="ExperimentHub"))
+setExperimentHubOption("CACHE", oldcache)
+eh = ExperimentHub(localHub=TRUE)
+
+## removes old location and all resources
+removeCache(eh, ask=FALSE)
+
+## create the new default caching location
+newcache = tools::R_user_dir("ExperimentHub", which="cache")
+setExperimentHubOption("CACHE", newcache)
+eh = ExperimentHub()
+```
+
+
 
 ### References
 
