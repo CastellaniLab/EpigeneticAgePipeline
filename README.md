@@ -165,7 +165,7 @@ A .png file containing a grouped bar chart showing each sample and their associa
 smaller sample sizes.
 
 ### Common Erros
-1. If using the package Compute Canada, and are getting a errors such as:
+1. If using the package Compute Canada, and are getting errors such as:
 ```
 Error in ExperimentHub::ExperimentHub() :
   DEFUNCT: As of ExperimentHub (>1.17.2), default caching location has changed.
