@@ -624,6 +624,7 @@
             for (i in colnames(sampleData))
             {
                 switch(i,
+                    ID = sampleData$ID <- sampleData$ID,
                     Age = .GlobalEnv$pdataSVs$Age <- as.numeric(sampleData$Age),
                     Sex = .GlobalEnv$pdataSVs$Sex <- as.factor(sampleData$Sex),
                     Smoking_Status =
