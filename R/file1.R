@@ -299,9 +299,9 @@
                     "~",
                     string,
                     "    +    ",
-                    "(Row...2 |Slide...2 )",
+                    "(Row |Slide )",
                     "    +    ",
-                    "(1|Batch...2 )"
+                    "(1|Batch )"
                 )
             } else if (!("Slide" %in% columnsUsed)) {
                 formula_string <- paste(
@@ -309,9 +309,9 @@
                     "~",
                     string,
                     "    +    ",
-                    "(Row...2 &Column...2 )",
+                    "(Row &Column )",
                     "    +    ",
-                    "(1|Batch...2 )"
+                    "(1|Batch )"
                 )
             } else {
                 formula_string <- paste(
@@ -319,16 +319,16 @@
                     "~",
                     string,
                     "    +    ",
-                    "(1    |    Slide...2 )",
+                    "(1    |    Slide )",
                     "    +    ",
-                    "(Row...2    +    Column...2     |    Slide...2 )",
+                    "(Row    +    Column     |    Slide )",
                     "    +    ",
-                    "(1    |    Batch...2 )"
+                    "(1    |    Batch )"
                 )
             }
 
-            if (!("Row...2 " %in% columnsUsed) |
-                !("Batch...2 " %in% columnsUsed)) {
+            if (!("Row " %in% columnsUsed) |
+                !("Batch " %in% columnsUsed)) {
                 formula_string <- paste(columns[1], "~", string)
             }
 
@@ -599,8 +599,10 @@
 
             for (i in colnames(sampleData))
             {
+                newVarName <- gsub("\\...[1-2]$", "", i)
                 if (grepl("...1", i)) {
-                    .GlobalEnv$pdataSVs[[i]] <- as.numeric(sampleData[[i]])
+                    .GlobalEnv$pdataSVs[[ newVarName]] <-
+                        as.numeric(sampleData[[i]])
                 } else if (grepl("...2", i)) {
                     if (i == "Array...2") {
                         row <- as.factor(gsub("R(\\d+).*",
@@ -609,8 +611,8 @@
                         column <- as.factor(gsub(".*C(\\d+)",
                                                  "\\1",
                                                  sampleData[[i]]))
-                        .GlobalEnv$pdataSVs$Row...2 <- row
-                        .GlobalEnv$pdataSVs$Column...2 <- column
+                        .GlobalEnv$pdataSVs$Row <- row
+                        .GlobalEnv$pdataSVs$Column <- column
                     } else {
                         .GlobalEnv$pdataSVs[[i]] <- as.factor(sampleData[[i]])
                     }
