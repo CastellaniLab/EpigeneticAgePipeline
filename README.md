@@ -2,7 +2,7 @@
 
 'EpigeneticAgePipeline' is a comprehensive package designed for processing and analyzing DNA methylation data. The package provides a variety of epigenetic age measures, epigenetic age acceleration measures, residual generation, cell-count generation and provides a set of plots and tables used for further analysis.
 
-## Installation and Use
+## Installation 
 
 1. Install the following packages which act as dependencies for the pipeline.
 
@@ -127,7 +127,7 @@ If IDAT files are provided, methylation data can be used to determine cell count
 
 ### Introduction to Residual Generation
 
-This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch”.
+This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv. If you have access to these variables in your Sample_Sheet.csv, make sure to append "@@@2" to each variable, and mind capitalization. More info on specification is in Usage Guidlines.    
 
 #### Dynamic Formula Construction for Linear Models
 Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae:
@@ -163,6 +163,56 @@ A set of .png files showing a line plot of an epigenetic age estimate against ch
 **SampleIDandAge.png:**  
 A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
 smaller sample sizes.
+
+## Usage Guidelines 
+### Using the Main Function
+```
+main(directory = getwd(),
+normalize = TRUE,
+useBeta = FALSE,
+arrayType = "450K",
+generateResiduals = TRUE,
+useSampleSheet = TRUE)
+```
+**directory** argument:  
+Directory containing input data files (default: current working directory).
+
+**normalize** argument:  
+Logical. Perform normalization of beta values if TRUE.
+
+**useBeta** argument:  
+Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).
+
+**arrayType** argument:  
+Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
+
+**generateResiduals** argument:  
+Logical. If TRUE, residual generation will take place.(options to be specified during runtime)
+
+**useSampleSheet** argument:  
+Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
+
+### Description of Client-Side Input Files
+**Sample_Sheet.csv**  
+.csv file containing phenotypic data for each sample.
+*Guidlines listed below
+
+**IDAT Files**  
+IDAT files containing methylation data for each sample.
+
+**betaValues.csv**  
+If IDAT files are not available, processed beta values can be provided. First **column** should contain CpG names. First **row** should contain sample names. 
+
+### Guidelines for Sample_Sheet.csv
+**To include a variable from Sample_Sheet.csv:**  
+If a variable contains **numeric** type data, append "@@@1" to the column name  
+
+If a variable contains **factor** type data, append "@@@2" to the column name  
+
+**Specification for Using 'Array' Variable**  
+If using an Array variable to store row and column information, please make sure it follows the format "RXCY" (X: row number, Y: column number).  
+Make sure to append @@@2 to the column name  
+
 
 ### Common Erros
 1. If using the package Compute Canada, and are getting errors such as:
