@@ -20,7 +20,15 @@ packages_to_install <- c(
   "IlluminaHumanMethylation450kmanifest",
   "IlluminaHumanMethylation450kanno.ilmn12.hg19",
   "IlluminaHumanMethylation27kmanifest",
-  "IlluminaHumanMethylation27kanno.ilmn12.hg19"
+  "IlluminaHumanMethylation27kanno.ilmn12.hg19",
+  "AnnotationHub",
+  "AnnotationHubData",
+  "base64",
+  "beanplot",
+  "ggplot2",
+  "dplyr",
+  "tidyr",
+  "annotate"
 )
 
 for (package in packages_to_install) {
