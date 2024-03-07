@@ -299,9 +299,9 @@
                     "~",
                     string,
                     "    +    ",
-                    "(Row|Slide)",
+                    "(Row...2 |Slide...2 )",
                     "    +    ",
-                    "(1|Batch)"
+                    "(1|Batch...2 )"
                 )
             } else if (!("Slide" %in% columnsUsed)) {
                 formula_string <- paste(
@@ -309,9 +309,9 @@
                     "~",
                     string,
                     "    +    ",
-                    "(Row&Column)",
+                    "(Row...2 &Column...2 )",
                     "    +    ",
-                    "(1|Batch)"
+                    "(1|Batch...2 )"
                 )
             } else {
                 formula_string <- paste(
@@ -319,15 +319,16 @@
                     "~",
                     string,
                     "    +    ",
-                    "(1    |    Slide)",
+                    "(1    |    Slide...2 )",
                     "    +    ",
-                    "(Row    +    Column    |    Slide)",
+                    "(Row...2    +    Column...2     |    Slide...2 )",
                     "    +    ",
-                    "(1    |    Batch)"
+                    "(1    |    Batch...2 )"
                 )
             }
 
-            if (!("Row" %in% columnsUsed) | !("Batch" %in% columnsUsed)) {
+            if (!("Row...2 " %in% columnsUsed) |
+                !("Batch...2 " %in% columnsUsed)) {
                 formula_string <- paste(columns[1], "~", string)
             }
 
@@ -388,17 +389,6 @@
                 message(i)
             }
             return(df)
-        }
-
-        # Definition for function used for removing outlier samples
-        removeOutliers <- function(df, isSampleSheet = FALSE) {
-            if (isSampleSheet == FALSE) {
-                df <- df[!(rownames(df) %in% outlier), ]
-                return(df)
-            } else {
-                df <- df[!(df$ID %in% outlier), ]
-                return(df)
-            }
         }
 
         # Definition for function used for processing epigenetic age measures
@@ -579,7 +569,6 @@
                 outlierIndexes <- append(outlierIndexes, i)
             }
         }
-        bVals <- bVals[, !(colnames(bVals) %in% outlier)]
         bValst <- t(bVals)
         bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
         pca_scores <- as.data.frame(bpca$x)
@@ -596,83 +585,36 @@
                 returnAll = FALSE, meanPlot = FALSE, verbose = TRUE
             )
 
-            CC <- removeOutliers(CC)
         }
 
         write.csv(bVals, file = "extractedBetaValues.csv")
 
         #    Correlation    Matrix    Construction    ####
-
+        .GlobalEnv$pdataSVs <- as.data.frame(matrix(NA, nrow = ncol(bVals),
+                                                    ncol = 1))
+        rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
         if (useSampleSheet == TRUE) {
             sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
-            if ("ID" %in% colnames(sampleData)) {
-                matchingIDs <- sampleData$ID %in% colnames(bVals)
-                sampleData <- sampleData[matchingIDs, ]
-            } else {
-                if (!length(outlierIndexes) == 0) {
-                    sampleData <-
-                    sampleData[-outlierIndexes, ]
-                }
-            }
-            .GlobalEnv$pdataSVs <- data.frame(Clock = seq.default(from = 1,
-            to = ncol(bVals)))
-            rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
             sampleData <- as.data.frame(sampleData)
-            columnData <- read.csv("Sample_Sheet.csv", header = TRUE)
-            colnames(sampleData) <- colnames(columnData)
 
             for (i in colnames(sampleData))
             {
-                switch(i,
-                    ID = sampleData$ID <- sampleData$ID,
-                    Age = .GlobalEnv$pdataSVs$Age <- as.numeric(sampleData$Age),
-                    Sex = .GlobalEnv$pdataSVs$Sex <- as.factor(sampleData$Sex),
-                    Smoking_Status =
-                        .GlobalEnv$pdataSVs$Smoking_Status <-
-                        as.factor(sampleData$Smoking_Status),
-                    Batch =
-                    .GlobalEnv$pdataSVs$Batch <- as.factor(sampleData$Batch),
-                    Slide =
-                    .GlobalEnv$pdataSVs$Slide <- as.factor(sampleData$Slide),
-                    Bcell =
-                    .GlobalEnv$pdataSVs$Bcell <- as.numeric(sampleData$Bcell),
-                    CD4T =
-                    .GlobalEnv$pdataSVs$CD4T <- as.numeric(sampleData$CD4T),
-                    CD8T =
-                    .GlobalEnv$pdataSVs$CD8T <- as.numeric(sampleData$CD8T),
-                    Gran =
-                    .GlobalEnv$pdataSVs$Gran <- as.numeric(sampleData$Gran),
-                    Mono =
-                    .GlobalEnv$pdataSVs$Mono <- as.numeric(sampleData$Mono),
-                    nRBC =
-                    .GlobalEnv$pdataSVs$nRBC <- as.numeric(sampleData$nRBC),
-                    Array = {
+                if (grepl("...1", i)) {
+                    .GlobalEnv$pdataSVs[[i]] <- as.numeric(sampleData[[i]])
+                } else if (grepl("...2", i)) {
+                    if (i == "Array...2") {
                         row <- as.factor(gsub("R(\\d+).*",
-                                                "\\1",
-                                                sampleData$Array))
+                                              "\\1",
+                                              sampleData[[i]]))
                         column <- as.factor(gsub(".*C(\\d+)",
-                                                "\\1",
-                                                sampleData$Array))
-                        .GlobalEnv$pdataSVs$Row <- row
-                        .GlobalEnv$pdataSVs$Column <- column
-                    },
-                    {
-                        message("Looks like you have a custom covariate")
-                        message(i)
-                        message("Enter 0 if this is a numerical variable,",
-                            "or 1 if this is a factor,",
-                            "or 2 to ignore")
-                        userInput <- scan(file = "", nmax = 1)
-                        message(userInput)
-                        if (userInput == 0) {
-                            .GlobalEnv$pdataSVs[[i]] <-
-                                as.numeric(sampleData[[i]])
-                        } else if (userInput == 1) {
-                            .GlobalEnv$pdataSVs[[i]] <-
-                                as.factor(sampleData[[i]])
-                        }
+                                                 "\\1",
+                                                 sampleData[[i]]))
+                        .GlobalEnv$pdataSVs$Row...2 <- row
+                        .GlobalEnv$pdataSVs$Column...2 <- column
+                    } else {
+                        .GlobalEnv$pdataSVs[[i]] <- as.factor(sampleData[[i]])
                     }
-                )
+                }
             }
             .GlobalEnv$pdataSVs <- pdataSVs[, vapply(
                     pdataSVs,
@@ -680,10 +622,6 @@
                     logical(1)
                 )
             ]
-        } else {
-            .GlobalEnv$pdataSVs <- data.frame(Clock = seq.default(from = 1,
-            to = ncol(bVals)))
-            rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
         }
 
         if (!is.numeric(rgSet) & arrayType != "27K") {
@@ -694,6 +632,11 @@
             .GlobalEnv$pdataSVs$Mono <- as.numeric(CC[, "Mono"])
             .GlobalEnv$pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
         }
+        print(pdataSVs)
+        print(dim(pdataSVs))
+        print(pca_scores)
+        print(dim(pca_scores))
+
 
         for (i in 1:5) {
             pc_name <- paste("PC", i, sep="")
@@ -848,6 +791,9 @@
                 )
             }
         }
+
+        finalOutput <- paste(finalOutput,
+                             "\n", "Outlier Samples From PCA: ", "\n", outlier)
 
         .GlobalEnv$exportDf <- as.data.frame(exportDf)
         write.table(as.data.frame(exportDf), file = "epigeneticAge.txt")

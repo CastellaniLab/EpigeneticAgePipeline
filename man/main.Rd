@@ -112,36 +112,13 @@ analysis tool when using smaller sample sizes.
 \note{
 Naming Conventions for Data in "Sample_Sheet.csv":
 
-ID:
-Variable containing the IDs of each sample.
-Note: Although optional in most circumstances
-adding an ID variable will significantly
-reduce the chances of encountering a runtime error.
+If a column contains numeric type data, append "@@@1" to the column name
 
-Array:
-Array plate name in format "RXCY" (X: row number, Y: column number).
+If a column contains factor type data, append "@@@2" to the column name
 
-Age:
-Age values of samples.
+If using an Array variable to store row and column information,
+please make sure it follows the format "RXCY" (X: row number, Y: column number).
 
-Sex:
-Gender information of samples (M or F, 0 or 1)
-
-Smoking_Status:
-Smoking status of samples.
-
-Batch:
-Batch information of samples.
-
-Slide:
-Slide information of samples.
-
-Bcell, CD4T, CD8T, Gran, Mono, nRBC:
-Optional* cell type proportions if IDAT files are not available
-
-*If data is not following the guidelines listed above,
-all non-obliging variables will be treated as custom variables,
-whose specification will be determined by the user during runtime.
 }
 
 \examples{
