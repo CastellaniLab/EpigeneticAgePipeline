@@ -773,7 +773,15 @@
                 Sex = pdataSVs$Sex
             )
 
-            grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
+            grimDf$Sex <- as.character(grimDf$Sex)
+            for (i in 1:nrow(grimDf)) {
+                if (grimDf$Sex[i] == "M" | grimDf$Sex[i] == 1) {
+                    grimDf$Sex[i] <-  "Male"
+                } else if (grimDf$Sex[i] == "F" | grimDf$Sex[i] == 2) {
+                    grimDf$Sex[i] <-  "Female"
+                }
+            }
+
             clockname <- "PCGrimAge"
             grimage <- methyAge(
                 betas = bVals,
