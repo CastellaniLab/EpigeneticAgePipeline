@@ -614,7 +614,8 @@
                         .GlobalEnv$pdataSVs$Row <- row
                         .GlobalEnv$pdataSVs$Column <- column
                     } else {
-                        .GlobalEnv$pdataSVs[[i]] <- as.factor(sampleData[[i]])
+                        .GlobalEnv$pdataSVs[[newVarName]] <-
+                            as.factor(sampleData[[i]])
                     }
                 }
             }
@@ -709,12 +710,12 @@
 
         if ("Age" %in% colnames(pdataSVs)) {
             plotDf <- data.frame(
-                sample = sampleData$ID,
+                sample = colnames(bVals),
                 horvath = results$Horvath,
                 skinhorvath = results$skinHorvath,
                 hannum = results$Hannum,
                 levine = results$Levine,
-                age = sampleData$Age
+                age = pdataSVs$Age
             )
 
             createGroupedBarChart(
@@ -764,12 +765,12 @@
         results$id <- rownames(results)
 
         .GlobalEnv$exportDf$DunedinPACE <- results[,2]
-        if ("Age" %in% colnames(pdataSVs)) {
+        if ("Age" %in% colnames(pdataSVs) && "Sex" %in% colnames(pdataSVs)) {
             finalOutput <- paste(finalOutput, "\n\nGrimAGE\n")
             grimDf <- data.frame(
                 Sample = colnames(bVals),
-                Age = sampleData$Age,
-                Sex = sampleData$Sex
+                Age = pdataSVs$Age,
+                Sex = pdataSVs$Sex
             )
 
             grimDf$Sex <- ifelse(grimDf$Sex == "M", "Male", "Female")
