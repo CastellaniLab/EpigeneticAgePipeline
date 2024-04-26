@@ -66,12 +66,10 @@ file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
 
 ```
 library(EpigeneticAgePipeline)
-main(
-	directory = directory, #directory containing IDAT/beta values/supporting data
+main(directory = directory, #directory containing IDAT/beta values/supporting data
     normalize = TRUE, #should normalize beta values?
     useBeta = FALSE, #should use beta values contained within a betaValues.csv file?
     arrayType = "450K", #specification of array type used to geneerate idat files ("450K", "27K", "EPIC)
-    generateResiduals = FALSE, #should generate residuals?
     useSampleSheet = FALSE #should use phenotypic data found within a Sample_Sheet.csv file?
 )
 ```
