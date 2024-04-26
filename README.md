@@ -135,7 +135,7 @@ If IDAT files are provided, methylation data can be used to determine cell count
 
 ### Introduction to Residual Generation
 
-This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv. If you have access to these variables in your Sample_Sheet.csv, make sure to append "@@@2" to each variable, and mind capitalization. More info on specification is in Usage Guidlines.    
+This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv. If you have access to these variables in your Sample_Sheet.csv, make sure to append "@@@2" to each variable, and mind capitalization. More info on using the "Array" variable is in Usage Guidlines.    
 
 #### Dynamic Formula Construction for Linear Models
 Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae:
@@ -173,13 +173,12 @@ A .png file containing a grouped bar chart showing each sample and their associa
 smaller sample sizes.
 
 ## Usage Guidelines 
-### Using the Main Function
+### Using the main Function
 ```
 main(directory = getwd(),
 normalize = TRUE,
 useBeta = FALSE,
 arrayType = "450K",
-generateResiduals = TRUE,
 useSampleSheet = TRUE)
 ```
 **directory** argument:  
@@ -194,11 +193,23 @@ Logical. If TRUE, will expect a betaValues.csv file containing beta values (scal
 **arrayType** argument:  
 Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 
-**generateResiduals** argument:  
-Logical. If TRUE, residual generation will take place.(options to be specified during runtime)
-
 **useSampleSheet** argument:  
-Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
+Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.  
+
+### Using the generateResiduals function
+```
+generateResiduals(directory = getwd(),
+useBeta = FALSE,
+arrayType = "450K"
+``` 
+**directory** argument:  
+Directory containing input data files (default: current working directory). 
+
+**useBeta** argument:  
+Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).  
+
+**arrayType** argument:  
+Type of DNA methylation array used (options: "27K", "450K", or "EPIC").  
 
 ### Description of Client-Side Input Files
 **Sample_Sheet.csv**  
@@ -215,7 +226,15 @@ If IDAT files are not available, processed beta values can be provided. First **
 **To include a variable from Sample_Sheet.csv:**  
 If a variable contains **numeric** type data, append "@@@1" to the column name  
 
-If a variable contains **factor** type data, append "@@@2" to the column name  
+If a variable contains **factor** type data, append "@@@2" to the column name.  
+
+Ex. variable "isSmoker" would become "isSmoker@@@2".  
+
+To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1", "M" or "Male". Valid values for female sex would be "2", "F", or "Female".  
+
+If using the **generateResiduals** function, name the column with epigenetic age values as "EpiAge@@@1".  
+
+If you want to use random effects in the **generateResiduals** function, view the guidelines found in "Introduction to Residual Generation" above.  
 
 **Specification for Using 'Array' Variable**  
 If using an Array variable to store row and column information, please make sure it follows the format "RXCY" (X: row number, Y: column number).  
