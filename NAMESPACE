@@ -1,4 +1,5 @@
-exportPattern("^[[:alpha:]]+")
+export(generateResiduals)
+export(main)
 importFrom("graphics",
             "abline",
             "pairs",

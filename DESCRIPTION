@@ -7,7 +7,8 @@ Authors@R: person("Stanislav",
     email = "srayevsk@uwo.ca", 
     role = c("aut", "cre"),
     comment = c(ORCID="0000-0000-0000-0000"))
-biocViews: DNAMethylation, Epigenetics, MethylationArray, Normalization
+biocViews: DNAMethylation, Epigenetics, MethylationArray, Normalization, 
+    PrincipalComponent
 Description: EpigeneticAgePipeline is a comprehensive package designed 
     for processing and analyzing DNA methylation data.
     The package provides a variety of epigenetic age measures,
