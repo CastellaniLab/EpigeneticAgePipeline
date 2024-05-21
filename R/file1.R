@@ -189,15 +189,16 @@ main <- function(directory = getwd(),
 
 
     message(finalOutput)
-    finalOutput <- processAgeType(results, "Horvath", finalOutput)
-    .GlobalEnv$pdataSVs$Horvath <- NULL
-    finalOutput <- processAgeType(results, "skinHorvath", finalOutput)
-    .GlobalEnv$pdataSVs$skinHorvath <- NULL
-    finalOutput <- processAgeType(results, "Hannum", finalOutput)
-    .GlobalEnv$pdataSVs$Hannum <- NULL
-    finalOutput <- processAgeType(results, "Levine", finalOutput)
-    .GlobalEnv$pdataSVs$Levine <- NULL
-
+    if (useSampleSheet) {
+        finalOutput <- processAgeType(results, "Horvath", finalOutput)
+        .GlobalEnv$pdataSVs$Horvath <- NULL
+        finalOutput <- processAgeType(results, "skinHorvath", finalOutput)
+        .GlobalEnv$pdataSVs$skinHorvath <- NULL
+        finalOutput <- processAgeType(results, "Hannum", finalOutput)
+        .GlobalEnv$pdataSVs$Hannum <- NULL
+        finalOutput <- processAgeType(results, "Levine", finalOutput)
+        .GlobalEnv$pdataSVs$Levine <- NULL
+    }
 
     if ("Age" %in% colnames(pdataSVs)) {
         plotDf <- data.frame(
