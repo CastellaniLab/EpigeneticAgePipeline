@@ -1,7 +1,7 @@
 utils::globalVariables(c(
     "bVals", "rgSet", "listofCors", "corsToRemove",
     "methyAge", "pdataSVs", "exportDf", "outliersCSV",
-    "residualsCSV"
+    "residualsCSV", "accelResidualsCSV"
 ))
 
 # Main function starts here
@@ -22,7 +22,6 @@ main <- function(directory = getwd(),
     }
 
     # More assignments to global environment variables...
-
     base::assign("rgSet", 0, envir = .GlobalEnv)
     base::assign("listofCors", c(), envir = .GlobalEnv)
     base::assign("corsToRemove", c(), envir = .GlobalEnv)
@@ -32,62 +31,6 @@ main <- function(directory = getwd(),
     # Loading necessary data files
     load(paste0(installDirectory, "PC-clocks.rda"), envir = .GlobalEnv)
     load(paste0(installDirectory, "golden_ref.rda"), envir = .GlobalEnv)
-
-    # Definition for function used for generating the grouped bar chart
-    createGroupedBarChart <- function(data, x, y, fill, title) {
-        melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
-        custom_palette <- c(
-            "age" = "red",
-            "horvath" = "#66c2a5",
-            "skinhorvath" = "#3288bd",
-            "hannum" = "#5e4fa2",
-            "levine" = "#3288dd"
-        )
-
-        plot <- ggplot2::ggplot(
-            data = melted_df,
-            ggplot2::aes_string(
-                x = x,
-                y = y,
-                fill = fill
-            )
-        ) +
-            ggplot2::geom_bar(stat = "identity", position = "dodge") +
-            ggplot2::labs(x = x, y = "Age", title = title) +
-            ggplot2::scale_fill_manual(values = custom_palette) +
-            ggplot2::theme_minimal()
-
-        plot <- plot +
-            ggplot2::theme(
-                plot.background =
-                    ggplot2::element_rect(fill = "white")
-            )
-
-        ggplot2::ggsave("SampleIDandAge.png",
-            plot = plot,
-            width = 10000,
-            height = 1000,
-            units = "px",
-            dpi = 300
-        )
-
-        for (i in 2:(ncol(data) - 1))
-        {
-            plot <- ggpubr::ggscatter(data,
-                x = "age", y = colnames(data)[i],
-                add = "reg.line", #
-                add.params = list(color = "blue", fill = "lightgray")
-            )
-            plot <- plot + ggpubr::stat_cor(method = "pearson")
-            ggplot2::ggsave(
-                filename = paste0("plot_", colnames(data)[i], ".png"),
-                plot = plot,
-                width = 1000, height = 1000,
-                units = "px"
-            )
-        }
-    }
-
 
     if (useBeta == TRUE) {
         if (typeof(bVals) != "list") {
@@ -162,42 +105,65 @@ main <- function(directory = getwd(),
         }
     }
 
+    clockname <- "DunedinPACE"
+    dunedinPACEDf <- methyAge(
+        betas = bVals,
+        clock = clockname,
+        do_plot = FALSE
+    )
+    dunedinPACEDf <- as.data.frame(dunedinPACEDf)
+    results$DunedinPACE <- dunedinPACEDf[,2]
+    results$GrimAge <- NA
+    if ("Age" %in% colnames(pdataSVs) && "Sex" %in% colnames(pdataSVs)) {
+        grimDf <- data.frame(
+            Sample = colnames(bVals),
+            Age = pdataSVs$Age,
+            Sex = pdataSVs$Sex
+        )
+        grimDf$Sex <- as.character(grimDf$Sex)
+        for (i in seq_len(nrow(grimDf))) {
+            if (grimDf$Sex[i] == "M" | grimDf$Sex[i] == 1) {
+                grimDf$Sex[i] <- "Male"
+            } else if (grimDf$Sex[i] == "F" | grimDf$Sex[i] == 2) {
+                grimDf$Sex[i] <- "Female"
+            }
+        }
+        clockname <- "PCGrimAge"
+        grimage <- methyAge(
+            betas = bVals,
+            clock = clockname,
+            age_info = as.data.frame(grimDf),
+            do_plot = FALSE
+        )
+        results$GrimAge <- grimage$Age_Acceleration
+    }
+
     finalOutput <- "Raw Clock Results\n"
 
-    headers <- c("SampleID", "Horvath", "SkinHorvath", "Hannum", "PhenoAge")
+    headers <- c("SampleID", "Horvath", "SkinHorvath", "Hannum", "PhenoAge",
+                 "DunedinPACE", "GrimAge")
     finalOutput <- sprintf(
-        "%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n",
+        "%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\n",
         headers[1],
         headers[2],
         headers[3],
         headers[4],
-        headers[5]
+        headers[5],
+        headers[6],
+        headers[7]
     )
-
-
     for (i in seq_len(nrow(results))) {
         row <- sprintf(
-            "%-30s\t%-30s\t%-30s\t%-30s\t%-30s\n",
+            "%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\n",
             results[i, 1],
             results$Horvath[i],
             results$skinHorvath[i],
             results$Hannum[i],
-            results$Levine[i]
+            results$Levine[i],
+            results$DunedinPACE[i],
+            results$GrimAge[i]
         )
         finalOutput <- paste0(finalOutput, row)
-    }
-
-
-    message(finalOutput)
-    if (useSampleSheet) {
-        finalOutput <- processAgeType(results, "Horvath", finalOutput)
-        .GlobalEnv$pdataSVs$Horvath <- NULL
-        finalOutput <- processAgeType(results, "skinHorvath", finalOutput)
-        .GlobalEnv$pdataSVs$skinHorvath <- NULL
-        finalOutput <- processAgeType(results, "Hannum", finalOutput)
-        .GlobalEnv$pdataSVs$Hannum <- NULL
-        finalOutput <- processAgeType(results, "Levine", finalOutput)
-        .GlobalEnv$pdataSVs$Levine <- NULL
     }
 
     if ("Age" %in% colnames(pdataSVs)) {
@@ -224,6 +190,8 @@ main <- function(directory = getwd(),
             "Hannum",
             "Levine",
             "skinHorvath",
+            "DunedinPACE",
+            "GrimAge",
             "age"
         )]
     } else {
@@ -234,80 +202,89 @@ main <- function(directory = getwd(),
                 "Horvath",
                 "Hannum",
                 "Levine",
-                "skinHorvath"
+                "skinHorvath",
+                "DunedinPACE",
+                "GrimAge"
             )
         ]
     }
-
-    finalOutput <- paste(finalOutput, "\n\nDunedinPACE\n")
-    clockname <- "DunedinPACE"
-    results <- methyAge(
-        betas = bVals,
-        clock = clockname,
-        do_plot = FALSE
-    )
-    results <- as.data.frame(results)
-    for (i in seq.default(from = 1, to = nrow(results)))
-    {
-        finalOutput <- paste(
-            finalOutput,
-            results[i, 1],
-            "\t",
-            results[i, 2],
-            "\n"
-        )
-    }
-
-    results$id <- rownames(results)
-
-    .GlobalEnv$exportDf$DunedinPACE <- results[, 2]
-    if ("Age" %in% colnames(pdataSVs) && "Sex" %in% colnames(pdataSVs)) {
-        finalOutput <- paste(finalOutput, "\n\nGrimAGE\n")
-        grimDf <- data.frame(
-            Sample = colnames(bVals),
-            Age = pdataSVs$Age,
-            Sex = pdataSVs$Sex
-        )
-
-        grimDf$Sex <- as.character(grimDf$Sex)
-        for (i in seq_len(grimDf)) {
-            if (grimDf$Sex[i] == "M" | grimDf$Sex[i] == 1) {
-                grimDf$Sex[i] <- "Male"
-            } else if (grimDf$Sex[i] == "F" | grimDf$Sex[i] == 2) {
-                grimDf$Sex[i] <- "Female"
-            }
-        }
-
-        clockname <- "PCGrimAge"
-        grimage <- methyAge(
-            betas = bVals,
-            clock = clockname,
-            age_info = as.data.frame(grimDf),
-            do_plot = FALSE
-        )
-        grimage$id <- grimage$Sample
-        .GlobalEnv$exportDf$Grimage <- grimage$Age_Acceleration
-        for (i in seq.default(from = 1, to = nrow(results)))
-        {
-            finalOutput <- paste(
-                finalOutput,
-                grimage[i, 1],
-                "\t",
-                grimage$Age_Acceleration[i],
-                "\n"
-            )
+    message(finalOutput)
+    if (useSampleSheet | useBeta == FALSE) {
+        finalOutput <- processAgeType(results, "Horvath", finalOutput)
+        .GlobalEnv$pdataSVs$Horvath <- NULL
+        finalOutput <- processAgeType(results, "skinHorvath", finalOutput)
+        .GlobalEnv$pdataSVs$skinHorvath <- NULL
+        finalOutput <- processAgeType(results, "Hannum", finalOutput)
+        .GlobalEnv$pdataSVs$Hannum <- NULL
+        finalOutput <- processAgeType(results, "Levine", finalOutput)
+        .GlobalEnv$pdataSVs$Levine <- NULL
+        finalOutput <- processAgeType(results, "DunedinPACE", finalOutput)
+        .GlobalEnv$pdataSVs$DunedinPACE <- NULL
+        if ("Age" %in% colnames(pdataSVs) && "Sex" %in% colnames(pdataSVs)) {
+            finalOutput <- processAgeType(results, "GrimAge", finalOutput)
+            .GlobalEnv$pdataSVs$GrimAge <- NULL
         }
     }
-
     .GlobalEnv$exportDf <- as.data.frame(exportDf)
     write.table(as.data.frame(exportDf), file = "epigeneticAge.txt")
-
     outputString <- paste(finalOutput, collapse = "\n")
-
     readr::write_file(outputString, file = "output.txt")
 }
 
-#
+# Definition for function used for generating the grouped bar chart
+createGroupedBarChart <- function(data, x, y, fill, title) {
+    melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
+    custom_palette <- c(
+        "age" = "red",
+        "horvath" = "#66c2a5",
+        "skinhorvath" = "#3288bd",
+        "hannum" = "#5e4fa2",
+        "levine" = "#3288dd"
+    )
+
+    plot <- ggplot2::ggplot(
+        data = melted_df,
+        ggplot2::aes_string(
+            x = x,
+            y = y,
+            fill = fill
+        )
+    ) +
+        ggplot2::geom_bar(stat = "identity", position = "dodge") +
+        ggplot2::labs(x = x, y = "Age", title = title) +
+        ggplot2::scale_fill_manual(values = custom_palette) +
+        ggplot2::theme_minimal()
+
+    plot <- plot +
+        ggplot2::theme(
+            plot.background =
+                ggplot2::element_rect(fill = "white")
+        )
+
+    ggplot2::ggsave("SampleIDandAge.png",
+                    plot = plot,
+                    width = 10000,
+                    height = 1000,
+                    units = "px",
+                    dpi = 300
+    )
+
+    for (i in 2:(ncol(data) - 1))
+    {
+        plot <- ggpubr::ggscatter(data,
+                                  x = "age", y = colnames(data)[i],
+                                  add = "reg.line", #
+                                  add.params = list(color = "blue", fill = "lightgray")
+        )
+        plot <- plot + ggpubr::stat_cor(method = "pearson")
+        ggplot2::ggsave(
+            filename = paste0("plot_", colnames(data)[i], ".png"),
+            plot = plot,
+            width = 1000, height = 1000,
+            units = "px"
+        )
+    }
+}
 
 # Definition of processIDAT function starts here
 processIDAT <- function(directory, useSampleSheet, arrayType) {
@@ -529,7 +506,6 @@ processAgeType <- function(data, age_type, output) {
         main = ""
     )
     grDevices::dev.off()
-
     finalOutput <- paste(output, "\n", age_type, "Covariates\n")
     finalOutput <- corCovariates(finalOutput)
     covariate_data <- .GlobalEnv$pdataSVs
@@ -702,7 +678,6 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         columns <- colnames(pdata)
         columnsUsed <- columns[columns != "EpiAge"]
         string <- paste(columnsUsed, collapse = " + ")
-
         if (!("Column" %in% columnsUsed)) {
             formula_string <- paste(
                 "EpiAge",
@@ -747,8 +722,8 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
                 data = pdata,
                 family = "gaussian",
                 control = glmmTMB::glmmTMBControl(optCtrl = list(
-                    iter.max    =    10000,
-                    eval.max    =    10000
+                    iter.max = 10000,
+                    eval.max = 10000
                 ))
             )
             smodel <- lme1
@@ -830,7 +805,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     createAnalysisDF(directory)
     if (!"EpiAge" %in% colnames(.GlobalEnv$pdataSVs)) {
         warning(
-            "You did not specify a column called EpiAge in your",
+            "You did not specify a column called EpiAge@@@1 in your",
             "Sample_Sheet.csv"
         )
         return()
@@ -842,6 +817,9 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     .GlobalEnv$corsToRemove <- c()
     .GlobalEnv$outliersCSV <- outlier
     .GlobalEnv$residualsCSV <- residGeneration(pdataSVs)
+    pdataSVs$EpiAge <- .GlobalEnv$residualsCSV[,2]
+    .GlobalEnv$accelResidualsCSV <- residGeneration(pdataSVs)
     write.csv(outlier, "OutlierSamples.csv")
     write.csv(residualsCSV, "Residuals.csv")
+    write.csv(accelResidualsCSV, "ResidualsAcceleration.csv")
 }

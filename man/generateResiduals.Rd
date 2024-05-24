@@ -102,6 +102,8 @@ if (file.exists(paste0(directory, "betaValues.csv")))
     knitr::kable(outliersCSV)
     message("Residuals")
     knitr::kable(residualsCSV)
+    message("Acceleration Residuals")
+    knitr::kable(accelResidualsCSV)
 }
 
 }
