@@ -62,14 +62,12 @@ main <- function(directory = getwd(),
         ncol = 1
     ))
     rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
-
     if (useSampleSheet == TRUE) {
         createAnalysisDF(directory)
         if ("EpiAge" %in% colnames(pdataSVs)) {
             .GlobalEnv$pdataSVs$EpiAge <- NULL
         }
     }
-
     if (!is.numeric(rgSet) & arrayType != "27K") {
         .GlobalEnv$pdataSVs$Bcell <- as.numeric(CC[, "Bcell"])
         .GlobalEnv$pdataSVs$CD4T <- as.numeric(CC[, "CD4T"])
@@ -78,8 +76,6 @@ main <- function(directory = getwd(),
         .GlobalEnv$pdataSVs$Mono <- as.numeric(CC[, "Mono"])
         .GlobalEnv$pdataSVs$nRBC <- as.numeric(CC[, "nRBC"])
     }
-
-
     # Clock Output                       ####
 
     results <- NULL
@@ -566,13 +562,9 @@ removeCovariates <- function() {
 # Definition of function used to find highly correlated covariates
 corCovariates <- function(x) {
     corDf <- pdataSVs
-
     corDf <- corDf[seq.default(from = 1, to = (ncol(pdataSVs))), ]
-
     row.names(corDf) <- colnames(corDf)
-
     corDf[, ] <- 0
-
     counter <- 1
     for (i in seq.default(from = 1, to = (ncol(corDf))))
     {
@@ -585,11 +577,7 @@ corCovariates <- function(x) {
             counter <- counter + 1
         }
     }
-
-
     corDf <- corDf[-nrow(corDf), ]
-
-
     counter <- 1
     for (i in seq.default(from = 1, to = (ncol(corDf))))
     {
@@ -637,6 +625,74 @@ corCovariates <- function(x) {
     return(x)
 }
 
+# Definition for function used for residual generation
+residGeneration <- function(pdata) {
+    columns <- colnames(pdata)
+    columnsUsed <- columns[columns != "EpiAge"]
+    string <- paste(columnsUsed, collapse = " + ")
+    if (!("Column" %in% columnsUsed) && "Row" %in% columnsUsed && "Slide"
+            %in% columnsUsed && "Batch" %in% columnsUsed) {
+        formula_string <- paste(
+            "EpiAge",
+            " ~ ",
+            string,
+            " + ",
+            "(Row|Slide)",
+            " + ",
+            "(1|Batch)"
+        )
+    } else if (!("Slide" %in% columnsUsed) && "Row" %in% columnsUsed && "Column"
+            %in% columnsUsed && "Batch" %in% columnsUsed) {
+        formula_string <- paste(
+            "EpiAge",
+            "~",
+            string,
+            " + ",
+            "(Row&Column)",
+            " + ",
+            "(1|Batch)"
+        )
+    } else if ("Row" %in% columnsUsed && "Column" %in% columnsUsed && "Slide"
+            %in% columnsUsed && "Batch" %in% columnsUsed) {
+        formula_string <- paste(
+            "EpiAge",
+            "~",
+            string,
+            " + ",
+            "(1|Slide)",
+            " + ",
+            "(Row+Column|Slide)",
+            " + ",
+            "(1|Batch)"
+        )
+    } else {
+        formula_string <- paste("EpiAge", "~", string)
+    }
+
+    runlme <- function(formula) {
+        lme1 <- glmmTMB::glmmTMB(formula,
+                            data = pdata,
+                            family = "gaussian",
+                            control = glmmTMB::glmmTMBControl(optCtrl = list(
+                                iter.max = 10000,
+                                eval.max = 10000
+                            ))
+        )
+        smodel <- lme1
+        return(smodel)
+    }
+
+    lme_formula <- formula_string
+    message(lme_formula)
+    lme_formula <- as.formula(lme_formula)
+
+    lme_summary <- try(runlme(lme_formula), silent = FALSE)
+
+    resids <- residuals(lme_summary)
+
+    return(resids)
+}
+
 # Residual and PCA Generation function
 generateResiduals <- function(directory = getwd(), useBeta = FALSE,
                             arrayType = "450K") {
@@ -651,73 +707,6 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     base::assign("exportDf", 0, envir = .GlobalEnv)
     base::assign("outliersCSV", 0, envir = .GlobalEnv)
     base::assign("residualsCSV", 0, envir = .GlobalEnv)
-    # Definition for function used for residual generation
-    residGeneration <- function(pdata) {
-        columns <- colnames(pdata)
-        columnsUsed <- columns[columns != "EpiAge"]
-        string <- paste(columnsUsed, collapse = " + ")
-        if (!("Column" %in% columnsUsed)) {
-            formula_string <- paste(
-                "EpiAge",
-                " ~ ",
-                string,
-                " + ",
-                "(Row|Slide)",
-                " + ",
-                "(1|Batch)"
-            )
-        } else if (!("Slide" %in% columnsUsed)) {
-            formula_string <- paste(
-                "EpiAge",
-                "~",
-                string,
-                " + ",
-                "(Row&Column)",
-                " + ",
-                "(1|Batch)"
-            )
-        } else {
-            formula_string <- paste(
-                "EpiAge",
-                "~",
-                string,
-                " + ",
-                "(1|Slide)",
-                " + ",
-                "(Row+Column|Slide)",
-                "    +    ",
-                "(1|Batch)"
-            )
-        }
-
-        if (!("Row " %in% columnsUsed) |
-            !("Batch " %in% columnsUsed)) {
-            formula_string <- paste("EpiAge", "~", string)
-        }
-
-        runlme <- function(formula) {
-            lme1 <- glmmTMB::glmmTMB(formula,
-                data = pdata,
-                family = "gaussian",
-                control = glmmTMB::glmmTMBControl(optCtrl = list(
-                    iter.max = 10000,
-                    eval.max = 10000
-                ))
-            )
-            smodel <- lme1
-            return(smodel)
-        }
-
-        lme_formula <- formula_string
-        message(lme_formula)
-        lme_formula <- as.formula(lme_formula)
-
-        lme_summary <- try(runlme(lme_formula), silent = FALSE)
-
-        resids <- residuals(lme_summary)
-
-        return(resids)
-    }
     if (!exists("bVals")) {
         base::assign("bVals", 0, envir = .GlobalEnv)
     }
