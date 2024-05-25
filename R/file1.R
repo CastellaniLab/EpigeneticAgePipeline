@@ -556,7 +556,7 @@ removeCovariates <- function() {
             message(column)
             .GlobalEnv$pdataSVs <- .GlobalEnv$pdataSVs[
                 ,
-                !grepl(column, names(.GlobalEnv$pdataSVs))
+                !(names(.GlobalEnv$pdataSVs) %in% column)
             ]
         }
         message(i)
@@ -709,8 +709,8 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         }
 
         lme_formula <- formula_string
-        lme_formula <- as.formula(lme_formula)
         message(lme_formula)
+        lme_formula <- as.formula(lme_formula)
 
         lme_summary <- try(runlme(lme_formula), silent = FALSE)
 
@@ -781,6 +781,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     ))
     rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
     createAnalysisDF(directory)
+    .GlobalEnv$pdataSVs <- cbind(pdataSVs, pca_scores[, 1:5])
     if (!"EpiAge" %in% colnames(.GlobalEnv$pdataSVs)) {
         warning(
             "You did not specify a column called EpiAge@@@1 in your",
