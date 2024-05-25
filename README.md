@@ -138,12 +138,30 @@ This section describes the proccess of residual generation. The function constru
 #### Dynamic Formula Construction for Linear Models
 Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae:
 
-| Formula                                                   |
-|-------------------------------|-----------------------------------------------------------|
-| `EpigeneticAgeMeasure ~ Xi + (Row\|Slide) + (1\|Batch)`   |
-| `EpigeneticAgeMeasure ~ Xi + (Row & Column) + (1\|Batch)` |
-| `EpigeneticAgeMeasure ~ Xi + (1\|Slide) + (Row + Column\|Slide) + (1\|Batch)` |
-| `EpigeneticAgeMeasure ~ Xi`                               |
+```mermaid
+graph TD
+    A["Start"]
+    B{"Is 'Column' NOT available but 'Row', 'Slide', and 'Batch' available?"}
+    C{"Is 'Slide' NOT available but 'Row', 'Column', and 'Batch' available?"}
+    D{"Are 'Row', 'Column', 'Slide', and 'Batch' all available?"}
+    E["formula_string = 'EpiAge ~ string + (Row|Slide) + (1|Batch)'"]
+    F["formula_string = 'EpiAge ~ string + (Row&Column) + (1|Batch)'"]
+    G["formula_string = 'EpiAge ~ string + (1|Slide) + (Row+Column|Slide) + (1|Batch)'"]
+    H["formula_string = 'EpiAge ~ string'"]
+    I["End"]
+
+    A --> B
+    B -->|Yes| E
+    B -->|No| C
+    C -->|Yes| F
+    C -->|No| D
+    D -->|Yes| G
+    D -->|No| H
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+```
 
 *Note: In these formulae, `Xi` represents the independent variables.*
 
