@@ -138,12 +138,12 @@ This section describes the proccess of residual generation. The function constru
 #### Dynamic Formula Construction for Linear Models
 Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae:
 
-| Variables Present             | Formula                                                   |
+| Formula                                                   |
 |-------------------------------|-----------------------------------------------------------|
-| Without “Column”              | `EpigeneticAgeMeasure ~ Xi + (Row\|Slide) + (1\|Batch)`   |
-| Without “Slide”               | `EpigeneticAgeMeasure ~ Xi + (Row & Column) + (1\|Batch)` |
-| Both “Column” and “Slide”     | `EpigeneticAgeMeasure ~ Xi + (1\|Slide) + (Row + Column\|Slide) + (1\|Batch)` |
-| Without “Row” or “Batch”      | `EpigeneticAgeMeasure ~ Xi`                               |
+| `EpigeneticAgeMeasure ~ Xi + (Row\|Slide) + (1\|Batch)`   |
+| `EpigeneticAgeMeasure ~ Xi + (Row & Column) + (1\|Batch)` |
+| `EpigeneticAgeMeasure ~ Xi + (1\|Slide) + (Row + Column\|Slide) + (1\|Batch)` |
+| `EpigeneticAgeMeasure ~ Xi`                               |
 
 *Note: In these formulae, `Xi` represents the independent variables.*
 
