@@ -143,7 +143,7 @@ main <- function(directory = getwd(),
     headers <- c("SampleID", "Horvath", "SkinHorvath", "Hannum", "PhenoAge",
                  "DunedinPACE", "GrimAge")
     finalOutput <- sprintf(
-        "%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\n",
+        "%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\n",
         headers[1],
         headers[2],
         headers[3],
@@ -154,7 +154,7 @@ main <- function(directory = getwd(),
     )
     for (i in seq_len(nrow(results))) {
         row <- sprintf(
-            "%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\t%-50s\n",
+            "%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\n",
             results[i, 1],
             results$Horvath[i],
             results$skinHorvath[i],
@@ -293,31 +293,8 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         "/extdata/"
     )
     dataDirectory <- directory
-    if (useSampleSheet == TRUE) {
-        testDf <- read.csv("Sample_Sheet.csv", header = TRUE)
-        if ("Sample_Name" %in% colnames(testDf)) {
-            pdata <- minfi::read.metharray.sheet(dataDirectory,
-                pattern = "Sample_Sheet.csv"
-            )
 
-            pdata$Basename <- pdata$Sample_Name
-
-            pdata$ID <- paste(pdata$Phenotype, pdata$Title, sep = ".")
-
-            pdata$Slide <- gsub("X", "", pdata$Slide)
-
-            write.csv(pdata, file = "Sample_Sheet.csv", row.names = FALSE)
-
-
-            rgSet <-
-                minfi::read.metharray.exp(targets = pdata, force = TRUE)
-            minfi::sampleNames(rgSet) <- pdata$ID
-        } else {
-            rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
-        }
-    } else {
-        rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
-    }
+    rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
 
     #    Calculate    the    detection    p-values
     detP <- minfi::detectionP(rgSet)
@@ -431,6 +408,7 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     #    Calculate    methylation    beta    values
     .GlobalEnv$rgSet <- rgSet
     .GlobalEnv$bVals <- minfi::getBeta(mSetSqFlt)
+    .GlobalEnv$bVals <- bVals[,colnames(bVals)]
 }
 
 # Definition for function used in matrix generation
@@ -817,7 +795,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     .GlobalEnv$corsToRemove <- c()
     .GlobalEnv$outliersCSV <- outlier
     .GlobalEnv$residualsCSV <- residGeneration(pdataSVs)
-    pdataSVs$EpiAge <- .GlobalEnv$residualsCSV[,2]
+    pdataSVs$EpiAge <- .GlobalEnv$residualsCSV
     .GlobalEnv$accelResidualsCSV <- residGeneration(pdataSVs)
     write.csv(outlier, "OutlierSamples.csv")
     write.csv(residualsCSV, "Residuals.csv")
