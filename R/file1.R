@@ -37,12 +37,12 @@ main <- function(directory = getwd(),
     } else {
         NA
     }
-
+    finalOutput <- ""
     if (useSampleSheet | useBeta == FALSE) {
         finalOutput <- processAllAgeTypes(results)
     }
 
-    exportResults(results, .GlobalEnv$bVals)
+    exportResults(results, .GlobalEnv$bVals, finalOutput)
 }
 
 startup <- function() {
@@ -141,8 +141,7 @@ calculateGrimAge <- function(bVals, pdataSVs) {
     return(grimage$Age_Acceleration)
 }
 
-exportResults <- function(results, bVals) {
-    finalOutput <- formatResults(results)
+exportResults <- function(results, bVals, finalOutput) {
     if ("Age" %in% colnames(.GlobalEnv$pdataSVs)) {
         plotDf <- preparePlotDf(results, .GlobalEnv$pdataSVs)
         createGroupedBarChart(plotDf, "sample", "value", "Age_Measure", "Sample ID and Type of Age Measure")
@@ -150,26 +149,9 @@ exportResults <- function(results, bVals) {
     } else {
         .GlobalEnv$exportDf <- results[, c("id", "Horvath", "Hannum", "Levine", "skinHorvath", "DunedinPACE", "GrimAge")]
     }
-    writeResults(finalOutput, .GlobalEnv$exportDf)
+    writeResults(finalOutput, .GlobalEnv$exportDf, results)
 }
 
-formatResults <- function(results) {
-    finalOutput <- "Raw Clock Results\n"
-    headers <- c("SampleID", "Horvath", "SkinHorvath", "Hannum", "PhenoAge", "DunedinPACE", "GrimAge")
-    finalOutput <- sprintf(
-        "%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\n",
-        headers[1], headers[2], headers[3], headers[4], headers[5], headers[6], headers[7]
-    )
-    for (i in seq_len(nrow(results))) {
-        row <- sprintf(
-            "%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\t%-70s\n",
-            results[i, 1], results$Horvath[i], results$skinHorvath[i],
-            results$Hannum[i], results$Levine[i], results$DunedinPACE[i], results$GrimAge[i]
-        )
-        finalOutput <- paste0(finalOutput, row)
-    }
-    return(finalOutput)
-}
 
 preparePlotDf <- function(results, pdataSVs) {
     data.frame(
@@ -182,10 +164,12 @@ preparePlotDf <- function(results, pdataSVs) {
     )
 }
 
-writeResults <- function(finalOutput, exportDf) {
+writeResults <- function(finalOutput, exportDf, results) {
+    formattedResults <- knitr::kable(results[,c("id", "Horvath", "skinHorvath", "Hannum", "Levine", "DunedinPACE", "GrimAge")], format = "markdown")
     exportDf <- as.data.frame(exportDf)
     write.table(exportDf, file = "epigeneticAge.txt")
     readr::write_file(finalOutput, file = "output.txt")
+    write(formattedResults, file = "results.md")
 }
 
 processAllAgeTypes <- function(results) {
