@@ -134,14 +134,16 @@ calculateDunedinPACE <- function(bVals) {
 
 calculateGrimAge <- function(bVals, pdataSVs) {
     grimDf <- data.frame(Sample = colnames(bVals), Age = pdataSVs$Age,
-        Sex = pdataSVs$Sex)
-    grimDf$Sex <- sapply(grimDf$Sex, function(sex) {
-        if (sex == "M" | sex == 1) return("Male")
-        if (sex == "F" | sex == 2) return("Female")
-        return(sex)
-    })
+        Sex = as.character(pdataSVs$Sex))
+    for (i in seq(from = 1, to = length(grimDf$Sex))) {
+        if (grimDf$Sex[i] == "M" | grimDf$Sex[i] == 1) {
+            grimDf$Sex[i] <- "Male"
+        } else if (grimDf$Sex[i] == "F" | grimDf$Sex[i] == 2) {
+            grimDf$Sex[i] <- "Female"
+        }
+    }
+    grimDf$Sex <- as.factor(grimDf$Sex)
     clockname <- "PCGrimAge"
-    print(grimDf)
     grimage <- methyAge(betas = bVals, clock = clockname, age_info = grimDf,
                 do_plot = FALSE)
     return(grimage$Age_Acceleration)
@@ -199,12 +201,8 @@ processAllAgeTypes <- function(results) {
 # Definition for function used for generating the grouped bar chart
 createGroupedBarChart <- function(data, x, y, fill, title) {
     melted_df <- reshape2::melt(data, id.vars = x, variable.name = fill)
-    custom_palette <- c(
-        "age" = "red",
-        "horvath" = "#66c2a5",
-        "skinhorvath" = "#3288bd",
-        "hannum" = "#5e4fa2",
-        "levine" = "#3288dd"
+    custom_palette <- c( "age" = "red", "horvath" = "#66c2a5",
+        "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine" = "#3288dd"
     )
     plot <- ggplot2::ggplot(
         data = melted_df,
@@ -225,12 +223,8 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
                 ggplot2::element_rect(fill = "white")
         )
 
-    ggplot2::ggsave("SampleIDandAge.png",
-                    plot = plot,
-                    width = 10000,
-                    height = 1000,
-                    units = "px",
-                    dpi = 300
+    ggplot2::ggsave("SampleIDandAge.png", plot = plot, width = 10000,
+                    height = 1000, units = "px", dpi = 300
     )
 
     for (i in 2:(ncol(data) - 1))
@@ -414,6 +408,11 @@ processAgeType <- function(data, ageType, output) {
     if ("V1" %in% names(pdataSVs)) {
         .GlobalEnv$pdataSVs$V1 <- NULL
     }
+    for (i in colnames(.GlobalEnv$pdataSVs)) {
+        if (length(unique(.GlobalEnv$pdataSVs[[i]])) == 1) {
+            .GlobalEnv$pdataSVs[[i]] <- NULL
+        }
+    }
     diag.labels <- colnames(pdataSVs)
     pdataColumns <- names(pdataSVs)[names(pdataSVs) != ageType]
     plot.formula <- as.formula(paste(
@@ -468,6 +467,12 @@ createAnalysisDF <- function(directory) {
             } else {
                 .GlobalEnv$pdataSVs[[newVarName]] <- as.factor(sampleData[[i]])
             }
+        }
+    }
+    for (i in colnames(.GlobalEnv$pdataSVs)) {
+        if (length(unique(.GlobalEnv$pdataSVs[[i]])) == 1) {
+            message("Covariate with only 1 unique level detected,
+                    consider excluding")
         }
     }
 }
@@ -532,22 +537,12 @@ corCovariates <- function(x) {
                     covariate1 <- rownames(corDf)[j + 1]
                     covariate2 <- colnames(corDf)[i]
                     x <- paste(
-                        x,
-                        "\n",
-                        covariate1,
-                        " and ",
-                        covariate2,
-                        " are highly correlated: ",
-                        corDf[j + 1, i],
-                        "\n"
+                        x, "\n", covariate1, " and ", covariate2,
+                        " are highly correlated: ", corDf[j + 1, i], "\n"
                     )
                     message("\n")
-                    message(
-                        covariate1,
-                        " and ",
-                        covariate2,
-                        " are highly correlated: ",
-                        corDf[j + 1, i]
+                    message( covariate1, " and ", covariate2,
+                        " are highly correlated: ", corDf[j + 1, i]
                     )
                     message("\n")
                     if (!(covariate1 %in% corsToRemove)) {
@@ -692,7 +687,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     ))
     rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
     createAnalysisDF(directory)
-    .GlobalEnv$pdataSVs <- cbind(pdataSVs, pca_scores[, 1:5])
+    .GlobalEnv$pdataSVs <- cbind(pdataSVs, pca_scores[, seq(from = 1, to = 5)])
     if (!"EpiAge" %in% colnames(.GlobalEnv$pdataSVs)) {
         warning(
             "You did not specify a column called EpiAge@@@1 in your",
