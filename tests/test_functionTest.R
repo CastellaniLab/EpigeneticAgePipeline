@@ -10,7 +10,6 @@ test_that("Testing IDAT file processing", {
             normalize = TRUE,
             useBeta = FALSE,
             arrayType = "450K",
-            generateResiduals = FALSE,
             useSampleSheet = FALSE
         )
 
@@ -29,7 +28,6 @@ test_that("Testing betaValues file processing", {
             normalize = TRUE,
             useBeta = TRUE,
             arrayType = "450K",
-            generateResiduals = FALSE,
             useSampleSheet = FALSE
         )
 

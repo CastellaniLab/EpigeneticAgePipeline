@@ -144,10 +144,10 @@ graph TD
     B{"Is 'Column' NOT available but 'Row', 'Slide', and 'Batch' available?"}
     C{"Is 'Slide' NOT available but 'Row', 'Column', and 'Batch' available?"}
     D{"Are 'Row', 'Column', 'Slide', and 'Batch' all available?"}
-    E["formula_string = 'EpiAge ~ string + (Row|Slide) + (1|Batch)'"]
-    F["formula_string = 'EpiAge ~ string + (Row&Column) + (1|Batch)'"]
-    G["formula_string = 'EpiAge ~ string + (1|Slide) + (Row+Column|Slide) + (1|Batch)'"]
-    H["formula_string = 'EpiAge ~ string'"]
+    E["formula_string = 'EpiAge ~ Xi + (Row|Slide) + (1|Batch)'"]
+    F["formula_string = 'EpiAge ~ Xi + (Row&Column) + (1|Batch)'"]
+    G["formula_string = 'EpiAge ~ Xi + (1|Slide) + (Row+Column|Slide) + (1|Batch)'"]
+    H["formula_string = 'EpiAge ~ Xi'"]
     I["End"]
 
     A --> B
