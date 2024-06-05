@@ -166,24 +166,6 @@ graph TD
 
 Once the formula is constructed, the linear model is generated using the Gaussian method. The function glmmTMB from the glmmTMB package is used to fit the model. The maximum number of iterations and evaluations for the optimizer are set to 10000 to ensure convergence. The user can specify to remove highly correlated explanatory variables (greater than 0.6) during runtime.
 
-### Output
-
-**output.txt:**  
-A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
-
-**matrixplot{Clockname}.pdf:**  
-A set of .pdf files illustrating a the correaltions between a specific epigenetic age estimate and covariates.
-
-**epigeneticAge.txt:**  
-A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing into a spreadsheet program than output.txt.
-
-**plot{Clockname}.pdf:**  
-A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
-
-**SampleIDandAge.png:**  
-A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
-smaller sample sizes.
-
 ## Usage Guidelines 
 ### Using the main Function
 ```
@@ -206,7 +188,25 @@ Logical. If TRUE, will expect a betaValues.csv file containing beta values (scal
 Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 
 **useSampleSheet** argument:  
-Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.  
+Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
+
+#### Output  
+
+**output.txt:**  
+A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
+
+**matrixplot{Clockname}.pdf:**  
+A set of .pdf files illustrating a the correaltions between a specific epigenetic age estimate and covariates.
+
+**epigeneticAge.txt:**  
+A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing into a spreadsheet program than output.txt.
+
+**plot{Clockname}.pdf:**  
+A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
+
+**SampleIDandAge.png:**  
+A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
+smaller sample sizes.
 
 ### Using the generateResiduals function
 ```
@@ -222,6 +222,14 @@ Logical. If TRUE, will expect a betaValues.csv file containing beta values (scal
 
 **arrayType** argument:  
 Type of DNA methylation array used (options: "27K", "450K", or "EPIC").  
+
+#### Output  
+
+**Residuals.csv:**  
+A .csv file containing residuals from the linear model.
+
+**ResidualsAcceleartion.csv:**  
+A .csv file containing age acceleration residuals from the linear model.
 
 ### Description of Client-Side Input Files
 **Sample_Sheet.csv**  
