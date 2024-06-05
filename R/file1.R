@@ -46,6 +46,7 @@ main <- function(directory = getwd(),
     exportResults(results, .GlobalEnv$bVals, finalOutput)
 }
 
+#Function for loading tools and setting variables
 startup <- function() {
     installDirectory <- paste0(
         path.package("EpigeneticAgePipeline"),
@@ -66,6 +67,7 @@ startup <- function() {
     load(paste0(installDirectory, "golden_ref.rda"), envir = .GlobalEnv)
 }
 
+#Getting beta values from .csv file
 getBetaValues <- function() {
     if (typeof(.GlobalEnv$bVals) != "list") {
         .GlobalEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
@@ -73,6 +75,7 @@ getBetaValues <- function() {
     return(.GlobalEnv$bVals)
 }
 
+#Function for getting cell counts
 estimateCellCounts <- function(rgSet) {
     FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
     CC <- minfi::estimateCellCounts(
@@ -85,6 +88,7 @@ estimateCellCounts <- function(rgSet) {
     return(CC)
 }
 
+#Creating pdataSVs dataframe
 preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
     .GlobalEnv$pdataSVs <- data.frame(row.names = colnames(bVals))
     if (useSampleSheet) {
@@ -98,6 +102,7 @@ preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
     }
 }
 
+#Adding cell counts to pdataSVs
 addCellCountsToPdataSVs <- function(CC) {
     cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
     for (cellType in cellTypes) {
@@ -105,23 +110,15 @@ addCellCountsToPdataSVs <- function(CC) {
     }
 }
 
-calculateDNAmAge <- function(bVals, pdataSVs, normalize) {
+#Calculating epigenetic age
+calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
     results <- NULL
     betaValues <- as.matrix(bVals)
     if ("Age" %in% colnames(pdataSVs)) {
-        results <- if (normalize) {
-            methylclock::DNAmAge(betaValues, normalize = TRUE,
-                age = pdataSVs$Age)
-        } else {
-            methylclock::DNAmAge(betaValues, normalize = FALSE,
-                age = pdataSVs$Age)
-        }
+        results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize,
+                                        age = pdataSVs$Age)
     } else {
-        results <- if (normalize) {
-            methylclock::DNAmAge(betaValues, normalize = TRUE)
-        } else {
-            methylclock::DNAmAge(betaValues, normalize = FALSE)
-        }
+        results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize)
     }
     return(results)
 }
@@ -431,6 +428,7 @@ processAgeType <- function(data, ageType, output) {
     return(finalOutput)
 }
 
+# Definition for function used for generating the correlation matrices
 generateMatrixPlot <- function(plotFormula, diagLabels, ageType) {
     grDevices::cairo_pdf(paste("matrixplot", ageType, ".pdf", sep = ""),
             width = 14, height = 14, fallback_resolution = 1000)
@@ -440,7 +438,7 @@ generateMatrixPlot <- function(plotFormula, diagLabels, ageType) {
     grDevices::dev.off()
 }
 
-# Definition of function for creating the df used for analyses
+# Definition for function for creating the df used for analyses
 createAnalysisDF <- function(directory) {
     setwd(directory)
     sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
@@ -512,7 +510,7 @@ removeCovariates <- function() {
     }
 }
 
-# Definition of function used to find highly correlated covariates
+# Definition for function used to find highly correlated covariates
 corCovariates <- function(x) {
     corDf <- pdataSVs
     corDf <- corDf[seq.default(from = 1, to = (ncol(pdataSVs))), ]
@@ -633,6 +631,7 @@ residGeneration <- function(pdata) {
     return(resids)
 }
 
+# Definition for function specifically used for generating pca's
 pcaGeneration <- function() {
     bVals <- na.omit(bVals)
     bValst <- t(bVals)

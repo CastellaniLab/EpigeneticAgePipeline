@@ -6,7 +6,7 @@ Authors@R: person("Stanislav",
     "Rayevskiy", 
     email = "srayevsk@uwo.ca", 
     role = c("aut", "cre"),
-    comment = c(ORCID="0000-0000-0000-0000"))
+    comment = c(ORCID="0009-0005-2942-5939"))
 biocViews: DNAMethylation, Epigenetics, MethylationArray, Normalization, 
     PrincipalComponent
 Description: EpigeneticAgePipeline is a comprehensive package designed 
