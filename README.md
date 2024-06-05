@@ -141,26 +141,22 @@ Based on the available data variables, the function dynamically constructs the f
 ```mermaid
 graph TD
     A["Start"]
-    B{"Is 'Column' NOT available but 'Row', 'Slide', and 'Batch' available?"}
-    C{"Is 'Slide' NOT available but 'Row', 'Column', and 'Batch' available?"}
-    D{"Are 'Row', 'Column', 'Slide', and 'Batch' all available?"}
-    E["formula_string = 'EpiAge ~ Xi + (Row|Slide) + (1|Batch)'"]
-    F["formula_string = 'EpiAge ~ Xi + (Row&Column) + (1|Batch)'"]
-    G["formula_string = 'EpiAge ~ Xi + (1|Slide) + (Row+Column|Slide) + (1|Batch)'"]
-    H["formula_string = 'EpiAge ~ Xi'"]
-    I["End"]
+    B{"Available Variables"}
+    C["formula_string = 'EpiAge ~ Xi + (Row|Slide) + (1|Batch)'"]
+    D["formula_string = 'EpiAge ~ Xi + (Row&Column) + (1|Batch)'"]
+    E["formula_string = 'EpiAge ~ Xi + (1|Slide) + (Row+Column|Slide) + (1|Batch)'"]
+    F["formula_string = 'EpiAge ~ Xi'"]
+    G["End"]
 
     A --> B
-    B -->|Yes| E
-    B -->|No| C
-    C -->|Yes| F
-    C -->|No| D
-    D -->|Yes| G
-    D -->|No| H
-    E --> I
-    F --> I
-    G --> I
-    H --> I
+    B -->|Not 'Column', Yes 'Row', 'Slide', 'Batch'| C
+    B -->|Not 'Slide', Yes 'Row', 'Column', 'Batch'| D
+    B -->|Yes 'Row', 'Column', 'Slide', 'Batch'| E
+    B -->|Else| F
+    C --> G
+    D --> G
+    E --> G
+    F --> G
 ```
 
 *Note: In these formulae, `Xi` represents the independent variables.*
