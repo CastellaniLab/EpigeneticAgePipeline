@@ -56,7 +56,7 @@ startup <- function() {
         base::assign("bVals", 0, envir = .GlobalEnv)
     }
     base::assign("rgSet", 0, envir = .GlobalEnv)
-    base::assign("listofCors", list(), envir = .GlobalEnv)
+    base::assign("listofCors", c(), envir = .GlobalEnv)
     base::assign("corsToRemove", c(), envir = .GlobalEnv)
     base::assign("pdataSVs", 0, envir = .GlobalEnv)
     base::assign("exportDf", 0, envir = .GlobalEnv)
@@ -188,11 +188,13 @@ processAllAgeTypes <- function(results) {
     ageTypes <- c("Horvath", "skinHorvath", "Hannum", "Levine", "DunedinPACE")
     for (ageType in ageTypes) {
         finalOutput <- processAgeType(results, ageType, finalOutput)
+        print(finalOutput)
         .GlobalEnv$pdataSVs[[ageType]] <- NULL
     }
     if ("Age" %in% colnames(.GlobalEnv$pdataSVs) &&
        "Sex" %in% colnames(.GlobalEnv$pdataSVs)) {
         finalOutput <- processAgeType(results, "GrimAge", finalOutput)
+        print(finalOutput)
         .GlobalEnv$pdataSVs$GrimAge <- NULL
     }
     return(finalOutput)
@@ -375,10 +377,7 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...) {
     on.exit(par(usr = usr))
     par(usr = c(0, 1, 0, 1))
     r <- abs(cor(x, y, use = "complete.obs"))
-    var1 <- deparse(substitute(x))
-    var2 <- deparse(substitute(y))
-    pair <- paste(var1, var2, sep = "_")
-    .GlobalEnv$listofCors[[pair]] <- r
+    .GlobalEnv$listofCors <- append(listofCors, r)
     txt <- format(c(r, 0.123456789), digits = digits)[1]
     txt <- paste0(prefix, txt)
     if (missing(cex.cor)) cex.cor <- 0.8 / strwidth(txt)
@@ -426,7 +425,7 @@ processAgeType <- function(data, ageType, output) {
     finalOutput <- corCovariates(finalOutput)
     covariate_data <- .GlobalEnv$pdataSVs
     if (ageType != "EpiAge") {
-        .GlobalEnv$listofCors <- list()
+        .GlobalEnv$listofCors <- c()
         .GlobalEnv$corsToRemove <- c()
     }
     return(finalOutput)
@@ -519,17 +518,18 @@ corCovariates <- function(x) {
     corDf <- corDf[seq.default(from = 1, to = (ncol(pdataSVs))), ]
     row.names(corDf) <- colnames(corDf)
     corDf[, ] <- 0
-    for (i in seq.default(from = 1, to = (ncol(corDf)))) {
-        for (j in seq.default(from = i, to = (ncol(corDf)) - 1)) {
-            var1 <- rownames(corDf)[j + 1]
-            var2 <- colnames(corDf)[i]
-            pair <- paste(var1, var2, sep = "_")
-            if (pair %in% names(.GlobalEnv$listofCors)) {
-                corDf[j + 1, i] <- .GlobalEnv$listofCors[[pair]]
-            }
+    counter <- 1
+    for (i in seq.default(from = 1, to = (ncol(corDf))))
+    {
+        for (j in seq.default(from = i, to = (ncol(corDf)) - 1))
+        {
+            corDf[j + 1, i] <- listofCors[counter]
+            counter <- counter + 1
         }
     }
     corDf <- corDf[-nrow(corDf), ]
+    print(.GlobalEnv$listofCors)
+    print(corDf)
     for (i in seq.default(from = 1, to = (ncol(corDf)))) {
         for (j in seq.default(from = i, to = (ncol(corDf)) - 1)) {
             if (!is.na(corDf[j + 1, i])) {
