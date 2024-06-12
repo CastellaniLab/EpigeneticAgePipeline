@@ -13,35 +13,23 @@ editor_options:
 
 # Introduction
 
-Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed
-for the comprehensive processing and analysis of DNA methylation data.
-The purpose of this vigentte is to showcase usage of the
-**generateResiduals()** function.
+Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the comprehensive processing and analysis of DNA methylation data. The purpose of this vigentte is to showcase usage of the **generateResiduals()** function.
 
 ## Key Features
 
 ### Residual Generation and Principal Component Analysis
 
--   **Generates residuals using linear models** with varying
-    complexities based on provided variables like "Row," "Column,"
-    "Slide," and "Batch."
-    -   Offers flexibility with **multiple combinations of random
-        effects**, adjusting the model construction accordingly.
--   Performs principal component analysis on sample methylation data to
-    select outlier samples.
+-   **Generates residuals using linear models** with varying complexities based on provided variables like "Row," "Column," "Slide," and "Batch."
+    -   Offers flexibility with **multiple combinations of random effects**, adjusting the model construction accordingly.
+-   Performs principal component analysis on sample methylation data to select outlier samples.
 
 # Installation
 
-To install the EpigeneticAgePipeline, which will include the data used
-in the upcoming example:
+To install the EpigeneticAgePipeline, which will include the data used in the upcoming example:
 
 ``` r
-
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-
-BiocManager::install()
-
 packages_to_install <- c(
     "minfi",
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
@@ -52,24 +40,28 @@ packages_to_install <- c(
     "IlluminaHumanMethylation450kmanifest",
     "IlluminaHumanMethylation450kanno.ilmn12.hg19",
     "IlluminaHumanMethylation27kmanifest",
-    "IlluminaHumanMethylation27kanno.ilmn12.hg19"
+    "IlluminaHumanMethylation27kanno.ilmn12.hg19",
+    "AnnotationHub",
+    "AnnotationHubData",
+    "base64",
+    "beanplot",
+    "ggplot2",
+    "dplyr",
+    "tidyr",
+    "annotate",
+    "magick",
+    "pdftools"
 )
-
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
     }
 }
-
-#BiocManager::install("EpigeneticAgePipeline")
+if (!requireNamespace("S4Vectors", quietly = TRUE)) {
+    BiocManager::install("S4Vectors", force = TRUE)
+}
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 library(EpigeneticAgePipeline)
-```
-
-Then run the following code:
-
-``` r
-options(timeout = 120)
 downloadDirectory <- "EpigeneticAgePipelineDataset-main"
 downloadURL <- paste0("https://github.com/StanRaye/",
                         "EpigeneticAgePipelineDataset",
@@ -79,44 +71,47 @@ setwd(installDirectory)
 utils::download.file(url = downloadURL, destfile = "asdf.zip")
 utils::unzip("asdf.zip", exdir = installDirectory)
 extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
-                            full.names = TRUE)
+                                    full.names = TRUE)
 file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
             recursive = TRUE)
 ```
 
-# Example
+# Example of Running generateResiduals()
 
-The following code will generate a set of residual data, as well as
-perform principle component analysis to determine outlier samples.
+## 1. Setup
+
+Load the package and identify the directory where methylation and covariate data is stored.
 
 ```{R}
 library("EpigeneticAgePipeline")
-```
-
-```{R}
 myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
 ```
 
+## 2. Data Source
+
 ```{R}
-message("The beta values used in this example were obtained from:\n")
+message("The data used in this example was obtained from:\n")
 message("https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646\n\n")
+```
 
-library(EpigeneticAgePipeline)
-directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+## 3. Example .csv File Containing Covariate Data
 
-if (file.exists(paste0(directory, "betaValues.csv")))
-{
-    EpigeneticAgePipeline::generateResiduals(
-        directory = directory,
+```{R}
+knitr::kable(read.csv(paste0(myDirectory, "Sample_Sheet.csv")))
+```
+
+## 4. Run Analysis
+
+```{R}
+if (file.exists(paste0(myDirectory, "betaValues.csv"))) {
+    generateResiduals(
+        directory = myDirectory,
         useBeta = TRUE,
         arrayType = "450K"
-    )
-    message("Outliers")
-    knitr::kable(outliersCSV)
+    )  
     message("Residuals")
-    knitr::kable(residualsCSV)
+    knitr::kable(read.csv("Residuals.csv"))
 }
-
 ```
 
 ```{R echo=FALSE}

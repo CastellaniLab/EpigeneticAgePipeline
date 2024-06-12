@@ -28,26 +28,20 @@ packages_to_install <- c(
   "ggplot2",
   "dplyr",
   "tidyr",
-  "annotate"
+  "annotate",
+  "magick",
+  "pdftools"
 )
-
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
     }
 }
-
 if (!requireNamespace("S4Vectors", quietly = TRUE)) {
 	BiocManager::install("S4Vectors", force = TRUE)
 }
-
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 library(EpigeneticAgePipeline)
-```
-
-2. Run this code separately from the code above.
-
-```
 downloadDirectory <- "EpigeneticAgePipelineDataset-main"
 downloadURL <- paste0("https://github.com/StanRaye/",
                         "EpigeneticAgePipelineDataset",

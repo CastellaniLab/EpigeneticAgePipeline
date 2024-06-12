@@ -10,11 +10,11 @@ main <- function(directory = getwd(),
                  useBeta = FALSE,
                  arrayType = "450K",
                  useSampleSheet = TRUE) {
+    baseDirectory <- getwd()
     setwd(directory)
     startup()
-
     if (useBeta) {
-        bVals <- getBetaValues()
+        .GlobalEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
     } else {
         processIDAT(directory, useSampleSheet, arrayType)
     }
@@ -22,16 +22,14 @@ main <- function(directory = getwd(),
     if (!is.numeric(.GlobalEnv$rgSet) & arrayType != "27K") {
         CC <- estimateCellCounts(.GlobalEnv$rgSet)
     }
-
-    write.csv(.GlobalEnv$bVals, file = "extractedBetaValues.csv")
-
+    if (useBeta == FALSE) {
+        write.csv(.GlobalEnv$bVals, file = "extractedBetaValues.csv")
+    }
     preparePdataSVs(.GlobalEnv$bVals, useSampleSheet, CC, arrayType)
-
     results <- calculateDNAmAge(.GlobalEnv$bVals, .GlobalEnv$pdataSVs,
-                                                                    normalize)
+                                normalize)
     clockname <- "DunedinPACE"
     results$DunedinPACE <- calculateDunedinPACE(.GlobalEnv$bVals)
-
     results$GrimAge <- if ("Age" %in% colnames(.GlobalEnv$pdataSVs) &&
                             "Sex" %in% colnames(.GlobalEnv$pdataSVs)) {
         calculateGrimAge(.GlobalEnv$bVals, .GlobalEnv$pdataSVs)
@@ -42,20 +40,18 @@ main <- function(directory = getwd(),
     if (useSampleSheet | useBeta == FALSE) {
         finalOutput <- processAllAgeTypes(results)
     }
-
     exportResults(results, .GlobalEnv$bVals, finalOutput)
+    setwd(baseDirectory)
 }
 
-#Function for loading tools and setting variables
+# Function for loading tools and setting variables
 startup <- function() {
     installDirectory <- paste0(
         path.package("EpigeneticAgePipeline"),
         "/extdata/"
     )
     devtools::load_all(paste0(installDirectory, "dnaMethyAge-main"))
-    if (!exists("bVals")) {
-        base::assign("bVals", 0, envir = .GlobalEnv)
-    }
+    base::assign("bVals", 0, envir = .GlobalEnv)
     base::assign("rgSet", 0, envir = .GlobalEnv)
     base::assign("listofCors", c(), envir = .GlobalEnv)
     base::assign("corsToRemove", c(), envir = .GlobalEnv)
@@ -67,15 +63,7 @@ startup <- function() {
     load(paste0(installDirectory, "golden_ref.rda"), envir = .GlobalEnv)
 }
 
-#Getting beta values from .csv file
-getBetaValues <- function() {
-    if (typeof(.GlobalEnv$bVals) != "list") {
-        .GlobalEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
-    }
-    return(.GlobalEnv$bVals)
-}
-
-#Function for getting cell counts
+# Function for getting cell counts
 estimateCellCounts <- function(rgSet) {
     FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
     CC <- minfi::estimateCellCounts(
@@ -88,7 +76,7 @@ estimateCellCounts <- function(rgSet) {
     return(CC)
 }
 
-#Creating pdataSVs dataframe
+# Creating pdataSVs dataframe
 preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
     .GlobalEnv$pdataSVs <- data.frame(row.names = colnames(bVals))
     if (useSampleSheet) {
@@ -102,7 +90,7 @@ preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
     }
 }
 
-#Adding cell counts to pdataSVs
+# Adding cell counts to pdataSVs
 addCellCountsToPdataSVs <- function(CC) {
     cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
     for (cellType in cellTypes) {
@@ -110,7 +98,7 @@ addCellCountsToPdataSVs <- function(CC) {
     }
 }
 
-#Calculating epigenetic age
+# Calculating epigenetic age
 calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
     results <- NULL
     betaValues <- as.matrix(bVals)
@@ -123,12 +111,14 @@ calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
     return(results)
 }
 
+# Calculating dunedinPACE
 calculateDunedinPACE <- function(bVals) {
     clockname <- "DunedinPACE"
     dunedinPACEDf <- methyAge(betas = bVals, clock = clockname, do_plot = FALSE)
     return(as.data.frame(dunedinPACEDf)[, 2])
 }
 
+# Calculating GrimAge
 calculateGrimAge <- function(bVals, pdataSVs) {
     grimDf <- data.frame(Sample = colnames(bVals), Age = pdataSVs$Age,
         Sex = as.character(pdataSVs$Sex))
@@ -146,6 +136,7 @@ calculateGrimAge <- function(bVals, pdataSVs) {
     return(grimage$Age_Acceleration)
 }
 
+# Exporting results
 exportResults <- function(results, bVals, finalOutput) {
     if ("Age" %in% colnames(.GlobalEnv$pdataSVs)) {
         plotDf <- preparePlotDf(results, .GlobalEnv$pdataSVs)
@@ -160,6 +151,7 @@ exportResults <- function(results, bVals, finalOutput) {
     writeResults(finalOutput, .GlobalEnv$exportDf, results)
 }
 
+# Making data frame for plotting
 preparePlotDf <- function(results, pdataSVs) {
     data.frame(
         sample = colnames(.GlobalEnv$bVals),
@@ -171,6 +163,7 @@ preparePlotDf <- function(results, pdataSVs) {
     )
 }
 
+# Writing out results
 writeResults <- function(finalOutput, exportDf, results) {
     formattedResults <- knitr::kable(results[,c("id", "Horvath", "skinHorvath",
         "Hannum", "Levine", "DunedinPACE", "GrimAge")], format = "markdown")
@@ -180,18 +173,17 @@ writeResults <- function(finalOutput, exportDf, results) {
     write(formattedResults, file = "results.md")
 }
 
+# Definition for initiation function for process age type
 processAllAgeTypes <- function(results) {
     finalOutput <- ""
     ageTypes <- c("Horvath", "skinHorvath", "Hannum", "Levine", "DunedinPACE")
     for (ageType in ageTypes) {
         finalOutput <- processAgeType(results, ageType, finalOutput)
-        print(finalOutput)
         .GlobalEnv$pdataSVs[[ageType]] <- NULL
     }
     if ("Age" %in% colnames(.GlobalEnv$pdataSVs) &&
        "Sex" %in% colnames(.GlobalEnv$pdataSVs)) {
         finalOutput <- processAgeType(results, "GrimAge", finalOutput)
-        print(finalOutput)
         .GlobalEnv$pdataSVs$GrimAge <- NULL
     }
     return(finalOutput)
@@ -250,17 +242,12 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         "/extdata/"
     )
     dataDirectory <- directory
-
     rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
-
     #    Calculate    the    detection    p-values
     detP <- minfi::detectionP(rgSet)
-
     samples_before <- dim(rgSet)[2]
-
     keep <- colMeans(detP) < 0.05
     rgSet <- rgSet[, keep]
-
     samples_removed <- samples_before - dim(detP)[2]
     message(
         "-----    ",
@@ -269,19 +256,13 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     )
 
     mSetSq <- rgSet
-
     mSetSq <- minfi::preprocessRaw(mSetSq)
-
     mSetSq <- minfi::mapToGenome(mSetSq)
-
     mSetSq <- minfi::ratioConvert(mSetSq)
-
     detP <- detP[match(minfi::featureNames(mSetSq), rownames(detP)), ]
-
     probes_before <- dim(mSetSq)[1]
     keep <- rowSums(detP < 0.01) == ncol(mSetSq)
     mSetSqFlt <- mSetSq[keep, ]
-
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message(
         "-----    ",
@@ -290,10 +271,8 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         "one or more samples"
     )
     probes_before <- dim(mSetSqFlt)[1]
-
     #    Remove    probes    with    SNPs    at    CpG    site
     mSetSqFlt <- minfi::dropLociWithSnps(mSetSqFlt)
-
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message(
         "-----    ",
@@ -302,25 +281,20 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         "for having SNPs at CpG site"
     )
     probes_before <- dim(mSetSqFlt)[1]
-
     #    Exclude    cross    reactive    probes
     if (arrayType == "450K") {
         xReactiveProbes <- read.csv(file = paste(installDirectory,
-            "ChenEtAlList.csv",
-            sep = ""
+            "ChenEtAlList.csv", sep = ""
         ))
     } else if (arrayType == "27K") {
         xReactiveProbes <- read.csv(file = paste(installDirectory,
-            "non-specific-probes-Illumina27k.csv",
-            sep = ""
+            "non-specific-probes-Illumina27k.csv", sep = ""
         ))
     } else {
         xReactiveProbes <- read.csv(file = paste(installDirectory,
-            "PidsleyCrossReactiveProbesEPIC.csv",
-            sep = ""
+            "PidsleyCrossReactiveProbesEPIC.csv", sep = ""
         ))
     }
-
     keep <-
         !(minfi::featureNames(mSetSqFlt)
         %in% xReactiveProbes$TargetID)
@@ -328,12 +302,10 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
 
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message(
-        "-----    ",
-        probes_removed,
+        "-----    ", probes_removed,
         " probe(s) removed for being cross reactive"
     )
     probes_before <- dim(mSetSqFlt)[1]
-
     #    Remove    Sex    Probes
     if (arrayType == "EPIC") {
         ann <- IlluminaHumanMethylationEPICanno.ilm10b4.hg19::Manifest
@@ -342,30 +314,23 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     } else {
         ann <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Manifest
     }
-
     sexProbes <- ann[which(ann$chr %in% c("chrX", "chrY")), ]
     keep <- !(minfi::featureNames(mSetSqFlt) %in% sexProbes$Name)
     mSetSqFlt <- mSetSqFlt[keep, ]
-
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
-    message(
-        "-----    ",
-        probes_removed,
-        " probe(s)  removed",
-        "for  being  on  sex  chromosomes"
+    message("-----    ",
+        probes_removed, " probe(s)  removed", "for  being  on  sex  chromosomes"
     )
-
     #    Print    out    the    number    of    probes    remaining
     message(
         "-----    ",
         dim(mSetSqFlt)[1],
         " probe(s) remaining for analysis"
     )
-
     #    Calculate    methylation    beta    values
     .GlobalEnv$rgSet <- rgSet
     .GlobalEnv$bVals <- minfi::getBeta(mSetSqFlt)
-    .GlobalEnv$bVals <- bVals[,order(colnames(bVals))]
+    .GlobalEnv$bVals <- .GlobalEnv$bVals[,order(colnames(.GlobalEnv$bVals))]
 }
 
 # Definition for function used in matrix generation
@@ -401,7 +366,7 @@ processAgeType <- function(data, ageType, output) {
         ageType,
         colnames[colnames != ageType]
     )]
-    if ("V1" %in% names(pdataSVs)) {
+    if ("V1" %in% names(.GlobalEnv$pdataSVs)) {
         .GlobalEnv$pdataSVs$V1 <- NULL
     }
     for (i in colnames(.GlobalEnv$pdataSVs)) {
@@ -410,7 +375,8 @@ processAgeType <- function(data, ageType, output) {
         }
     }
     diag.labels <- colnames(pdataSVs)
-    pdataColumns <- names(pdataSVs)[names(pdataSVs) != ageType]
+    pdataColumns <-
+        names(.GlobalEnv$pdataSVs)[names(.GlobalEnv$pdataSVs) != ageType]
     plot.formula <- as.formula(paste(
         ageType, "~",
         paste(pdataColumns,
@@ -467,9 +433,9 @@ createAnalysisDF <- function(directory) {
         }
     }
     for (i in colnames(.GlobalEnv$pdataSVs)) {
-        if (length(unique(.GlobalEnv$pdataSVs[[i]])) == 1) {
-            message("Covariate with only 1 unique level detected,
-                    consider excluding")
+        if (length(unique(.GlobalEnv$pdataSVs[[i]])) == 1 & i != "V1") {
+            message("\nCovariate with only 1 unique level detected,",
+                    "consider excluding\n")
         }
     }
 }
@@ -512,8 +478,8 @@ removeCovariates <- function() {
 
 # Definition for function used to find highly correlated covariates
 corCovariates <- function(x) {
-    corDf <- pdataSVs
-    corDf <- corDf[seq.default(from = 1, to = (ncol(pdataSVs))), ]
+    corDf <- .GlobalEnv$pdataSVs
+    corDf <- corDf[seq.default(from = 1, to = (ncol(.GlobalEnv$pdataSVs))), ]
     row.names(corDf) <- colnames(corDf)
     corDf[, ] <- 0
     counter <- 1
@@ -526,8 +492,6 @@ corCovariates <- function(x) {
         }
     }
     corDf <- corDf[-nrow(corDf), ]
-    print(.GlobalEnv$listofCors)
-    print(corDf)
     for (i in seq.default(from = 1, to = (ncol(corDf)))) {
         for (j in seq.default(from = i, to = (ncol(corDf)) - 1)) {
             if (!is.na(corDf[j + 1, i])) {
@@ -562,6 +526,7 @@ corCovariates <- function(x) {
     return(x)
 }
 
+# Generating regression formula
 formulaGeneration <- function(string, columnsUsed) {
     formula_string <- ""
     if (!("Column" %in% columnsUsed) && "Row" %in% columnsUsed && "Slide"
@@ -633,8 +598,8 @@ residGeneration <- function(pdata) {
 
 # Definition for function specifically used for generating pca's
 pcaGeneration <- function() {
-    bVals <- na.omit(bVals)
-    bValst <- t(bVals)
+    .GlobalEnv$bVals <- na.omit(.GlobalEnv$bVals)
+    bValst <- t(.GlobalEnv$bVals)
     bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
     pca_scores <- as.data.frame(bpca$x)
     constant <- 3
@@ -661,7 +626,6 @@ pcaGeneration <- function() {
         sample_outliers <- c()
     }
     .GlobalEnv$outliersCSV <- unique(alloutliers)
-    bValst <- t(bVals)
     bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
     pca_scores <- as.data.frame(bpca$x)
     return(pca_scores)
@@ -670,23 +634,25 @@ pcaGeneration <- function() {
 # Residual and PCA Generation function
 generateResiduals <- function(directory = getwd(), useBeta = FALSE,
                             arrayType = "450K") {
+    baseDirectory <- getwd()
+    setwd(directory)
     startup()
     if (useBeta == TRUE) {
-        if (typeof(bVals) != "list") {
-            bVals <- read.csv("betaValues.csv", row.names = 1)
-        }
+        .GlobalEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
     } else {
         processIDAT(directory, useSampleSheet = TRUE, arrayType)
     }
     pca_scores <- pcaGeneration()
+    print(pca_scores)
     # Processing and Writing Residuals ####
     .GlobalEnv$pdataSVs <- as.data.frame(matrix(NA,
-        nrow = ncol(bVals),
+        nrow = ncol(.GlobalEnv$bVals),
         ncol = 1
     ))
-    rownames(.GlobalEnv$pdataSVs) <- colnames(bVals)
+    rownames(.GlobalEnv$pdataSVs) <- colnames(.GlobalEnv$bVals)
     createAnalysisDF(directory)
-    .GlobalEnv$pdataSVs <- cbind(pdataSVs, pca_scores[, seq(from = 1, to = 5)])
+    .GlobalEnv$pdataSVs <-
+        cbind(.GlobalEnv$pdataSVs, pca_scores[, seq(from = 1, to = 5)])
     if (!"EpiAge" %in% colnames(.GlobalEnv$pdataSVs)) {
         warning(
             "You did not specify a column called EpiAge@@@1 in your",
@@ -705,4 +671,5 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     write.csv(.GlobalEnv$outliersCSV, "OutlierSamples.csv")
     write.csv(.GlobalEnv$residualsCSV, "Residuals.csv")
     write.csv(accelResidualsCSV, "ResidualsAcceleration.csv")
+    setwd(baseDirectory)
 }
