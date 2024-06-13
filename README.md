@@ -30,33 +30,21 @@ packages_to_install <- c(
   "tidyr",
   "annotate",
   "magick",
-  "pdftools"
+  "pdftools",
+  "S4Vectors"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
     }
 }
-if (!requireNamespace("S4Vectors", quietly = TRUE)) {
-	BiocManager::install("S4Vectors", force = TRUE)
+if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
+        devtools::install_github("yiluyucheng/dnaMethyAge")
 }
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
-library(EpigeneticAgePipeline)
-downloadDirectory <- "EpigeneticAgePipelineDataset-main"
-downloadURL <- paste0("https://github.com/StanRaye/",
-                        "EpigeneticAgePipelineDataset",
-                        "/archive/refs/heads/main.zip")
-installDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
-setwd(installDirectory)
-utils::download.file(url = downloadURL, destfile = "asdf.zip")
-utils::unzip("asdf.zip", exdir = installDirectory)
-extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
-                                    full.names = TRUE)
-file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
-            recursive = TRUE)
 ```
 
-3. Once installed, the package is used by invoking the main function with the needed parameters.
+2. Once installed, the package is used by invoking the main function with the needed parameters.
 
 ```
 library(EpigeneticAgePipeline)

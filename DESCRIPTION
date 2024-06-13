@@ -22,17 +22,16 @@ BugReports: https://github.com/CastellaniLab/EpigeneticAgePipeline/issues
 Encoding: UTF-8
 NeedsCompilation: no
 VignetteBuilder: knitr
-Packaged: 2023-09-26 16:33:54 UTC; stanl
+Packaged: 2023-09-26 16:33:54 UTC;
 Imports:
     ggplot2,
     ggpubr,
     reshape2,
     readr,
     glmmTMB,
-    graphics,
-    stats,
-    utils,
-    devtools
+    devtools,
+    minfi, 
+    methylclock
 Suggests:
     BiocManager,
     IlluminaHumanMethylationEPICmanifest,
@@ -42,8 +41,13 @@ Suggests:
     IlluminaHumanMethylation450kanno.ilmn12.hg19,
     IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
     IlluminaHumanMethylation27kanno.ilmn12.hg19,
-    minfi,
-    methylclock,
     knitr,
-    testthat
+    AnnotationHub,
+    AnnotationHubData,
+    S4Vectors,
+    annotate,
+    methylclockData,
+    magick,
+    testthat,
+    dnaMethyAge
 RoxygenNote: 7.2.3
