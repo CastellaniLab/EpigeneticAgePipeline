@@ -84,28 +84,19 @@ https://github.com/CastellaniLab/EpigeneticAgePipeline
 \examples{
 #Example of using the main function to generate epigenetic age values from
 #IDAT files
-
-message("The beta values used in this example were obtained from:\n")
-message("https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646\n\n")
-
 library(EpigeneticAgePipeline)
-directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
-
-if (file.exists(paste0(directory, "betaValues.csv")))
-{
-    EpigeneticAgePipeline::generateResiduals(
-        directory = directory,
-        useBeta = TRUE,
-        arrayType = "450K"
-    )
-    message("Outliers")
-    knitr::kable(outliersCSV)
-    message("Residuals")
-    knitr::kable(residualsCSV)
-    message("Acceleration Residuals")
-    knitr::kable(accelResidualsCSV)
-}
-
+directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
+EpigeneticAgePipeline::generateResiduals(
+    directory = directory,
+    useBeta = TRUE,
+    arrayType = "450K",
+)
+message("Outliers")
+knitr::kable(outliersCSV)
+message("Residuals")
+knitr::kable(residualsCSV)
+message("Acceleration Residuals")
+knitr::kable(accelResidualsCSV)
 }
 
 

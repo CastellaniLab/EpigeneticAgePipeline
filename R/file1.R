@@ -48,9 +48,8 @@ main <- function(directory = getwd(),
 startup <- function() {
     installDirectory <- paste0(
         path.package("EpigeneticAgePipeline"),
-        "/extdata/"
+        "/data/"
     )
-    devtools::load_all(paste0(installDirectory, "dnaMethyAge-main"))
     base::assign("bVals", 0, envir = .GlobalEnv)
     base::assign("rgSet", 0, envir = .GlobalEnv)
     base::assign("listofCors", c(), envir = .GlobalEnv)
@@ -59,8 +58,9 @@ startup <- function() {
     base::assign("exportDf", 0, envir = .GlobalEnv)
     base::assign("outliersCSV", 0, envir = .GlobalEnv)
     base::assign("residualsCSV", 0, envir = .GlobalEnv)
-    load(paste0(installDirectory, "PC-clocks.rda"), envir = .GlobalEnv)
-    load(paste0(installDirectory, "golden_ref.rda"), envir = .GlobalEnv)
+    data("PC-clocks", package = "EpigeneticAgePipeline")
+    data("golden_ref", package = "EpigeneticAgePipeline")
+    data("DunedinPACE", package = "EpigeneticAgePipeline")
 }
 
 # Function for getting cell counts
@@ -114,7 +114,8 @@ calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
 # Calculating dunedinPACE
 calculateDunedinPACE <- function(bVals) {
     clockname <- "DunedinPACE"
-    dunedinPACEDf <- methyAge(betas = bVals, clock = clockname, do_plot = FALSE)
+    dunedinPACEDf <-
+        dnaMethyAge::methyAge(betas = bVals, clock = clockname, do_plot = FALSE)
     return(as.data.frame(dunedinPACEDf)[, 2])
 }
 
@@ -131,7 +132,9 @@ calculateGrimAge <- function(bVals, pdataSVs) {
     }
     grimDf$Sex <- as.factor(grimDf$Sex)
     clockname <- "PCGrimAge"
-    grimage <- methyAge(betas = bVals, clock = clockname, age_info = grimDf,
+    grimage <-
+        dnaMethyAge::methyAge(betas = bVals, clock = clockname,
+                age_info = grimDf,
                 do_plot = FALSE)
     return(grimage$Age_Acceleration)
 }
@@ -239,15 +242,15 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
 processIDAT <- function(directory, useSampleSheet, arrayType) {
     installDirectory <- paste0(
         path.package("EpigeneticAgePipeline"),
-        "/extdata/"
+        "/data/"
     )
     dataDirectory <- directory
-    rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
+    .GlobalEnv$rgSet <- minfi::read.metharray.exp(dataDirectory, force = TRUE)
     #    Calculate    the    detection    p-values
-    detP <- minfi::detectionP(rgSet)
-    samples_before <- dim(rgSet)[2]
+    detP <- minfi::detectionP(.GlobalEnv$rgSet)
+    samples_before <- dim(.GlobalEnv$rgSet)[2]
     keep <- colMeans(detP) < 0.05
-    rgSet <- rgSet[, keep]
+    .GlobalEnv$rgSet <- .GlobalEnv$rgSet[, keep]
     samples_removed <- samples_before - dim(detP)[2]
     message(
         "-----    ",
@@ -255,7 +258,7 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         " sample(s) removed due to poor quality"
     )
 
-    mSetSq <- rgSet
+    mSetSq <- .GlobalEnv$rgSet
     mSetSq <- minfi::preprocessRaw(mSetSq)
     mSetSq <- minfi::mapToGenome(mSetSq)
     mSetSq <- minfi::ratioConvert(mSetSq)
@@ -299,11 +302,9 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         !(minfi::featureNames(mSetSqFlt)
         %in% xReactiveProbes$TargetID)
     mSetSqFlt <- mSetSqFlt[keep, ]
-
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
-    message(
-        "-----    ", probes_removed,
-        " probe(s) removed for being cross reactive"
+    message( "-----    ", probes_removed,
+            " probe(s) removed for being cross reactive"
     )
     probes_before <- dim(mSetSqFlt)[1]
     #    Remove    Sex    Probes
@@ -328,7 +329,6 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         " probe(s) remaining for analysis"
     )
     #    Calculate    methylation    beta    values
-    .GlobalEnv$rgSet <- rgSet
     .GlobalEnv$bVals <- minfi::getBeta(mSetSqFlt)
     .GlobalEnv$bVals <- .GlobalEnv$bVals[,order(colnames(.GlobalEnv$bVals))]
 }
@@ -447,7 +447,7 @@ removeCovariates <- function() {
         return()
     }
     message(
-        "The following covariates",
+        "The following covariates ",
         "were found to be highly correlated: \n"
     )
     for (i in corsToRemove)
@@ -455,10 +455,10 @@ removeCovariates <- function() {
         message(i)
     }
     message(
-        "\nTo remove",
-        "one of the covariates or several,",
-        "enter 1 for",
-        "each index  want to  remove,",
+        "\nTo remove ",
+        "one of the covariates or several, ",
+        "enter 1 ",
+        "to  remove, ",
         "0   to  keep"
     )
     userInput <- scan(file = "", n = length(corsToRemove))
@@ -643,7 +643,6 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         processIDAT(directory, useSampleSheet = TRUE, arrayType)
     }
     pca_scores <- pcaGeneration()
-    print(pca_scores)
     # Processing and Writing Residuals ####
     .GlobalEnv$pdataSVs <- as.data.frame(matrix(NA,
         nrow = ncol(.GlobalEnv$bVals),
@@ -661,7 +660,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         return()
     }
     processAgeType(.GlobalEnv$pdataSVs, "EpiAge", " ")
-    message(corCovariates(" "))
+    x <- corCovariates(" ")
     removeCovariates()
     .GlobalEnv$listofCors <- c()
     .GlobalEnv$corsToRemove <- c()

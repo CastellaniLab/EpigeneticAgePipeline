@@ -28,8 +28,9 @@ Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the 
 To install the EpigeneticAgePipeline, which will include the data used in the upcoming example:
 
 ``` r
-if (!require("BiocManager", quietly = TRUE))
+if (!require("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
+}
 packages_to_install <- c(
     "minfi",
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
@@ -57,23 +58,10 @@ for (package in packages_to_install) {
         BiocManager::install(package)
     }
 }
-if (!requireNamespace("S4Vectors", quietly = TRUE)) {
-    BiocManager::install("S4Vectors", force = TRUE)
+if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
+        devtools::install_github("yiluyucheng/dnaMethyAge")
 }
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
-library(EpigeneticAgePipeline)
-downloadDirectory <- "EpigeneticAgePipelineDataset-main"
-downloadURL <- paste0("https://github.com/StanRaye/",
-                        "EpigeneticAgePipelineDataset",
-                        "/archive/refs/heads/main.zip")
-installDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
-setwd(installDirectory)
-utils::download.file(url = downloadURL, destfile = "asdf.zip")
-utils::unzip("asdf.zip", exdir = installDirectory)
-extractedFiles <- list.files(paste0(installDirectory, downloadDirectory),
-                                    full.names = TRUE)
-file.copy(from = extractedFiles, to = installDirectory, overwrite = TRUE,
-            recursive = TRUE)
 ```
 
 # Example of Running generateResiduals()
@@ -84,36 +72,36 @@ Load the package and identify the directory where methylation and covariate data
 
 ```{R}
 library("EpigeneticAgePipeline")
-myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
 ```
 
-## 2. Data Source
-
-```{R}
-message("The data used in this example was obtained from:\n")
-message("https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646\n\n")
-```
-
-## 3. Example .csv File Containing Covariate Data
+## 2. Example .csv File Containing Covariate Data
 
 ```{R}
 knitr::kable(read.csv(paste0(myDirectory, "Sample_Sheet.csv")))
 ```
 
-## 4. Run Analysis
+## 3. Run Analysis
+
+Run the generateResiduals function. Ignore the encompassing if statement.
 
 ```{R}
-if (file.exists(paste0(myDirectory, "betaValues.csv"))) {
-    generateResiduals(
-        directory = myDirectory,
-        useBeta = TRUE,
-        arrayType = "450K"
-    )  
-    message("Residuals")
-    knitr::kable(read.csv("Residuals.csv"))
-}
+baseDir <- getwd()
+setwd(myDirectory)
+generateResiduals(
+    directory = myDirectory,
+    useBeta = TRUE,
+    arrayType = "450K"
+)  
+message("Residuals")
+knitr::kable(read.csv("Residuals.csv"))
+setwd(baseDir)
 ```
 
 ```{R echo=FALSE}
 sessionInfo()
 ```
+
+## Data Disclaimer
+
+The data used for examples in this package is public and is available at: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>
