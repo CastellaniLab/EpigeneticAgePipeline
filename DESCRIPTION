@@ -1,7 +1,7 @@
 Package: EpigeneticAgePipeline
 Type: Package
 Title: Package designed for processing and analyzing DNA methylation data
-Version: 0.1.0
+Version: 1.0.0
 Authors@R: person("Stanislav", 
     "Rayevskiy", 
     email = "srayevsk@uwo.ca", 
@@ -23,6 +23,7 @@ Encoding: UTF-8
 NeedsCompilation: no
 VignetteBuilder: knitr
 Packaged: 2023-09-26 16:33:54 UTC;
+Depends: R (>= 3.5.0)
 Imports:
     ggplot2,
     ggpubr,
@@ -31,23 +32,22 @@ Imports:
     glmmTMB,
     devtools,
     minfi, 
-    methylclock
+    methylclock,
+    FlowSorted.CordBlood.450k,
+    IlluminaHumanMethylation27kanno.ilmn12.hg19,
+    IlluminaHumanMethylation450kanno.ilmn12.hg19,
+    IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
+    S4Vectors,
+    knitr
 Suggests:
     BiocManager,
     IlluminaHumanMethylationEPICmanifest,
     IlluminaHumanMethylation450kmanifest,
     IlluminaHumanMethylation27kmanifest,
-    FlowSorted.CordBlood.450k,
-    IlluminaHumanMethylation450kanno.ilmn12.hg19,
-    IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
-    IlluminaHumanMethylation27kanno.ilmn12.hg19,
-    knitr,
     AnnotationHub,
     AnnotationHubData,
-    S4Vectors,
     annotate,
     methylclockData,
     magick,
     testthat,
-    dnaMethyAge
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

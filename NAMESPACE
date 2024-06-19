@@ -1,24 +1,31 @@
 export(generateResiduals)
 export(main)
-importFrom("graphics",
-            "abline",
-            "pairs",
-            "par",
-            "points",
-            "rect",
-            "strwidth",
-            "text")
-importFrom("stats",
-            "as.formula",
-            "cor",
-            "lm",
-            "na.omit",
-            "prcomp",
-            "residuals",
-            "sd")
-import(utils)
+importFrom("utils", "data", "read.csv", "write.csv", "write.table")
+importFrom("graphics", "abline", "pairs", "par", "points", "rect", "strwidth",
+"text")
+importFrom("stats", "as.formula", "cor", "lm", "na.omit", "prcomp", "residuals",
+"sd")
+importFrom("minfi", "estimateCellCounts", "read.metharray.exp", "detectionP",
+"preprocessRaw", "mapToGenome", "ratioConvert", "featureNames",
+"dropLociWithSnps", "getBeta")
+importFrom("knitr", "kable")
+importFrom("reshape2", "melt")
+importFrom("ggplot2", "ggplot", "aes_string", "geom_bar", "labs",
+"scale_fill_manual", "theme_minimal", "ggsave", "element_rect")
+importFrom("ggpubr", "ggscatter", "stat_cor")
+importFrom("readr", "write_file")
+importFrom("glmmTMB", "glmmTMB", "glmmTMBControl")
+importFrom("S4Vectors", "findMatches")
+importFrom("grDevices", "cairo_pdf", "dev.off")
 import(ggplot2)
 import(ggpubr)
 import(reshape2)
 import(readr)
 import(glmmTMB)
+import(devtools)
+import(minfi)
+import(methylclock)
+import(FlowSorted.CordBlood.450k)
+import(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+import(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+import(IlluminaHumanMethylation27kanno.ilmn12.hg19)

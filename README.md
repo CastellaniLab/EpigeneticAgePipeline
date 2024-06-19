@@ -266,10 +266,3 @@ newcache = tools::R_user_dir("ExperimentHub", which="cache")
 setExperimentHubOption("CACHE", newcache)
 eh = ExperimentHub()
 ```
-
-
-
-### References
-
-Citation for dnaMethyAge Package:
-Wang, Y., Grant, O. A., Zhai, X., McDonald-Maier, K. D., & Schalkwyk, L. C. (2023). Insights into ageing rates comparison across tissues from recalibrating cerebellum DNA methylation clock. *GeroScience*, 1–18. [Link to article](https://link.springer.com/article/10.1007/s11357-023-00871-w)

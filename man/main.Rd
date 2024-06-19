@@ -111,14 +111,14 @@ https://github.com/CastellaniLab/EpigeneticAgePipeline
 }
 
 \examples{
-#Example of using the main function to generate epigenetic age values from
-#IDAT files
+#Example of using the main function
 library(EpigeneticAgePipeline)
 directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
-EpigeneticAgePipeline::main(
+df <-
+main(
     directory = directory,
     normalize = TRUE,
-    useBeta = FALSE,
+    useBeta = TRUE,
     arrayType = "450K",
     useSampleSheet = FALSE
 )

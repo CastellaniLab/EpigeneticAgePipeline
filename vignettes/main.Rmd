@@ -3,7 +3,7 @@ title: "Using the main Function"
 output:
     rmarkdown::html_vignette
 vignette: >
-    %\VignetteIndexEntry{"Example of using the main() function"}
+    %\VignetteIndexEntry{Using the main Function}
     %\VignetteEncoding{UTF-8}
     %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -13,24 +13,35 @@ editor_options:
 
 # Introduction
 
-Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the comprehensive processing and analysis of DNA methylation data. Our package aims to provide an efficient and integrated solution for several key functionalities: The purpose of this vigentte is to show usage of the **main()** function.
+Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the
+comprehensive processing and analysis of DNA methylation data. Our package aims
+to provide an efficient and integrated solution for several key functionalities:
+The purpose of this vigentte is to show usage of the **main()** function.
 
 ## Key Features
 
 ### Epigenetic Age Measures
 
--   **Generate diverse epigenetic age measures** directly from beta values or IDAT files.
--   Includes renowned measures such as the **Horvath Clock**, **Hannum Clock**, **Levine/PhenoAge Clock**, among others.
--   Each clock offers unique sets of CpG sites, array types, and cell type specificities for different tissue types.
+-   **Generate diverse epigenetic age measures** directly from beta values or
+IDAT files.
+-   Includes renowned measures such as the **Horvath Clock**, **Hannum Clock**,
+**Levine/PhenoAge Clock**, among others.
+-   Each clock offers unique sets of CpG sites, array types, and cell type
+specificities for different tissue types.
 
 ### Visualization and Quantitative Analysis
 
--   Presents visual and quantitative mediums to **explore and analyze various epigenetic age measures**.
--   Offers matrix plots, line plots, and grouped bar charts for **easy interpretation and comparison** of age estimates against chronological age and covariates.
+-   Presents visual and quantitative mediums to
+**explore and analyze variousepigenetic age measures**.
+-   Offers matrix plots, line plots, and grouped bar charts for
+**easy interpretation and comparison** of age estimates against
+chronological age and covariates.
 
 ### Cell Count Estimation
 
--   Utilizes methylation data from provided IDAT files to **estimate cell counts** for specific cell types including B Cells, CD4T Cells, CD8T Cells, Granulocytes, Monocytes, and Nucleated Red Blood cells.
+-   Utilizes methylation data from provided IDAT files to
+**estimate cell counts** for specific cell types including B Cells, CD4T Cells,
+CD8T Cells, Granulocytes, Monocytes, and Nucleated Red Blood cells.
 
 # Installation
 
@@ -88,7 +99,6 @@ myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
 Run the main function. Ignore the encompassing if statement.
 
 ```{R}
-baseDir <- getwd()
 setwd(myDirectory)
 main(
     directory = myDirectory,
@@ -97,18 +107,14 @@ main(
     useSampleSheet = FALSE
 )  
 knitr::kable(read.table("epigeneticAge.txt"))
-setwd(baseDir)
-```
-
-```{R echo=FALSE}
-sessionInfo()
 ```
 
 # Example of Running the Main Function With Covariates
 
 ## 1. Setup
 
-Load the package and identify the directory where methylation and covariate data is stored.
+Load the package and identify the directory where methylation and covariate
+data is stored.
 
 ```{R}
 library("EpigeneticAgePipeline")
@@ -123,10 +129,10 @@ knitr::kable(read.csv(paste0(myDirectory, "Sample_Sheet.csv")))
 
 ## 3. Run Analysis
 
-Run the main function, notice that the attribute *useSampleSheet* is set to TRUE. Ignore the encompassing if statement.
+Run the main function, notice that the attribute *useSampleSheet* is set to
+TRUE. Ignore the encompassing if statement.
 
 ```{R}
-baseDir <- getwd()
 setwd(myDirectory)
 main(
     directory = myDirectory,
@@ -134,9 +140,7 @@ main(
     arrayType = "450K",
     useSampleSheet = TRUE
 )  
-print(knitr::kable(read.table("epigeneticAge.txt")))
-print(magick::image_read_pdf(paste0(myDirectory, "matrixplotHorvath.pdf")))
-setwd(baseDir)
+knitr::kable(read.table("epigeneticAge.txt"))
 ```
 
 ```{R echo=FALSE}
@@ -145,4 +149,5 @@ sessionInfo()
 
 ## Data Disclaimer
 
-The data used for examples in this package is public and is available at: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>
+The data used for examples in this package is public and is available at:
+<https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>
