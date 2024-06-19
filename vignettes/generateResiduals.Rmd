@@ -3,7 +3,7 @@ title: "Using the generateResiduals Function"
 output:
     rmarkdown::html_vignette
 vignette: >
-    %\VignetteIndexEntry{"Example of using the generateResiduals() function"}
+    %\VignetteIndexEntry{"Using the generateResiduals Function"}
     %\VignetteEncoding{UTF-8}
     %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -13,19 +13,25 @@ editor_options:
 
 # Introduction
 
-Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the comprehensive processing and analysis of DNA methylation data. The purpose of this vigentte is to showcase usage of the **generateResiduals()** function.
+Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the
+comprehensive processing and analysis of DNA methylation data. The purpose of
+this vigentte is to showcase usage of the **generateResiduals()** function.
 
 ## Key Features
 
 ### Residual Generation and Principal Component Analysis
 
--   **Generates residuals using linear models** with varying complexities based on provided variables like "Row," "Column," "Slide," and "Batch."
-    -   Offers flexibility with **multiple combinations of random effects**, adjusting the model construction accordingly.
--   Performs principal component analysis on sample methylation data to select outlier samples.
+-   **Generates residuals using linear models** with varying complexities based
+on provided variables like "Row," "Column," "Slide," and "Batch."
+    -   Offers flexibility with **multiple combinations of random effects**,
+    adjusting the model construction accordingly.
+-   Performs principal component analysis on sample methylation data to select
+outlier samples.
 
 # Installation
 
-To install the EpigeneticAgePipeline, which will include the data used in the upcoming example:
+To install the EpigeneticAgePipeline, which will include the data used
+in the upcoming example:
 
 ``` r
 if (!require("BiocManager", quietly = TRUE)) {
@@ -68,7 +74,8 @@ remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 
 ## 1. Setup
 
-Load the package and identify the directory where methylation and covariate data is stored.
+Load the package and identify the directory where methylation and
+covariate data is stored.
 
 ```{R}
 library("EpigeneticAgePipeline")
@@ -86,7 +93,6 @@ knitr::kable(read.csv(paste0(myDirectory, "Sample_Sheet.csv")))
 Run the generateResiduals function. Ignore the encompassing if statement.
 
 ```{R}
-baseDir <- getwd()
 setwd(myDirectory)
 generateResiduals(
     directory = myDirectory,
@@ -95,7 +101,6 @@ generateResiduals(
 )  
 message("Residuals")
 knitr::kable(read.csv("Residuals.csv"))
-setwd(baseDir)
 ```
 
 ```{R echo=FALSE}
@@ -104,4 +109,5 @@ sessionInfo()
 
 ## Data Disclaimer
 
-The data used for examples in this package is public and is available at: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>
+The data used for examples in this package is public and is available at: 
+<https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>
