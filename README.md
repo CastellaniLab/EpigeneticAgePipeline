@@ -34,7 +34,9 @@ packages_to_install <- c(
   "S4Vectors",
   "preprocessCore",
   "reshape2",
-  "glmmTMB"
+  "glmmTMB",
+  "SparseM",
+  "nloptr"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
