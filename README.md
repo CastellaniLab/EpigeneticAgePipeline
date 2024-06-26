@@ -32,7 +32,9 @@ packages_to_install <- c(
   "magick",
   "pdftools",
   "S4Vectors",
-  "preprocessCore"
+  "preprocessCore",
+  "reshape2",
+  "glmmTMB"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
