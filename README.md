@@ -31,7 +31,8 @@ packages_to_install <- c(
   "annotate",
   "magick",
   "pdftools",
-  "S4Vectors"
+  "S4Vectors",
+  "preprocessCore"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
