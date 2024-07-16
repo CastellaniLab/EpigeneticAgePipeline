@@ -2,7 +2,7 @@
 
 'EpigeneticAgePipeline' is a comprehensive package designed for processing and analyzing DNA methylation data. The package provides a variety of epigenetic age measures, epigenetic age acceleration measures, residual generation, cell-count generation and provides a set of plots and tables used for further analysis.
 
-## Installation 
+## Installation
 
 1. Install the following packages which act as dependencies for the pipeline.
 
@@ -31,15 +31,17 @@ packages_to_install <- c(
   "annotate",
   "magick",
   "pdftools",
-  "S4Vectors"
+  "S4Vectors",
+  "preprocessCore",
+  "reshape2",
+  "glmmTMB",
+  "SparseM",
+  "nloptr"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
     }
-}
-if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
-        devtools::install_github("yiluyucheng/dnaMethyAge")
 }
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
@@ -115,9 +117,10 @@ If IDAT files are provided, methylation data can be used to determine cell count
 
 ### Introduction to Residual Generation
 
-This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv. If you have access to these variables in your Sample_Sheet.csv, make sure to append "@@@2" to each variable, and mind capitalization. More info on using the "Array" variable is in Usage Guidlines.    
+This section describes the proccess of residual generation. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv. If you have access to these variables in your Sample_Sheet.csv, make sure to append "@@@2" to each variable, and mind capitalization. More info on using the "Array" variable is in Usage Guidlines.
 
 #### Dynamic Formula Construction for Linear Models
+
 Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae:
 
 ```mermaid
@@ -141,15 +144,16 @@ graph TD
     F --> G
 ```
 
-*Note: In these formulae, `Xi` represents the independent variables.*
-
+_Note: In these formulae, `Xi` represents the independent variables._
 
 #### Implementation of the Linear Model Generation
 
 Once the formula is constructed, the linear model is generated using the Gaussian method. The function glmmTMB from the glmmTMB package is used to fit the model. The maximum number of iterations and evaluations for the optimizer are set to 10000 to ensure convergence. The user can specify to remove highly correlated explanatory variables (greater than 0.6) during runtime.
 
-## Usage Guidelines 
+## Usage Guidelines
+
 ### Using the main Function
+
 ```
 main(directory = getwd(),
 normalize = TRUE,
@@ -157,6 +161,7 @@ useBeta = FALSE,
 arrayType = "450K",
 useSampleSheet = TRUE)
 ```
+
 **directory** argument:  
 Directory containing input data files (default: current working directory).
 
@@ -172,7 +177,7 @@ Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 **useSampleSheet** argument:  
 Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
 
-#### Output  
+#### Output
 
 **output.txt:**  
 A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
@@ -187,25 +192,27 @@ A .txt file showing epigenetic age/acceleration estimates. This file is better s
 A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
 
 **SampleIDandAge.png:**  
-A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
+A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using
 smaller sample sizes.
 
 ### Using the generateResiduals function
+
 ```
 generateResiduals(directory = getwd(),
 useBeta = FALSE,
 arrayType = "450K"
-``` 
+```
+
 **directory** argument:  
-Directory containing input data files (default: current working directory). 
+Directory containing input data files (default: current working directory).
 
 **useBeta** argument:  
-Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).  
+Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).
 
 **arrayType** argument:  
-Type of DNA methylation array used (options: "27K", "450K", or "EPIC").  
+Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 
-#### Output  
+#### Output
 
 **Residuals.csv:**  
 A .csv file containing residuals from the linear model.
@@ -214,44 +221,49 @@ A .csv file containing residuals from the linear model.
 A .csv file containing age acceleration residuals from the linear model.
 
 ### Description of Client-Side Input Files
+
 **Sample_Sheet.csv**  
 .csv file containing phenotypic data for each sample.
-*Guidlines listed below
+\*Guidlines listed below
 
 **IDAT Files**  
 IDAT files containing methylation data for each sample.
 
 **betaValues.csv**  
-If IDAT files are not available, processed beta values can be provided. First **column** should contain CpG names. First **row** should contain sample names. 
+If IDAT files are not available, processed beta values can be provided. First **column** should contain CpG names. First **row** should contain sample names.
 
 ### Guidelines for Sample_Sheet.csv
+
 **To include a variable from Sample_Sheet.csv:**  
-If a variable contains **numeric** type data, append "@@@1" to the column name  
+If a variable contains **numeric** type data, append "@@@1" to the column name
 
-If a variable contains **factor** type data, append "@@@2" to the column name.  
+If a variable contains **factor** type data, append "@@@2" to the column name.
 
-Ex. variable "isSmoker" would become "isSmoker@@@2".  
+Ex. variable "isSmoker" would become "isSmoker@@@2".
 
-To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1", "M" or "Male". Valid values for female sex would be "2", "F", or "Female".  
+To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1", "M" or "Male". Valid values for female sex would be "2", "F", or "Female".
 
-If using the **generateResiduals** function, name the column with epigenetic age values as "EpiAge@@@1".  
+If using the **generateResiduals** function, name the column with epigenetic age values as "EpiAge@@@1".
 
-If you want to use random effects in the **generateResiduals** function, view the guidelines found in "Introduction to Residual Generation" above.  
+If you want to use random effects in the **generateResiduals** function, view the guidelines found in "Introduction to Residual Generation" above.
 
 **Specification for Using 'Array' Variable**  
 If using an Array variable to store row and column information, please make sure it follows the format "RXCY" (X: row number, Y: column number).  
-Make sure to append @@@2 to the column name  
-
+Make sure to append @@@2 to the column name
 
 ### Common Erros
+
 1. If using the package Compute Canada, and are getting errors such as:
+
 ```
 Error in ExperimentHub::ExperimentHub() :
   DEFUNCT: As of ExperimentHub (>1.17.2), default caching location has changed.
   Problematic cache: /users/ccastell/.cache/ExperimentHub
   See https://bioconductor.org/packages/devel/bioc/vignettes/ExperimentHub/inst/doc/ExperimentHub.html#default-caching-location-update
 ```
+
 Try running:
+
 ```
 library(ExperimentHub)
 oldcache = path.expand(rappdirs::user_cache_dir(appname="ExperimentHub"))
