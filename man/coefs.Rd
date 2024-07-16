@@ -1,8 +1,8 @@
-\name{PC-clocks}
-\alias{PC-clocks}
-\title{dnaMethyAge Required Data}
+\name{coefs}
+\alias{coefs}
+\title{Coefficient Data}
 \description{
-Contains data required for the dnaMethyAge package.
+Epigenetic age probe data. Part of dnaMethyAge package.
 \href{https://link.springer.com/article/10.1007/s11357-023-00871-w}{Wang et
 al., 2023}
 }
@@ -16,5 +16,4 @@ An R data object.
 myEnv <- new.env(parent = emptyenv())
 data("PC-clocks", package = "EpigeneticAgePipeline", envir = myEnv)
 print(myEnv$coefs)
-print(myEnv$PCGrimAge_agesex)
 }

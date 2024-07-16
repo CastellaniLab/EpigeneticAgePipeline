@@ -104,10 +104,10 @@ calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
     results <- NULL
     betaValues <- as.matrix(bVals)
     if ("Age" %in% colnames(pdataSVs)) {
-        results <- DNAmAge(betaValues, normalize = shouldNormalize,
+        results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize,
                                         age = pdataSVs$Age)
     } else {
-        results <- DNAmAge(betaValues, normalize = shouldNormalize)
+        results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize)
     }
     return(results)
 }
@@ -288,17 +288,16 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     probes_before <- dim(mSetSqFlt)[1]
     #    Exclude    cross    reactive    probes
     if (arrayType == "450K") {
-        xReactiveProbes <- read.csv(file = paste(installDirectory,
-            "ChenEtAlList.csv", sep = ""
-        ))
+        data("ChenEtAlList", envir = myEnv, package = "EpigeneticAgePipeline")
+        xReactiveProbes <- myEnv$ChenEtAlList
     } else if (arrayType == "27K") {
-        xReactiveProbes <- read.csv(file = paste(installDirectory,
-            "non-specific-probes-Illumina27k.csv", sep = ""
-        ))
+        data("non-specific-probes-Illumina27k", envir = myEnv,
+            package = "EpigeneticAgePipeline")
+        xReactiveProbes <- myEnv$non_specific_probes_Illumina27k
     } else {
-        xReactiveProbes <- read.csv(file = paste(installDirectory,
-            "PidsleyCrossReactiveProbesEPIC.csv", sep = ""
-        ))
+        data("PidsleyCrossReactiveProbesEPIC", envir = myEnv,
+            package = "EpigeneticAgePipeline")
+        xReactiveProbes <- myEnv$PidsleyCrossReactiveProbesEPIC
     }
     keep <-
         !(featureNames(mSetSqFlt)
@@ -408,6 +407,7 @@ generateMatrixPlot <- function(plotFormula, diagLabels, ageType) {
 
 # Definition for function for creating the df used for analyses
 createAnalysisDF <- function(directory) {
+    message("Reading Sample_Sheet.csv...")
     setwd(directory)
     sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
     sampleData <- as.data.frame(sampleData)
@@ -635,7 +635,7 @@ pcaGeneration <- function() {
 
 # Residual and PCA Generation function
 generateResiduals <- function(directory = getwd(), useBeta = FALSE,
-                            arrayType = "450K") {
+                            arrayType = "450K", ignoreCor = FALSE) {
     baseDirectory <- getwd()
     setwd(directory)
     startup()
@@ -665,7 +665,9 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     }
     processAgeType(myEnv$pdataSVs, "EpiAge", " ")
     x <- corCovariates(" ")
-    removeCovariates()
+    if (!ignoreCor) {
+        removeCovariates()
+    }
     myEnv$listofCors <- c()
     myEnv$corsToRemove <- c()
     myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs)
@@ -703,7 +705,7 @@ methyAge <- function(betas, clock, age_info=NA) {
     sample ID and age information,
     like:\nSample\tAge\nname1\t30\nname2\t60\nname3\t40\nAge acceleration
     will not be calculated."
-    if (class(age_info) == "data.frame") {
+    if (is(age_info, "data.frame")) {
         if (all(c('Sample', 'Age') %in% colnames(age_info))){
             m_age <- merge(age_info, m_age, by='Sample', sort=FALSE)
             if (nrow(m_age) < 1){
@@ -748,7 +750,7 @@ methyAge <- function(betas, clock, age_info=NA) {
 
 #FUNCTION FROM:
 #https://github.com/yiluyucheng/dnaMethyAge
-preprocessDunedinPACE <- function(betas, ref_means, least_proportion=0.7){
+preprocessDunedinPACE <- function(betas, ref_means, least_proportion=0){
     common_p <- intersect(rownames(betas), names(ref_means))
     back_p <- length(common_p) / length(ref_means)
     if(back_p > least_proportion){
@@ -774,12 +776,45 @@ preprocessDunedinPACE <- function(betas, ref_means, least_proportion=0.7){
 #FUNCTION FROM:
 #https://github.com/yiluyucheng/dnaMethyAge
 getAccel <- function(c_age, m_age){
-    message("Age acceleration is calculated as the residual resulting
-        from a linear regression model which DNAm age is regressed
-        on chronological age.") ## copied
+    message("Age acceleration is calculated as the residual resulting",
+        " from a linear regression model which DNAm age is regressed",
+        " on chronological age.") ## copied
     fit_model <- lm(m_age ~ c_age, na.action = na.exclude)
     accel <- residuals(fit_model)
     return(accel)
+}
+
+loadTestData <- function() {
+    myEnv <- new.env(parent = emptyenv())
+    data("CpGNames", package = "EpigeneticAgePipeline", envir = myEnv)
+    CpGNames <- myEnv$CpGNames
+    df <- data.frame(matrix(runif(length(CpGNames) * 9),
+        nrow = length(CpGNames), ncol = 9))
+    colnames(df) <- paste0("Sample", 1:9)
+    rownames(df) <- CpGNames
+    SampleSheet <- data.frame(
+        Sex...2 = ifelse(runif(9) < 0.3, "Male", "Female"),
+        Age...1 = sample(0:100, 9, replace = TRUE),
+        EpiAge...1 = sample(0:100, 9, replace = TRUE)
+    )
+    write.csv(SampleSheet, paste0(system.file(package =
+        "EpigeneticAgePipeline"),"/data/Sample_Sheet.csv"))
+    write.csv(df, paste0(system.file(package = "EpigeneticAgePipeline"),
+        "/data/betaValues.csv"))
+}
+
+removeTestData <- function() {
+    filePath <- paste0(system.file(package = "EpigeneticAgePipeline"),
+        "/data/betaValues.csv")
+    filePath2 <- paste0(system.file(package = "EpigeneticAgePipeline"),
+        "/data/Sample_Sheet.csv")
+    if (file.exists(filePath)) {
+        unlink(filePath)
+        unlink(filePath2)
+        message("Test data deleted")
+    } else {
+        message("Test data not yet loaded")
+    }
 }
 
 

@@ -32,22 +32,21 @@ Imports:
     glmmTMB,
     devtools,
     minfi, 
-    methylclock,
     FlowSorted.CordBlood.450k,
     IlluminaHumanMethylation27kanno.ilmn12.hg19,
     IlluminaHumanMethylation450kanno.ilmn12.hg19,
     IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
+    knitr,
+    preprocessCore,
+    stats,
     S4Vectors,
-    knitr
+    utils
 Suggests:
     BiocManager,
     IlluminaHumanMethylationEPICmanifest,
     IlluminaHumanMethylation450kmanifest,
     IlluminaHumanMethylation27kmanifest,
-    AnnotationHub,
-    AnnotationHubData,
-    annotate,
-    methylclockData,
+    methylclock,
     magick,
     testthat,
 RoxygenNote: 7.3.1

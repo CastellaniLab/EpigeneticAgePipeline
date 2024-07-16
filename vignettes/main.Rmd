@@ -91,6 +91,7 @@ Load the package and identify the directory where methylation data is stored.
 
 ```{R}
 library("EpigeneticAgePipeline")
+EpigeneticAgePipeline:::loadTestData()
 myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
 ```
 
@@ -144,10 +145,6 @@ knitr::kable(read.table("epigeneticAge.txt"))
 ```
 
 ```{R echo=FALSE}
+EpigeneticAgePipeline:::removeTestData()
 sessionInfo()
 ```
-
-## Data Disclaimer
-
-The data used for examples in this package is public and is available at:
-<https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>

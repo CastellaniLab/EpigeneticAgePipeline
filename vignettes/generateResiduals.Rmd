@@ -79,6 +79,7 @@ covariate data is stored.
 
 ```{R}
 library("EpigeneticAgePipeline")
+EpigeneticAgePipeline:::loadTestData()
 myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
 ```
 
@@ -97,17 +98,14 @@ setwd(myDirectory)
 generateResiduals(
     directory = myDirectory,
     useBeta = TRUE,
-    arrayType = "450K"
+    arrayType = "450K",
+    ignoreCor = TRUE
 )  
 message("Residuals")
 knitr::kable(read.csv("Residuals.csv"))
 ```
 
 ```{R echo=FALSE}
+EpigeneticAgePipeline:::removeTestData()
 sessionInfo()
 ```
-
-## Data Disclaimer
-
-The data used for examples in this package is public and is available at: 
-<https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197646>
