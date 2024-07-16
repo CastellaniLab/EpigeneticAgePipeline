@@ -8,12 +8,14 @@ IDAT file processing.
 et al., 2016}
 }
 \usage{
-data(PidsleyCrossReactiveProbesEPIC)
+data("PidsleyCrossReactiveProbesEPIC", package = "EpigeneticAgePipeline")
 }
 \format{
 A data frame where each row represents a methylation probe.
 }
 \examples{
-data(PidsleyCrossReactiveProbesEPIC, package = "EpigeneticAgePipeline")
-head(PidsleyCrossReactiveProbesEPIC)
+myEnv <- new.env(parent = emptyenv())
+data("PidsleyCrossReactiveProbesEPIC", package = "EpigeneticAgePipeline",
+    envir = myEnv)
+head(myEnv$PidsleyCrossReactiveProbesEPIC)
 }

@@ -1,6 +1,7 @@
 library("testthat")
 test_that("Testing betaValues file processing", {
     library(EpigeneticAgePipeline)
+    EpigeneticAgePipeline:::loadTestData()
     directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
     main(
         directory = directory,
@@ -9,6 +10,7 @@ test_that("Testing betaValues file processing", {
         arrayType = "450K",
         useSampleSheet = FALSE
     )
-    testthat::expect_true(nrow(exportDf) > 0,
-        "Number of rows should be greater than 0")
+    testthat::expect_true(file.exists(paste0(directory, "epigeneticAge.txt")),
+        "epigeneticAge.txt should exist")
+    EpigeneticAgePipeline:::removeTestData()
 })

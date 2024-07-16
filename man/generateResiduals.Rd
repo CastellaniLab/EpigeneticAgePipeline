@@ -1,7 +1,7 @@
 \name{generateResiduals}
 \alias{generateResiduals}
 
-\title{generateResiduals}
+\title{Generate Epigenetic Age Residual Data}
 
 \description{
 A function used to perform principal component analysis and residual generation
@@ -11,7 +11,8 @@ post epigenetic age measure generation.
 \usage{
 generateResiduals(directory = getwd(),
 useBeta = FALSE,
-arrayType = "450K")
+arrayType = "450K",
+ignoreCor = FALSE)
 
 }
 
@@ -29,6 +30,11 @@ If FALSE, process raw intensity data (IDAT).
 
 \item{arrayType}{
 Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
+}
+
+\item{ignoreCor}{
+Logical. If TRUE then removing highly correlated covariates will not be an
+option, default FALSE.
 }
 
 }
@@ -84,18 +90,21 @@ https://github.com/CastellaniLab/EpigeneticAgePipeline
 \examples{
 #Example of using generateResiduals function
 library(EpigeneticAgePipeline)
+EpigeneticAgePipeline:::loadTestData()
 directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
 generateResiduals(
     directory = directory,
     useBeta = TRUE,
     arrayType = "450K",
+    ignoreCor = TRUE
 )
 message("Outliers")
-knitr::kable(outliersCSV)
+knitr::kable(read.csv(paste0(directory, "OutlierSamples.csv")))
 message("Residuals")
-knitr::kable(residualsCSV)
+knitr::kable(read.csv(paste0(directory, "Residuals.csv")))
 message("Acceleration Residuals")
-knitr::kable(accelResidualsCSV)
+knitr::kable(read.csv(paste0(directory, "ResidualsAcceleration.csv")))
+EpigeneticAgePipeline:::removeTestData()
 }
 
 

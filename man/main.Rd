@@ -1,7 +1,7 @@
 \name{main}
 \alias{main}
 
-\title{main}
+\title{Epigenetic Age Generation}
 
 \description{
 A comprehensive function designed for
@@ -66,7 +66,7 @@ output.txt: A .txt file containing
 epigenetic age/acceleration estimates,
 covariate data and residual data.
 
-matrixplot{Clockname}.pdf: A set of .pdf files
+matrixplot[Clockname].pdf: A set of .pdf files
 illustrating a the correaltions between a specific
 epigenetic age estimate and covariates.
 
@@ -76,7 +76,7 @@ as well as some covariate data.
 This file is better suited for importing
 generated data into a spreadsheet program.
 
-plot_{Clockname}.png: A set of
+plot_[Clockname].png: A set of
 .png files showing a line
 plot of an epigenetic age
 estimate against chronological age.
@@ -113,8 +113,8 @@ https://github.com/CastellaniLab/EpigeneticAgePipeline
 \examples{
 #Example of using the main function
 library(EpigeneticAgePipeline)
+EpigeneticAgePipeline:::loadTestData()
 directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
-df <-
 main(
     directory = directory,
     normalize = TRUE,
@@ -122,7 +122,8 @@ main(
     arrayType = "450K",
     useSampleSheet = FALSE
 )
-knitr::kable(exportDf)
+knitr::kable(read.table(paste0(directory, "epigeneticAge.txt")))
+EpigeneticAgePipeline:::removeTestData()
 }
 
 
