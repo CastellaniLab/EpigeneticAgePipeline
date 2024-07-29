@@ -560,8 +560,6 @@ formulaGeneration <- function(string, columnsUsed) {
             "~",
             string,
             " + ",
-            "(1|Slide)",
-            " + ",
             "(Row+Column|Slide)",
             " + ",
             "(1|Batch)"
