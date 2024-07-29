@@ -126,7 +126,7 @@ graph TD
     B{"Available Variables"}
     C["formula_string = 'EpiAge ~ Xi + (Row|Slide) + (1|Batch)'"]
     D["formula_string = 'EpiAge ~ Xi + (Row&Column) + (1|Batch)'"]
-    E["formula_string = 'EpiAge ~ Xi + (1|Slide) + (Row+Column|Slide) + (1|Batch)'"]
+    E["formula_string = 'EpiAge ~ Xi + (Row+Column|Slide) + (1|Batch)'"]
     F["formula_string = 'EpiAge ~ Xi'"]
     G["End"]
  
