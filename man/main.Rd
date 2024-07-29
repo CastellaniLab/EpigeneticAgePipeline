@@ -25,7 +25,7 @@ Directory containing input data files (default: current working directory).
 }
 
 \item{normalize}{
-Logical. Perform normalization of beta values if TRUE.
+Logical. Perform normalization of beta values if TRUE. (Horvath's normalization)
 }
 
 \item{useBeta}{
@@ -52,10 +52,12 @@ Sample_Sheet.csv:
 *See note for conventions
 
 IDAT Files:
-IDAT files containing methylation data for each sample
+IDAT files containing methylation data for each sample. Should be contained in
+the directory passed.
 
 betaValues.csv:
-If IDAT files are not available, processed beta values can be provided
+If IDAT files are not available, a .csv containing beta values (CpG names first
+column, then sample columns) can be provided.
 
 }
 
@@ -104,6 +106,7 @@ Ex. variable "isSmoker" would become "isSmoker@@@2".
 To generate GrimAge, chronological age must be included ("Age@@@1"),
 as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1",
 "M" or "Male". Valid values for female sex would be "2", "F", or "Female".
+Mind capatalization.
 
 For a more detailed guide, visit the github page:
 https://github.com/CastellaniLab/EpigeneticAgePipeline
