@@ -8,40 +8,44 @@ vignette: >
     %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
     markdown: 
+      wrap: 72
     wrap: 72
 ---
 
 # Introduction
 
-Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed for the
-comprehensive processing and analysis of DNA methylation data. Our package aims
-to provide an efficient and integrated solution for several key functionalities:
-The purpose of this vigentte is to show usage of the **main()** function.
+Welcome to the **EpigeneticAgePipeline** package, an R toolkit designed
+for the comprehensive processing and analysis of DNA methylation data.
+Our package aims to provide an efficient and integrated solution for
+several key functionalities: The purpose of this vigentte is to show
+usage of the **main()** function.
 
 ## Key Features
 
 ### Epigenetic Age Measures
 
--   **Generate diverse epigenetic age measures** directly from beta values or
-IDAT files.
--   Includes renowned measures such as the **Horvath Clock**, **Hannum Clock**,
-**Levine/PhenoAge Clock**, among others.
--   Each clock offers unique sets of CpG sites, array types, and cell type
-specificities for different tissue types.
+-   **Generate diverse epigenetic age measures** directly from beta
+    values or IDAT files.
+-   Includes renowned measures such as the **Horvath Clock**, **Hannum
+    Clock**, **Levine/PhenoAge Clock**, **skinHorvath/Horvath2018**,
+    **DunedinPACE** and **GrimAge**.
+-   Each clock offers unique sets of CpG sites, array types, and cell
+    type specificities for different tissue types.
 
 ### Visualization and Quantitative Analysis
 
--   Presents visual and quantitative mediums to
-**explore and analyze variousepigenetic age measures**.
--   Offers matrix plots, line plots, and grouped bar charts for
-**easy interpretation and comparison** of age estimates against
-chronological age and covariates.
+-   Presents visual and quantitative mediums to **explore and analyze
+    various epigenetic age measures**.
+-   Offers matrix plots, line plots, and grouped bar charts for **easy
+    interpretation and comparison** of age estimates against
+    chronological age and covariates.
 
 ### Cell Count Estimation
 
--   Utilizes methylation data from provided IDAT files to
-**estimate cell counts** for specific cell types including B Cells, CD4T Cells,
-CD8T Cells, Granulocytes, Monocytes, and Nucleated Red Blood cells.
+-   Utilizes methylation data from IDAT files (if provided) to
+    **estimate cell counts** for specific cell types including B Cells,
+    CD4T Cells, CD8T Cells, Granulocytes, Monocytes, and Nucleated Red
+    Blood cells.
 
 # Installation
 
@@ -83,11 +87,12 @@ if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 
-# Example of Running the Main Function Without Covariates
+# Example of Running the Main Function Without Age and Sex Available
 
 ## 1. Setup
 
-Load the package and identify the directory where methylation data is stored.
+Load the package and identify the directory where methylation data is
+stored.
 
 ```{R}
 library("EpigeneticAgePipeline")
@@ -97,7 +102,7 @@ myDirectory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
 
 ## 2. Run Analysis
 
-Run the main function. Ignore the encompassing if statement.
+Run the main function.
 
 ```{R}
 setwd(myDirectory)
@@ -110,12 +115,12 @@ main(
 knitr::kable(read.table("epigeneticAge.txt"))
 ```
 
-# Example of Running the Main Function With Covariates
+# Example of Running the Main Function with Age and Sex Available
 
 ## 1. Setup
 
-Load the package and identify the directory where methylation and covariate
-data is stored.
+Load the package and identify the directory where methylation and
+covariate data is stored. Note that GrimAge will not be generated.
 
 ```{R}
 library("EpigeneticAgePipeline")
@@ -130,8 +135,8 @@ knitr::kable(read.csv(paste0(myDirectory, "Sample_Sheet.csv")))
 
 ## 3. Run Analysis
 
-Run the main function, notice that the attribute *useSampleSheet* is set to
-TRUE. Ignore the encompassing if statement.
+Run the main function, notice that the attribute *useSampleSheet* is set
+to TRUE. Ignore the encompassing if statement. GrimAge is generated.
 
 ```{R}
 setwd(myDirectory)

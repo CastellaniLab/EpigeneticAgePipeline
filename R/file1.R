@@ -599,7 +599,7 @@ residGeneration <- function(pdata) {
 }
 
 # Definition for function specifically used for generating pca's
-pcaGeneration <- function() {
+pcaGeneration <- function(PCs) {
     myEnv$bVals <- na.omit(myEnv$bVals)
     bValst <- t(myEnv$bVals)
     bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
@@ -607,10 +607,10 @@ pcaGeneration <- function() {
     constant <- 3
     sample_outliers <- c()
     alloutliers <- c()
-    if (ncol(pca_scores) < 5) {
+    if (ncol(pca_scores) < PCs) {
         loopNum <- ncol(pca_scores)
     } else {
-        loopNum <- 5
+        loopNum <- PCs
     }
     for (i in seq.default(from = 1, to = loopNum))
     {
@@ -635,7 +635,7 @@ pcaGeneration <- function() {
 
 # Residual and PCA Generation function
 generateResiduals <- function(directory = getwd(), useBeta = FALSE,
-                            arrayType = "450K", ignoreCor = FALSE) {
+                            arrayType = "450K", ignoreCor = FALSE, PCs = 5) {
     baseDirectory <- getwd()
     setwd(directory)
     startup()
@@ -646,7 +646,9 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         message("Processing IDAT files...")
         processIDAT(directory, useSampleSheet = TRUE, arrayType)
     }
-    pca_scores <- pcaGeneration()
+    if (PCs != 0) {
+        pca_scores <- pcaGeneration(PCs = PCs)
+    }
     # Processing and Writing Residuals ####
     myEnv$pdataSVs <- as.data.frame(matrix(NA,
         nrow = ncol(myEnv$bVals),
@@ -654,14 +656,20 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     ))
     rownames(myEnv$pdataSVs) <- colnames(myEnv$bVals)
     createAnalysisDF(directory)
-    myEnv$pdataSVs <-
-        cbind(myEnv$pdataSVs, pca_scores[, seq(from = 1, to = 5)])
+    if (PCs != 0) {
+        myEnv$pdataSVs <-
+            cbind(myEnv$pdataSVs, pca_scores[, seq(from = 1, to = PCs)])
+    }
     if (!"EpiAge" %in% colnames(myEnv$pdataSVs)) {
         warning(
             "You did not specify a column called EpiAge@@@1 in your",
             "Sample_Sheet.csv"
         )
         return()
+    }
+    if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
+        CC <- estimateCellCounts(myEnv$rgSet)
+        addCellCountsToPdataSVs(CC)
     }
     processAgeType(myEnv$pdataSVs, "EpiAge", " ")
     x <- corCovariates(" ")

@@ -3,7 +3,7 @@
 \title{Cross-Reactive Probes List for EPIC Arrays}
 \description{
 A list of methylation probes. Used to remove cross reactive probes during
-IDAT file processing.
+IDAT file processing. For EPIC microarray's.
 \href{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5055731/}{Pidsley
 et al., 2016}
 }

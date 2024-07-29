@@ -26,7 +26,8 @@ on provided variables like "Row," "Column," "Slide," and "Batch."
     -   Offers flexibility with **multiple combinations of random effects**,
     adjusting the model construction accordingly.
 -   Performs principal component analysis on sample methylation data to select
-outlier samples.
+outlier samples. By default uses the first 5 PC's in the linear model, but 
+can be adjusted. 
 
 # Installation
 
@@ -99,7 +100,8 @@ generateResiduals(
     directory = myDirectory,
     useBeta = TRUE,
     arrayType = "450K",
-    ignoreCor = TRUE
+    ignoreCor = TRUE,
+    PCs = 5
 )  
 message("Residuals")
 knitr::kable(read.csv("Residuals.csv"))

@@ -12,7 +12,8 @@ post epigenetic age measure generation.
 generateResiduals(directory = getwd(),
 useBeta = FALSE,
 arrayType = "450K",
-ignoreCor = FALSE)
+ignoreCor = FALSE,
+PCs = 5)
 
 }
 
@@ -33,8 +34,12 @@ Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 }
 
 \item{ignoreCor}{
-Logical. If TRUE then removing highly correlated covariates will not be an
+Logical. If TRUE then removing highly correlated (>=0.6) covariates will not be an
 option, default FALSE.
+}
+
+\item{PCs}{
+Numerical. Number of PC's to generate. Default is 5.
 }
 
 }
@@ -47,7 +52,8 @@ Sample_Sheet.csv:
 *See note for conventions
 
 IDAT Files:
-IDAT files containing methylation data for each sample
+IDAT files containing methylation data for each sample. Should be contained in
+the directory passed.
 
 betaValues.csv:
 If IDAT files are not available, processed beta values can be provided
@@ -61,7 +67,7 @@ Residuals.csv: A .csv file containing sample residual data, with your epigenetic
 age measure against your independent variables.
 
 Outliers.csv: A .csv file containing samples that were deemed to be outliers
-during PCA.
+during PCA (+/-3 SD from mean of at least 1 of the generated PCs).
 }
 
 
