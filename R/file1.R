@@ -196,32 +196,37 @@ processAllAgeTypes <- function(results) {
 
 # Definition for function used for generating the grouped bar chart
 createGroupedBarChart <- function(data, x, y, fill, title) {
-    melted_df <- melt(data, id.vars = x, variable.name = fill)
-    custom_palette <- c( "age" = "red", "horvath" = "#66c2a5",
-        "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine" = "#3288dd"
+    meltedDf <- melt(data, id.vars = x, variable.name = fill)
+    customPalette <- c( "age" = "red", "horvath" = "#66c2a5",
+                        "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine" = "#3288dd"
     )
+
+    numSamples <- length(unique(meltedDf[[x]]))
+
+    barWidth <- 0.5 / numSamples
+    dodgeWidth <- 1.0 / numSamples
+    plotWidth <- 10 + numSamples * 0.5
+
     plot <- ggplot(
-        data = melted_df,
+        data = meltedDf,
         aes_string(
             x = x,
             y = y,
             fill = fill
         )
     ) +
-        geom_bar(stat = "identity", position = "dodge") +
+        geom_bar(stat = "identity", width = barWidth, position = position_dodge(width = dodgeWidth)) +
         labs(x = x, y = "Age", title = title) +
-        scale_fill_manual(values = custom_palette) +
+        scale_fill_manual(values = customPalette) +
         theme_minimal()
 
     plot <- plot +
         theme(
-            plot.background =
-                element_rect(fill = "white")
+            plot.background = element_rect(fill = "white"),
+            axis.text.x = element_text(angle = 45, hjust = 1) # Adjust x-axis text for better readability
         )
 
-    ggsave("SampleIDandAge.png", plot = plot, width = 10000,
-                    height = 1000, units = "px", dpi = 300
-    )
+    ggsave("SampleIDandAge.png", plot = plot, width = plotWidth, height = 10, units = "in", dpi = 300)
 
     for (i in 2:(ncol(data) - 1))
     {
@@ -549,7 +554,7 @@ formulaGeneration <- function(string, columnsUsed) {
             "~",
             string,
             " + ",
-            "(Row&Column)",
+            "Row + Column",
             " + ",
             "(1|Batch)"
         )
@@ -561,6 +566,17 @@ formulaGeneration <- function(string, columnsUsed) {
             string,
             " + ",
             "(Row+Column|Slide)",
+            " + ",
+            "(1|Batch)"
+        )
+    } else if (!("Row" %in% columnsUsed) && "Column" %in% columnsUsed && "Slide"
+        %in% columnsUsed && "Batch" %in% columnsUsed) {
+        formula_string <- paste(
+            "EpiAge",
+            " ~ ",
+            string,
+            " + ",
+            "(Column|Slide)",
             " + ",
             "(1|Batch)"
         )
