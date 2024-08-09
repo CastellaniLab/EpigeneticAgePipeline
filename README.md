@@ -125,20 +125,23 @@ graph TD
     A["Start"]
     B{"Available Variables"}
     C["formula_string = 'EpiAge ~ Xi + (Row|Slide) + (1|Batch)'"]
-    D["formula_string = 'EpiAge ~ Xi + (Row&Column) + (1|Batch)'"]
+    D["formula_string = 'EpiAge ~ Xi + Row + Column + (1|Batch)'"]
     E["formula_string = 'EpiAge ~ Xi + (Row+Column|Slide) + (1|Batch)'"]
-    F["formula_string = 'EpiAge ~ Xi'"]
-    G["End"]
+    F["formula_string = 'EpiAge ~ Xi + (Column|Slide) + (1|Batch)'"]
+    G["formula_string = 'EpiAge ~ Xi'"]
+    H["End"]
  
     A --> B
     B -->|Not 'Column', Yes 'Row', 'Slide', 'Batch'| C
     B -->|Not 'Slide', Yes 'Row', 'Column', 'Batch'| D
     B -->|Yes 'Row', 'Column', 'Slide', 'Batch'| E
-    B -->|Else| F
-    C --> G
-    D --> G
-    E --> G
-    F --> G
+    B -->|Not 'Row', Yes 'Column', 'Slide', 'Batch'| F
+    B -->|Else| G
+    C --> H
+    D --> H
+    E --> H
+    F --> H
+    G --> H
 ```
  
 *Note: In these formulae, `Xi` represents the independent variables.*
