@@ -108,9 +108,6 @@ message("Outliers")
 knitr::kable(read.csv(paste0(directory, "OutlierSamples.csv")))
 message("Residuals")
 knitr::kable(read.csv(paste0(directory, "Residuals.csv")))
-message("Acceleration Residuals")
-knitr::kable(read.csv(paste0(directory, "ResidualsAcceleration.csv")))
-EpigeneticAgePipeline:::removeTestData()
 }
 
 

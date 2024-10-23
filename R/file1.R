@@ -30,11 +30,12 @@ main <- function(directory = getwd(),
                                 normalize)
     clockname <- "DunedinPACE"
     results$DunedinPACE <- calculateDunedinPACE()
-    results$GrimAge <- if ("Age" %in% colnames(myEnv$pdataSVs) &&
+    if ("Age" %in% colnames(myEnv$pdataSVs) &&
                             "Sex" %in% colnames(myEnv$pdataSVs)) {
-        calculateGrimAge()
+        results <- calculateGrimAge(results)
     } else {
-        NA
+        results$GrimAge <- NA
+        results$GrimAgeAccel <- NA
     }
     finalOutput <- ""
     if (useSampleSheet | useBeta == FALSE) {
@@ -122,7 +123,7 @@ calculateDunedinPACE <- function() {
 }
 
 # Calculating GrimAge
-calculateGrimAge <- function() {
+calculateGrimAge <- function(df) {
     message("Calculating GrimAge...")
     grimDf <- data.frame(Sample = colnames(myEnv$bVals),
         Age = myEnv$pdataSVs$Age,
@@ -138,20 +139,33 @@ calculateGrimAge <- function() {
     grimage <-
         methyAge(betas = myEnv$bVals, clock = "PCGrimAge",
             age_info = grimDf)
-    return(grimage$Age_Acceleration)
+
+    df$GrimAgeAccel <- grimage$Age_Acceleration
+    df$GrimAge <- grimage$mAge
+    return(df)
 }
 
 # Exporting results
 exportResults <- function(results, bVals, finalOutput) {
-    if ("Age" %in% colnames(myEnv$pdataSVs)) {
+    if ("Age" %in% colnames(myEnv$pdataSVs) &&
+        "Sex" %in% colnames(myEnv$pdataSVs)) {
         plotDf <- preparePlotDf(results, myEnv$pdataSVs)
+        plotDf$age <- NULL
+        plotDf$grimage <- results$GrimAge
+        plotDf$age <- myEnv$pdataSVs$Age
         createGroupedBarChart(plotDf, "sample", "value", "Age_Measure",
             "Sample ID and Type of Age Measure")
         myEnv$exportDf <- results[, c("id", "Horvath", "Hannum",
-            "Levine", "skinHorvath", "DunedinPACE", "GrimAge", "age")]
+            "Levine", "GrimAge", "skinHorvath", "DunedinPACE", "GrimAgeAccel", "age")]
+    } else if ("Age" %in% colnames(myEnv$pdataSVs)) {
+        plotDf <- preparePlotDf(results, myEnv$pdataSVs)
+        createGroupedBarChart(plotDf, "sample", "value", "Age_Measure",
+                              "Sample ID and Type of Age Measure")
+        myEnv$exportDf <- results[, c("id", "Horvath", "Hannum",
+                                      "Levine", "skinHorvath", "DunedinPACE", "age")]
     } else {
         myEnv$exportDf <- results[, c("id", "Horvath", "Hannum", "Levine",
-                                "skinHorvath", "DunedinPACE", "GrimAge")]
+                                "skinHorvath", "DunedinPACE")]
     }
     writeResults(finalOutput, myEnv$exportDf, results)
 }
@@ -171,7 +185,7 @@ preparePlotDf <- function(results, pdataSVs) {
 # Writing out results
 writeResults <- function(finalOutput, exportDf, results) {
     formattedResults <- kable(results[,c("id", "Horvath", "skinHorvath",
-        "Hannum", "Levine", "DunedinPACE", "GrimAge")], format = "markdown")
+        "Hannum", "Levine", "GrimAge", "DunedinPACE", "GrimAgeAccel")], format = "markdown")
     exportDf <- as.data.frame(exportDf)
     write.table(exportDf, file = "epigeneticAge.txt")
     write_file(finalOutput, file = "output.txt")
@@ -190,6 +204,8 @@ processAllAgeTypes <- function(results) {
        "Sex" %in% colnames(myEnv$pdataSVs)) {
         finalOutput <- processAgeType(results, "GrimAge", finalOutput)
         myEnv$pdataSVs$GrimAge <- NULL
+        finalOutput <- processAgeType(results, "GrimAgeAccel", finalOutput)
+        myEnv$pdataSVs$GrimAgeAccel <- NULL
     }
     return(finalOutput)
 }
@@ -197,15 +213,17 @@ processAllAgeTypes <- function(results) {
 # Definition for function used for generating the grouped bar chart
 createGroupedBarChart <- function(data, x, y, fill, title) {
     meltedDf <- melt(data, id.vars = x, variable.name = fill)
+
     customPalette <- c( "age" = "red", "horvath" = "#66c2a5",
                         "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine" = "#3288dd"
     )
 
-    numSamples <- length(unique(meltedDf[[x]]))
-
-    barWidth <- 0.5 / numSamples
-    dodgeWidth <- 1.0 / numSamples
-    plotWidth <- 10 + numSamples * 0.5
+    if ("Age" %in% colnames(myEnv$pdataSVs) &&
+        "Sex" %in% colnames(myEnv$pdataSVs)) {
+        customPalette <- c( "age" = "red", "horvath" = "#66c2a5",
+                            "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2",
+                            "levine" = "#3288dd", "grimage" = "#3798de")
+    }
 
     plot <- ggplot(
         data = meltedDf,
@@ -215,7 +233,7 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
             fill = fill
         )
     ) +
-        geom_bar(stat = "identity", width = barWidth, position = position_dodge(width = dodgeWidth)) +
+        geom_bar(stat = "identity", width = 1, position = position_dodge(width = 0.6)) +
         labs(x = x, y = "Age", title = title) +
         scale_fill_manual(values = customPalette) +
         theme_minimal()
@@ -223,10 +241,10 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
     plot <- plot +
         theme(
             plot.background = element_rect(fill = "white"),
-            axis.text.x = element_text(angle = 45, hjust = 1) # Adjust x-axis text for better readability
+            axis.text.x = element_text(angle = 65, hjust = 1) # Adjust x-axis text for better readability
         )
 
-    ggsave("SampleIDandAge.png", plot = plot, width = plotWidth, height = 10, units = "in", dpi = 300)
+    ggsave("SampleIDandAge.png", plot = plot, width = 35, height = 10, units = "in", dpi = 300)
 
     for (i in 2:(ncol(data) - 1))
     {
@@ -565,7 +583,7 @@ formulaGeneration <- function(string, columnsUsed) {
             "~",
             string,
             " + ",
-            "(Row+Column|Slide)",
+            "((Row+Column)|Slide)",
             " + ",
             "(1|Batch)"
         )
@@ -693,11 +711,8 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     myEnv$listofCors <- c()
     myEnv$corsToRemove <- c()
     myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs)
-    myEnv$pdataSVs$EpiAge <- myEnv$residualsCSV
-    myEnv$accelResidualsCSV <- residGeneration(myEnv$pdataSVs)
     write.csv(myEnv$outliersCSV, "OutlierSamples.csv")
     write.csv(myEnv$residualsCSV, "Residuals.csv")
-    write.csv(myEnv$accelResidualsCSV, "ResidualsAcceleration.csv")
     setwd(baseDirectory)
 }
 

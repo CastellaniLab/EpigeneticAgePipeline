@@ -86,6 +86,14 @@ main(directory = directory, #directory containing IDAT/beta values/supporting da
 - CpG Sites: Uses 513 CpG sites.
 - Array Type: This clock was trained on Illumina 27K, 450K and EPIC array types.
 - Cell Type: Designed primarily for blood samples.
+
+**GrimAge:**
+https://www.nature.com/articles/s43587-022-00248-2
+- Description: Provides DNAm age.
+- CpG Sites: Uses 78464 CpG sites.
+- Array Type: Trained using Illumina 450K and EPIC array types.
+- Cell Type: Designed primarily for blood samples.
+NOTE: To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex are "1", "M" or "Male". Valid values for female sex are "2", "F", or "Female".    
  
 **DunedinPACE:**
  https://elifesciences.org/articles/73420
@@ -94,13 +102,6 @@ main(directory = directory, #directory containing IDAT/beta values/supporting da
 - Array Type: Trained using Illumina 450K and EPIC array types.
 - Cell Type: Designed primarily for blood samples.
  
-**GrimAge:**
- https://www.nature.com/articles/s43587-022-00248-2
-- Description: Provides a measure of epigenetic age acceleration.
-- CpG Sites: Uses 1030 CpG sites.
-- Array Type: Trained using Illumina 450K and EPIC array types.
-- Cell Type: Designed primarily for blood samples.
-NOTE: To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex are "1", "M" or "Male". Valid values for female sex are "2", "F", or "Female".    
  
 ### Cell Counts
  
@@ -225,9 +226,6 @@ Numerical. Number of PC's to generate. Default is 5.
  
 **Residuals.csv:**  
 A .csv file containing residuals from the linear model.
- 
-**ResidualsAcceleartion.csv:**  
-A .csv file containing age acceleration residuals from the linear model.
  
 ### Description of Client-Side Input Files
 **Sample_Sheet.csv**  
