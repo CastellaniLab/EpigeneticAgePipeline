@@ -38,9 +38,6 @@ for (package in packages_to_install) {
         BiocManager::install(package)
     }
 }
-if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
-        devtools::install_github("yiluyucheng/dnaMethyAge")
-}
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 2. Once installed, the primary function of the package is used by invoking the ‘main’ function with the required parameters.     
