@@ -50,7 +50,7 @@ main <- function(directory = getwd(),
         results$GrimAgeAccel <- NA
     }
     finalOutput <- ""
-    if (myEnv$pdataSVs != 0) {
+    if (ncol(myEnv$pdataSVs) != 0) {
         finalOutput <- processAllAgeTypes(results)
     }
     exportResults(results, myEnv$bVals, finalOutput)

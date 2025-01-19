@@ -15,23 +15,24 @@ packages_to_install <- c(
     "glmmTMB",
     "devtools",
     "magick",
-	"reshape2",
+    "reshape2",
     "minfi",
     "FlowSorted.CordBloodCombined.450k",
-	"FlowSorted.Blood.EPIC",
+    "FlowSorted.Blood.EPIC",
     "IlluminaHumanMethylation27kanno.ilmn12.hg19",
     "IlluminaHumanMethylation450kanno.ilmn12.hg19",
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
     "IlluminaHumanMethylationEPICv2anno.20a1.hg38",
     "IlluminaHumanMethylationMSAanno.ilm10a1.hg38",
-	"IlluminaHumanMethylationEPICv2manifest",
-	"IlluminaHumanMethylationEPICmanifest",
-	"IlluminaHumanMethylation450kmanifest",
-	"IlluminaHumanMethylation27kmanifest",
-	"IlluminaHumanMethylationMSAmanifest",
-	"sesame",
+    "IlluminaHumanMethylationEPICv2manifest",
+    "IlluminaHumanMethylationEPICmanifest",
+    "IlluminaHumanMethylation450kmanifest",
+    "IlluminaHumanMethylation27kmanifest",
+    "IlluminaHumanMethylationMSAmanifest",
+    "sesame",
     "methylclock"
 )
+
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
@@ -49,9 +50,9 @@ main(directory = directory, #directory containing IDAT/beta values/supporting da
     useBeta = FALSE, #should use beta values contained within a betaValues.csv file?
     arrayType = "450K", #specification of array type used to generate idat files 
     useSampleSheet = FALSE, #should use phenotypic data found within a Sample_Sheet.csv file?
-	doParallel = TRUE, #should utilize parallel processing when reading beta values?
-	writeBeta = TRUE, #should write beta values from processed IDAT files
-	useAdult = FALSE #should assume using adult blood samples for cell counts or cord blood?
+    doParallel = TRUE, #should utilize parallel processing when reading beta values?
+    writeBeta = TRUE, #should write beta values from processed IDAT files
+    useAdult = FALSE #should assume using adult blood samples for cell counts or cord blood?
 )
 ```
  
