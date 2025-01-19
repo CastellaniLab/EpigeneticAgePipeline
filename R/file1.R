@@ -7,7 +7,8 @@ main <- function(directory = getwd(),
                  arrayType = "450K",
                  useSampleSheet = TRUE,
                  doParallel = TRUE,
-                 writeBeta = TRUE) {
+                 writeBeta = TRUE,
+                 useAdult = FALSE) {
     myEnv$baseDirectory <- sub("/$", "", getwd())
     setwd(directory)
     startup()
@@ -27,7 +28,7 @@ main <- function(directory = getwd(),
     }
     CC <- NULL
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        CC <- estimateCellCounts(myEnv$rgSet, arrayType)
+        CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
     }
     if (useBeta == FALSE) {
         if (writeBeta ) {
@@ -35,7 +36,7 @@ main <- function(directory = getwd(),
             write.csv(myEnv$bVals, file = paste0(myEnv$baseDirectory, "/extractedBetaValues.csv"))
         }
     }
-    preparePdataSVs(myEnv$bVals, useSampleSheet, CC, arrayType)
+    preparePdataSVs(myEnv$bVals, useSampleSheet, CC, arrayType, useAdult)
     message("Generating epigenetic age...")
     results <- calculateDNAmAge(myEnv$bVals, myEnv$pdataSVs,
                                 normalize)
@@ -49,7 +50,7 @@ main <- function(directory = getwd(),
         results$GrimAgeAccel <- NA
     }
     finalOutput <- ""
-    if (useSampleSheet | useBeta == FALSE) {
+    if (myEnv$pdataSVs != 0) {
         finalOutput <- processAllAgeTypes(results)
     }
     exportResults(results, myEnv$bVals, finalOutput)
@@ -74,42 +75,94 @@ startup <- function() {
 }
 
 # Function for getting cell counts
-estimateCellCounts <- function(rgSet, arrayType) {
+estimateCellCounts <- function(rgSet, arrayType, useAdult) {
     message("Generating cell counts...")
-    if (arrayType == "EPIC" || arrayType == "450K") {
-        FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
-        CC <- minfi::estimateCellCounts(
-            rgSet, compositeCellType = "CordBlood", processMethod = "auto",
-            probeSelect = "auto", cellTypes = c("Bcell", "CD4T", "CD8T", "Gran",
-                                                "Mono", "nRBC"),
-            referencePlatform = "IlluminaHumanMethylation450k",
-            returnAll = FALSE, meanPlot = FALSE, verbose = TRUE
-        )
-    } else {
-        if (arrayType == "MSA" &&
-            (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
-             minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
-            minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
-                                   annotation = "ilm10a1.hg38")
+    if (useAdult) {
+        if (arrayType == "EPIC" || arrayType == "MSA") {
+            if (arrayType == "MSA" &&
+                (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
+                 minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
+                minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
+                                              annotation = "ilm10a1.hg38")
+            }
+            Betas <- getBeta(preprocessNoob(rgSet))
+            IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
+                which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
+            ]
+            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
+                Betas[IDOLOptimizedCpGsBlood, ],
+                FlowSorted.Blood.EPIC::IDOLOptimizedCpGs.compTable[IDOLOptimizedCpGsBlood, ],
+                contrastWBC = NULL,
+                nonnegative = TRUE,
+                lessThanOne = FALSE
+            )
+        } else if (arrayType == "EPICv2") {
+            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- sesame::betasCollapseToPfx(Betas)
+            IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
+                which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
+            ]
+            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
+                Betas[IDOLOptimizedCpGsBlood, ],
+                FlowSorted.Blood.EPIC::IDOLOptimizedCpGs.compTable[IDOLOptimizedCpGsBlood, ],
+                contrastWBC = NULL,
+                nonnegative = TRUE,
+                lessThanOne = FALSE
+            )
+        } else {
+            Betas <- getBeta(preprocessNoob(rgSet))
+            IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy[
+                which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy %in% rownames(Betas))
+            ]
+            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
+                Betas[IDOLOptimizedCpGsBlood, ],
+                FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy.compTable[IDOLOptimizedCpGsBlood, ],
+                contrastWBC = NULL,
+                nonnegative = TRUE,
+                lessThanOne = FALSE
+            )
         }
-        Betas <- getBeta(preprocessNoob(rgSet))
-        Betas <- sesame::betasCollapseToPfx(Betas)
-        IDOLOptimizedCpGsBloodv2 <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
-            which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
-        ]
-        CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
-            Betas[IDOLOptimizedCpGsBloodv2, ],
-            FlowSorted.Blood.EPIC::IDOLOptimizedCpGs.compTable[IDOLOptimizedCpGsBloodv2, ],
-            contrastWBC = NULL,
-            nonnegative = TRUE,
-            lessThanOne = FALSE
-        )
+        return(CC)
+    } else {
+        if (arrayType != "EPICv2") {
+            if (arrayType == "MSA" &&
+                (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
+                 minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
+                minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
+                                              annotation = "ilm10a1.hg38")
+            }
+            Betas <- getBeta(preprocessNoob(rgSet))
+            IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
+                which(FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood %in% rownames(Betas))
+            ]
+            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
+                Betas[IDOLOptimizedCpGsBlood, ],
+                FlowSorted.CordBloodCombined.450k::FlowSorted.CordBloodCombined.450k.compTable[IDOLOptimizedCpGsBlood, ],
+                contrastWBC = NULL,
+                nonnegative = TRUE,
+                lessThanOne = FALSE
+            )
+        } else {
+            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- sesame::betasCollapseToPfx(Betas)
+            IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
+                which(FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood %in% rownames(Betas))
+            ]
+            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
+                Betas[IDOLOptimizedCpGsBlood, ],
+                FlowSorted.CordBloodCombined.450k::FlowSorted.CordBloodCombined.450k.compTable[IDOLOptimizedCpGsBlood, ],
+                contrastWBC = NULL,
+                nonnegative = TRUE,
+                lessThanOne = FALSE
+            )
+        }
+        return(CC)
     }
-    return(CC)
+
 }
 
 # Creating pdataSVs dataframe
-preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
+preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType, useAdult) {
     myEnv$pdataSVs <- data.frame(row.names = colnames(bVals))
     if (useSampleSheet) {
         createAnalysisDF(getwd())
@@ -118,16 +171,16 @@ preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
         }
     }
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        addCellCountsToPdataSVs(CC, arrayType)
+        addCellCountsToPdataSVs(CC, arrayType, useAdult)
     }
 }
 
 # Adding cell counts to pdataSVs
-addCellCountsToPdataSVs <- function(CC, arrayType) {
-    if (arrayType == "EPICv2" || arrayType == "MSA") {
-        cellTypes <- c("CD8T", "CD4T", "NK", "Bcell", "Mono", "Neu")
+addCellCountsToPdataSVs <- function(CC, arrayType, useAdult) {
+    if (useAdult) {
+        cellTypes <- c("Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK")
     } else {
-        cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
+        cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC", "NK")
     }
     for (cellType in cellTypes) {
         myEnv$pdataSVs[[cellType]] <- as.numeric(CC[, cellType])
@@ -353,7 +406,7 @@ processIDAT <- function(directory, arrayType) {
         data("ChenEtAlList", envir = myEnv, package = "EpigeneticAgePipeline")
         xReactiveProbes <- myEnv$ChenEtAlList
     } else if (arrayType == "27K") {
-        data("non-specific-probes-Illumina27k", envir = myEnv,
+        data("non_specific_probes_Illumina27k", envir = myEnv,
             package = "EpigeneticAgePipeline")
         xReactiveProbes <- myEnv$non_specific_probes_Illumina27k
     } else if (arrayType == "EPIC") {
@@ -385,10 +438,14 @@ processIDAT <- function(directory, arrayType) {
     } else if (arrayType == "MSA") {
         ann <- getAnnotation(IlluminaHumanMethylationMSAanno.ilm10a1.hg38)
     } else {
-        ann <- getAnnotation(IlluminaHumanMethylation27kanno.ilmn12.hg19)
+        ann <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Locations
     }
     sexProbes <- ann[which(ann$chr %in% c("chrX", "chrY")), ]
-    keep <- !(featureNames(mSetSqFlt) %in% sexProbes$Name)
+    if (arrayType != "27K") {
+        keep <- !(featureNames(mSetSqFlt) %in% sexProbes$Name)
+    } else {
+        keep <- !(featureNames(mSetSqFlt) %in% rownames(sexProbes))
+    }
     mSetSqFlt <- mSetSqFlt[keep, ]
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message("-----    ",
@@ -414,6 +471,7 @@ processIDAT <- function(directory, arrayType) {
         rownames(myEnv$bVals)[emptyIndices] <- wSuffix450[matchedIndices][emptyIndices]
         emptyIndices <- which(rownames(myEnv$bVals) == "")
         rownames(myEnv$bVals)[emptyIndices] <- wSuffix27[matchedIndices][emptyIndices]
+        myEnv$bVals <- myEnv$bVals[rownames(myEnv$bVals) != "", ]
     }
 }
 
@@ -741,7 +799,7 @@ pcaGeneration <- function(PCs, threshold) {
 # Residual and PCA Generation function
 generateResiduals <- function(directory = getwd(), useBeta = FALSE,
                             arrayType = "450K", ignoreCor = FALSE, PCs = 5, threshold = 3,
-                            doParallel = TRUE) {
+                            doParallel = TRUE, doCellCounts = TRUE, useAdult = FALSE) {
     myEnv$baseDirectory <- sub("/$", "", getwd())
     setwd(directory)
     startup()
@@ -780,9 +838,9 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         )
         return()
     }
-    if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        CC <- estimateCellCounts(myEnv$rgSet, arrayType)
-        addCellCountsToPdataSVs(CC, arrayType)
+    if (!is.numeric(myEnv$rgSet) && arrayType != "27K" && doCellCounts) {
+        CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
+        addCellCountsToPdataSVs(CC, arrayType, useAdult)
     }
     processAgeType(myEnv$pdataSVs, "EpiAge", " ")
     x <- corCovariates(" ")

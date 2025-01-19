@@ -17,7 +17,7 @@ packages_to_install <- c(
     "magick",
 	"reshape2",
     "minfi",
-    "FlowSorted.CordBlood.450k",
+    "FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.Blood.EPIC",
     "IlluminaHumanMethylation27kanno.ilmn12.hg19",
     "IlluminaHumanMethylation450kanno.ilmn12.hg19",
@@ -51,6 +51,7 @@ main(directory = directory, #directory containing IDAT/beta values/supporting da
     useSampleSheet = FALSE, #should use phenotypic data found within a Sample_Sheet.csv file?
 	doParallel = TRUE, #should utilize parallel processing when reading beta values?
 	writeBeta = TRUE, #should write beta values from processed IDAT files
+	useAdult = FALSE #should assume using adult blood samples for cell counts or cord blood?
 )
 ```
  
@@ -106,20 +107,23 @@ NOTE: To generate **GrimAge**, chronological age must be included ("Age@@@1"), a
  
 If IDAT files are provided, methylation data can be used to determine cell counts of the following cell types .
  
+ useAdult == FALSE
 - B Cells
 - CD4T Cells
 - CD8T Cells
 - Granulocytes
 - Monocytes
-- Nucleated Red Blood cells
+- Nucleated Red Blood cells  
 
-If IDAT files are in EPICv2 or Methylation Screening Array format:
-- B Cells
-- CD4T Cells
-- CD8T Cells
-- Natural Killer Cells
-- Monocytes
-- Neutrophil
+useAdult == TRUE  
+- B Cells  
+- CD4T Cells  
+- CD8T Cells  
+- Monocytes  
+- Neutrophils  
+- Natural Killer Cells  
+
+
  
 ### Introduction to Residual Generation
  
@@ -193,7 +197,11 @@ Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
 Logical. If TRUE use parallel processing in .csv file reads.
 
 **writeBeta** argument:
-Logical. If TRUE write extracted beta values from processed IDAT files.
+Logical. If TRUE write extracted beta values from processed IDAT files.  
+
+**useAdult** argument:  
+Logical. If TRUE asssume adult blood sample during cell count generation, else
+assuming cord blood.
  
 #### Output  
  
@@ -224,7 +232,9 @@ arrayType = "450K",
 ignoreCor = FALSE,
 PCs = 5,
 threshold = 3,
-doParallel = TRUE)
+doParallel = TRUE,
+doCellCounts = TRUE,
+useAdult = FALSE)
 
 ``` 
 **directory** argument:  
@@ -248,7 +258,14 @@ Numerical. Threshold for MAD outlier detection. Default is 3.
 median +- threshold * MAD
 
 **doParallel** argument:
-Logical. Use parallel processing if reading beta values. Default is TRUE.
+Logical. Use parallel processing if reading beta values. Default is TRUE.  
+
+**doCellCounts** argument:  
+Logical. If TRUE include cell counts for analysis.  
+
+**useAdult** argument:  
+Logical. If TRUE asssume adult blood sample during cell count generation, else
+assuming cord blood.  
  
 #### Output  
  

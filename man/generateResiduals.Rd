@@ -15,7 +15,9 @@ arrayType = "450K",
 ignoreCor = FALSE,
 PCs = 5,
 threshold = 3,
-doParallel = TRUE)
+doParallel = TRUE,
+doCellCounts = TRUE,
+useAdult = FALSE)
 
 }
 
@@ -37,20 +39,29 @@ Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
 
 \item{ignoreCor}{
 Logical. If TRUE then removing highly correlated (>=0.6) covariates will not be an
-option, default FALSE.
+option.
 }
 
 \item{PCs}{
-Numerical. Number of PC's to generate. Default is 5.
+Numerical. Number of PC's to generate.
 }
 
 \item{threshold}{
-Numerical. Threshold for MAD outlier detection. Default is 3.
+Numerical. Threshold for MAD outlier detection.
 median +- threshold * MAD
 }
 
 \item{doParallel}{
-Logical. If TRUE, use parallel processing if reading beta values. Default is TRUE.
+Logical. If TRUE, use parallel processing if reading beta values.
+}
+
+\item{doCellCounts}{
+Logical. If TRUE include cell counts for analysis.
+}
+
+\item{useAdult}{
+Logical. If TRUE asssume adult blood sample during cell count generation, else
+assuming cord blood.
 }
 
 }

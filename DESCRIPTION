@@ -32,8 +32,8 @@ Imports:
     reshape2,
     BiocManager
 Suggests:
-    minfi, 
-    FlowSorted.CordBlood.450k,
+    minfi,
+    FlowSorted.CordBloodCombined.450k,
     FlowSorted.Blood.EPIC,
     IlluminaHumanMethylation27kanno.ilmn12.hg19,
     IlluminaHumanMethylation450kanno.ilmn12.hg19,

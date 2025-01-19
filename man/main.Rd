@@ -17,7 +17,8 @@ useBeta = FALSE,
 arrayType = "450K",
 useSampleSheet = TRUE,
 doParallel = TRUE,
-writeBeta = TRUE)
+writeBeta = TRUE,
+useAdult = FALSE)
 
 }
 
@@ -53,6 +54,12 @@ Logical. If TRUE use parallel processing in .csv file reads.
 \item{writeBeta }{
 Logical. If TRUE write extracted beta values from processed IDAT files.
 }
+
+\item{useAdult}{
+Logical. If TRUE asssume adult blood sample during cell count generation, else
+assuming cord blood.
+}
+
 }
 
 \details{
