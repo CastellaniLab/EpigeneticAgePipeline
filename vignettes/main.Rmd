@@ -110,7 +110,9 @@ main(
     directory = myDirectory,
     useBeta = TRUE,
     arrayType = "450K",
-    useSampleSheet = FALSE
+    useSampleSheet = FALSE,
+    doParallel = TRUE,
+    writeBeta = FALSE
 )  
 knitr::kable(read.table("epigeneticAge.txt"))
 ```
@@ -144,7 +146,8 @@ main(
     directory = myDirectory,
     useBeta = TRUE,
     arrayType = "450K",
-    useSampleSheet = TRUE
+    useSampleSheet = TRUE,
+    writeBeta = FALSE
 )  
 knitr::kable(read.table("epigeneticAge.txt"))
 ```

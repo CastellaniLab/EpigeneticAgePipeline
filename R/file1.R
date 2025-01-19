@@ -5,24 +5,35 @@ main <- function(directory = getwd(),
                  normalize = TRUE,
                  useBeta = FALSE,
                  arrayType = "450K",
-                 useSampleSheet = TRUE) {
-    baseDirectory <- getwd()
+                 useSampleSheet = TRUE,
+                 doParallel = TRUE,
+                 writeBeta = TRUE) {
+    myEnv$baseDirectory <- sub("/$", "", getwd())
     setwd(directory)
     startup()
     if (useBeta) {
-        message("Reading betaValues.csv...")
-        myEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
+        if (doParallel) {
+            message("Reading betaValues.csv, utilizing parallel processing...")
+            myEnv$bVals <- as.data.frame(data.table::fread("betaValues.csv"))
+            rownames(myEnv$bVals) <- myEnv$bVals$V1
+            myEnv$bVals$V1 <- NULL
+        } else {
+            message("Reading betaValues.csv...")
+            myEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
+        }
     } else {
         message("Processing IDAT files...")
-        processIDAT(directory, useSampleSheet, arrayType)
+        processIDAT(directory, arrayType)
     }
     CC <- NULL
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        CC <- estimateCellCounts(myEnv$rgSet)
+        CC <- estimateCellCounts(myEnv$rgSet, arrayType)
     }
     if (useBeta == FALSE) {
-        message("Writing extracted beta values...")
-        write.csv(myEnv$bVals, file = "extractedBetaValues.csv")
+        if (writeBeta ) {
+            message("Writing extracted beta values...")
+            write.csv(myEnv$bVals, file = paste0(myEnv$baseDirectory, "/extractedBetaValues.csv"))
+        }
     }
     preparePdataSVs(myEnv$bVals, useSampleSheet, CC, arrayType)
     message("Generating epigenetic age...")
@@ -42,16 +53,13 @@ main <- function(directory = getwd(),
         finalOutput <- processAllAgeTypes(results)
     }
     exportResults(results, myEnv$bVals, finalOutput)
-    setwd(baseDirectory)
+    setwd(myEnv$baseDirectory)
+    on.exit(detach(myEnv))
 }
 
 # Function for loading tools and setting variables
 startup <- function() {
     message("Loading dependencies...")
-    installDirectory <- paste0(
-        path.package("EpigeneticAgePipeline"),
-        "/data/"
-    )
     assign("bVals", 0, envir = myEnv)
     assign("rgSet", 0, envir = myEnv)
     assign("listofCors", c(), envir = myEnv)
@@ -62,19 +70,41 @@ startup <- function() {
     assign("residualsCSV", 0, envir = myEnv)
     data("PC-clocks", envir = myEnv, package = "EpigeneticAgePipeline")
     data("DunedinPACE", envir = myEnv, package = "EpigeneticAgePipeline")
+    attach(myEnv)
 }
 
 # Function for getting cell counts
-estimateCellCounts <- function(rgSet) {
+estimateCellCounts <- function(rgSet, arrayType) {
     message("Generating cell counts...")
-    FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
-    CC <- minfi::estimateCellCounts(
-        rgSet, compositeCellType = "CordBlood", processMethod = "auto",
-        probeSelect = "auto", cellTypes = c("Bcell", "CD4T", "CD8T", "Gran",
-                                            "Mono", "nRBC"),
-        referencePlatform = c("IlluminaHumanMethylation450k"),
-        returnAll = FALSE, meanPlot = FALSE, verbose = TRUE
-    )
+    if (arrayType == "EPIC" || arrayType == "450K") {
+        FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
+        CC <- minfi::estimateCellCounts(
+            rgSet, compositeCellType = "CordBlood", processMethod = "auto",
+            probeSelect = "auto", cellTypes = c("Bcell", "CD4T", "CD8T", "Gran",
+                                                "Mono", "nRBC"),
+            referencePlatform = "IlluminaHumanMethylation450k",
+            returnAll = FALSE, meanPlot = FALSE, verbose = TRUE
+        )
+    } else {
+        if (arrayType == "MSA" &&
+            (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
+             minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
+            minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
+                                   annotation = "ilm10a1.hg38")
+        }
+        Betas <- getBeta(preprocessNoob(rgSet))
+        Betas <- sesame::betasCollapseToPfx(Betas)
+        IDOLOptimizedCpGsBloodv2 <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
+            which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
+        ]
+        CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
+            Betas[IDOLOptimizedCpGsBloodv2, ],
+            FlowSorted.Blood.EPIC::IDOLOptimizedCpGs.compTable[IDOLOptimizedCpGsBloodv2, ],
+            contrastWBC = NULL,
+            nonnegative = TRUE,
+            lessThanOne = FALSE
+        )
+    }
     return(CC)
 }
 
@@ -88,13 +118,17 @@ preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType) {
         }
     }
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        addCellCountsToPdataSVs(CC)
+        addCellCountsToPdataSVs(CC, arrayType)
     }
 }
 
 # Adding cell counts to pdataSVs
-addCellCountsToPdataSVs <- function(CC) {
-    cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
+addCellCountsToPdataSVs <- function(CC, arrayType) {
+    if (arrayType == "EPICv2" || arrayType == "MSA") {
+        cellTypes <- c("CD8T", "CD4T", "NK", "Bcell", "Mono", "Neu")
+    } else {
+        cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
+    }
     for (cellType in cellTypes) {
         myEnv$pdataSVs[[cellType]] <- as.numeric(CC[, cellType])
     }
@@ -187,9 +221,9 @@ writeResults <- function(finalOutput, exportDf, results) {
     formattedResults <- kable(results[,c("id", "Horvath", "skinHorvath",
         "Hannum", "Levine", "GrimAge", "DunedinPACE", "GrimAgeAccel")], format = "markdown")
     exportDf <- as.data.frame(exportDf)
-    write.table(exportDf, file = "epigeneticAge.txt")
-    write_file(finalOutput, file = "output.txt")
-    write(formattedResults, file = "results.md")
+    write.table(exportDf, file = paste0(myEnv$baseDirectory,"/epigeneticAge.txt"))
+    write_file(finalOutput, file = paste0(myEnv$baseDirectory,"/output.txt"))
+    write(formattedResults, file = paste0(myEnv$baseDirectory,"/results.md"))
 }
 
 # Definition for initiation function for process age type
@@ -233,18 +267,18 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
             fill = fill
         )
     ) +
-        geom_bar(stat = "identity", width = 1, position = position_dodge(width = 0.6)) +
+        geom_bar(stat = "identity", width = 1, position = ggplot2::position_dodge(width = 0.6)) +
         labs(x = x, y = "Age", title = title) +
         scale_fill_manual(values = customPalette) +
         theme_minimal()
 
     plot <- plot +
-        theme(
+        ggplot2::theme(
             plot.background = element_rect(fill = "white"),
-            axis.text.x = element_text(angle = 65, hjust = 1) # Adjust x-axis text for better readability
+            axis.text.x = ggplot2::element_text(angle = 65, hjust = 1) # Adjust x-axis text for better readability
         )
 
-    ggsave("SampleIDandAge.png", plot = plot, width = 35, height = 10, units = "in", dpi = 300)
+    ggsave(paste0(myEnv$baseDirectory,"/SampleIDandAge.png"), plot = plot, width = 35, height = 10, units = "in", dpi = 300)
 
     for (i in 2:(ncol(data) - 1))
     {
@@ -255,7 +289,7 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
         )
         plot <- plot + stat_cor(method = "pearson")
         ggsave(
-            filename = paste0("plot_", colnames(data)[i], ".png"),
+            filename = paste0(myEnv$baseDirectory, "/plot_", colnames(data)[i], ".png"),
             plot = plot,
             width = 1000, height = 1000,
             units = "px"
@@ -264,15 +298,20 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
 }
 
 # Definition of processIDAT function starts here
-processIDAT <- function(directory, useSampleSheet, arrayType) {
-    installDirectory <- paste0(
-        path.package("EpigeneticAgePipeline"),
-        "/data/"
-    )
+processIDAT <- function(directory, arrayType) {
     dataDirectory <- directory
     myEnv$rgSet <- read.metharray.exp(dataDirectory, force = TRUE)
+
+    if (arrayType == "MSA" &&
+        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
+         minfi::annotation(myEnv$rgSet)["annotation"] != "ilm10a1.hg38")) {
+        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationMSA",
+                                      annotation = "ilm10a1.hg38")
+    }
+
     #    Calculate    the    detection    p-values
     detP <- detectionP(myEnv$rgSet)
+    detP <- detP[complete.cases(detP),]
     samples_before <- dim(myEnv$rgSet)[2]
     keep <- colMeans(detP) < 0.05
     myEnv$rgSet <- myEnv$rgSet[, keep]
@@ -295,7 +334,7 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     message(
         "-----    ",
         probes_removed,
-        " probe(s) removed for failing in",
+        " probe(s) removed for failing in ",
         "one or more samples"
     )
     probes_before <- dim(mSetSqFlt)[1]
@@ -305,7 +344,7 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     message(
         "-----    ",
         probes_removed,
-        " probe(s)  removed",
+        " probe(s)  removed ",
         "for having SNPs at CpG site"
     )
     probes_before <- dim(mSetSqFlt)[1]
@@ -317,13 +356,18 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
         data("non-specific-probes-Illumina27k", envir = myEnv,
             package = "EpigeneticAgePipeline")
         xReactiveProbes <- myEnv$non_specific_probes_Illumina27k
-    } else {
+    } else if (arrayType == "EPIC") {
         data("PidsleyCrossReactiveProbesEPIC", envir = myEnv,
             package = "EpigeneticAgePipeline")
         xReactiveProbes <- myEnv$PidsleyCrossReactiveProbesEPIC
+    } else if (arrayType == "EPICv2" || arrayType == "MSA") {
+        data("epicV2CR", envir = myEnv,
+             package = "EpigeneticAgePipeline")
+        xReactiveProbes <- myEnv$epicV2CR
     }
+
     keep <-
-        !(featureNames(mSetSqFlt)
+        !(sub("_.*", "", featureNames(mSetSqFlt))
         %in% xReactiveProbes$TargetID)
     mSetSqFlt <- mSetSqFlt[keep, ]
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
@@ -333,18 +377,22 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     probes_before <- dim(mSetSqFlt)[1]
     #    Remove    Sex    Probes
     if (arrayType == "EPIC") {
-        ann <- IlluminaHumanMethylationEPICanno.ilm10b4.hg19::Manifest
+        ann <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+    } else if (arrayType == "EPICv2") {
+        ann <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
     } else if (arrayType == "450K") {
-        ann <- IlluminaHumanMethylation450kanno.ilmn12.hg19::Manifest
+        ann <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+    } else if (arrayType == "MSA") {
+        ann <- getAnnotation(IlluminaHumanMethylationMSAanno.ilm10a1.hg38)
     } else {
-        ann <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Manifest
+        ann <- getAnnotation(IlluminaHumanMethylation27kanno.ilmn12.hg19)
     }
     sexProbes <- ann[which(ann$chr %in% c("chrX", "chrY")), ]
     keep <- !(featureNames(mSetSqFlt) %in% sexProbes$Name)
     mSetSqFlt <- mSetSqFlt[keep, ]
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message("-----    ",
-        probes_removed, " probe(s)  removed", "for  being  on  sex  chromosomes"
+        probes_removed, " probe(s)  removed ", "for  being  on  sex  chromosomes"
     )
     #    Print    out    the    number    of    probes    remaining
     message(
@@ -355,6 +403,18 @@ processIDAT <- function(directory, useSampleSheet, arrayType) {
     #    Calculate    methylation    beta    values
     myEnv$bVals <- getBeta(mSetSqFlt)
     myEnv$bVals <- myEnv$bVals[,order(colnames(myEnv$bVals))]
+    if (arrayType == "EPICv2") {
+        suffix <- rownames(getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38))
+        wSuffixEPIC <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)$EPICv1_Loci
+        wSuffix450 <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)$Methyl450_Loci
+        wSuffix27 <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)$Methyl27_Loci
+        matchedIndices <- match(rownames(myEnv$bVals), suffix)
+        rownames(myEnv$bVals) <- wSuffixEPIC[matchedIndices]
+        emptyIndices <- which(rownames(myEnv$bVals) == "")
+        rownames(myEnv$bVals)[emptyIndices] <- wSuffix450[matchedIndices][emptyIndices]
+        emptyIndices <- which(rownames(myEnv$bVals) == "")
+        rownames(myEnv$bVals)[emptyIndices] <- wSuffix27[matchedIndices][emptyIndices]
+    }
 }
 
 # Definition for function used in matrix generation
@@ -393,6 +453,7 @@ processAgeType <- function(data, ageType, output) {
     if ("V1" %in% names(myEnv$pdataSVs)) {
         myEnv$pdataSVs$V1 <- NULL
     }
+    write.csv(myEnv$pdataSVs, file = paste0(myEnv$baseDirectory, "/", ageType,"SampleData.csv"))
     for (i in colnames(myEnv$pdataSVs)) {
         if (length(unique(myEnv$pdataSVs[[i]])) == 1) {
             myEnv$pdataSVs[[i]] <- NULL
@@ -420,7 +481,7 @@ processAgeType <- function(data, ageType, output) {
 
 # Definition for function used for generating the correlation matrices
 generateMatrixPlot <- function(plotFormula, diagLabels, ageType) {
-    cairo_pdf(paste("matrixplot", ageType, ".pdf", sep = ""),
+    cairo_pdf(paste0(myEnv$baseDirectory, "/matrixplot", ageType, ".pdf"),
             width = 14, height = 14, fallback_resolution = 1000)
     pairs(plotFormula, data = myEnv$pdataSVs, upper.panel = twolines,
             labels = diagLabels, diag.panel = mydiag.panel,
@@ -437,6 +498,7 @@ createAnalysisDF <- function(directory) {
     for (i in colnames(sampleData)) {
         newVarName <- gsub("\\...[1-2]$", "", i)
         if (grepl("...1", i)) {
+            message(paste0("Reading variable as numeric, ", i))
             myEnv$pdataSVs[[newVarName]] <- as.numeric(sampleData[[i]])
         } else if (grepl("...2", i)) {
             if (i == "Array...2") {
@@ -450,9 +512,11 @@ createAnalysisDF <- function(directory) {
                     "\\1",
                     sampleData[[i]]
                 ))
+                message(paste0("Reading Row and Column data from Array"))
                 myEnv$pdataSVs$Row <- row
                 myEnv$pdataSVs$Column <- column
             } else {
+                message(paste0("Reading variable as factor, ", i))
                 myEnv$pdataSVs[[newVarName]] <- as.factor(sampleData[[i]])
             }
         }
@@ -631,34 +695,43 @@ residGeneration <- function(pdata) {
 }
 
 # Definition for function specifically used for generating pca's
-pcaGeneration <- function(PCs) {
+pcaGeneration <- function(PCs, threshold) {
     myEnv$bVals <- na.omit(myEnv$bVals)
     bValst <- t(myEnv$bVals)
     bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
     pca_scores <- as.data.frame(bpca$x)
-    constant <- 3
+    constant <- threshold
     sample_outliers <- c()
     alloutliers <- c()
+
+
     if (ncol(pca_scores) < PCs) {
         loopNum <- ncol(pca_scores)
     } else {
         loopNum <- PCs
     }
+
+
     for (i in seq.default(from = 1, to = loopNum))
     {
+        median <- median(bpca$x[, i])
+        MAD <- stats::mad(bpca$x[,i])
+        upper <- median + constant * MAD
+        lower <- median - constant * MAD
+
         a <- subset(
             rownames(bpca$x),
-            bpca$x[, i] > (mean(bpca$x[, i]) + constant * sd(bpca$x[, i]))
-        )
+            bpca$x[, i] > upper)
         b <- subset(
             rownames(bpca$x),
-            bpca$x[, i] < (mean(bpca$x[, i]) - constant * sd(bpca$x[, i]))
-        )
+            bpca$x[, i] < lower)
+
         out <- c(a, b)
         sample_outliers <- c(sample_outliers, out)
         alloutliers <- c(alloutliers, sample_outliers)
         sample_outliers <- c()
     }
+
     myEnv$outliersCSV <- unique(alloutliers)
     bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
     pca_scores <- as.data.frame(bpca$x)
@@ -667,19 +740,27 @@ pcaGeneration <- function(PCs) {
 
 # Residual and PCA Generation function
 generateResiduals <- function(directory = getwd(), useBeta = FALSE,
-                            arrayType = "450K", ignoreCor = FALSE, PCs = 5) {
-    baseDirectory <- getwd()
+                            arrayType = "450K", ignoreCor = FALSE, PCs = 5, threshold = 3,
+                            doParallel = TRUE) {
+    myEnv$baseDirectory <- sub("/$", "", getwd())
     setwd(directory)
     startup()
     if (useBeta == TRUE) {
-        message("Reading betaValues.csv...")
-        myEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
+        if (doParallel) {
+            message("Reading betaValues.csv, utilizing parallel processing...")
+            myEnv$bVals <- as.data.frame(data.table::fread("betaValues.csv"))
+            rownames(myEnv$bVals) <- myEnv$bVals$V1
+            myEnv$bVals$V1 <- NULL
+        } else {
+            message("Reading betaValues.csv...")
+            myEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
+        }
     } else {
         message("Processing IDAT files...")
-        processIDAT(directory, useSampleSheet = TRUE, arrayType)
+        processIDAT(directory, arrayType)
     }
     if (PCs != 0) {
-        pca_scores <- pcaGeneration(PCs = PCs)
+        pca_scores <- pcaGeneration(PCs, threshold)
     }
     # Processing and Writing Residuals ####
     myEnv$pdataSVs <- as.data.frame(matrix(NA,
@@ -700,8 +781,8 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         return()
     }
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        CC <- estimateCellCounts(myEnv$rgSet)
-        addCellCountsToPdataSVs(CC)
+        CC <- estimateCellCounts(myEnv$rgSet, arrayType)
+        addCellCountsToPdataSVs(CC, arrayType)
     }
     processAgeType(myEnv$pdataSVs, "EpiAge", " ")
     x <- corCovariates(" ")
@@ -711,13 +792,16 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
     myEnv$listofCors <- c()
     myEnv$corsToRemove <- c()
     myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs)
-    write.csv(myEnv$outliersCSV, "OutlierSamples.csv")
-    write.csv(myEnv$residualsCSV, "Residuals.csv")
-    setwd(baseDirectory)
+    write.csv(myEnv$outliersCSV, paste0(myEnv$baseDirectory, "/OutlierSamples.csv"))
+    write.csv(myEnv$residualsCSV, paste0(myEnv$baseDirectory, "/Residuals.csv"))
+    setwd(myEnv$baseDirectory)
 }
 
 #FUNCTION FROM:
 #https://github.com/yiluyucheng/dnaMethyAge
+# All borrowed functions were carefully curated and modified to suit specific project requirements.
+# Certain parts of the original implementations were excluded to focus on essential functionality.
+# Changes include trimming unused features and restructuring for improved integration.
 methyAge <- function(betas, clock, age_info=NA) {
     if(grepl('^PC[A-Z]', clock)){
         data(list="PC-clocks", envir=myEnv, package = "EpigeneticAgePipeline")

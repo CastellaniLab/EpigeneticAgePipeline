@@ -26,27 +26,25 @@ Packaged: 2023-09-26 16:33:54 UTC;
 Depends: R (>= 3.5.0)
 Imports:
     ggplot2,
-    ggpubr,
-    reshape2,
-    readr,
     glmmTMB,
     devtools,
+    magick,
+    reshape2,
+    BiocManager
+Suggests:
     minfi, 
     FlowSorted.CordBlood.450k,
+    FlowSorted.Blood.EPIC,
     IlluminaHumanMethylation27kanno.ilmn12.hg19,
     IlluminaHumanMethylation450kanno.ilmn12.hg19,
     IlluminaHumanMethylationEPICanno.ilm10b4.hg19,
-    knitr,
-    preprocessCore,
-    stats,
-    S4Vectors,
-    utils
-Suggests:
-    BiocManager,
+    IlluminaHumanMethylationEPICv2anno.20a1.hg38,
+    IlluminaHumanMethylationMSAanno.ilm10a1.hg38,
+    IlluminaHumanMethylationEPICv2manifest,
     IlluminaHumanMethylationEPICmanifest,
     IlluminaHumanMethylation450kmanifest,
     IlluminaHumanMethylation27kmanifest,
-    methylclock,
-    magick,
-    testthat,
+    IlluminaHumanMethylationMSAmanifest,
+    sesame,
+    methylclock
 RoxygenNote: 7.3.1

@@ -13,7 +13,9 @@ generateResiduals(directory = getwd(),
 useBeta = FALSE,
 arrayType = "450K",
 ignoreCor = FALSE,
-PCs = 5)
+PCs = 5,
+threshold = 3,
+doParallel = TRUE)
 
 }
 
@@ -42,6 +44,15 @@ option, default FALSE.
 Numerical. Number of PC's to generate. Default is 5.
 }
 
+\item{threshold}{
+Numerical. Threshold for MAD outlier detection. Default is 3.
+median +- threshold * MAD
+}
+
+\item{doParallel}{
+Logical. If TRUE, use parallel processing if reading beta values. Default is TRUE.
+}
+
 }
 
 \details{
@@ -67,7 +78,7 @@ Residuals.csv: A .csv file containing sample residual data, with your epigenetic
 age measure against your independent variables.
 
 Outliers.csv: A .csv file containing samples that were deemed to be outliers
-during PCA (+/-3 SD from mean of at least 1 of the generated PCs).
+during PCA.
 }
 
 

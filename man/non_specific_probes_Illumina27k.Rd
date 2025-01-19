@@ -1,6 +1,6 @@
 \name{non_specific_probes_Illumina27k}
 \alias{non_specific_probes_Illumina27k}
-\title{Non-Specific Probes for Illumina 27k Methylation Array}
+\title{Cross Reactive Probes for Illumina 27k Methylation Array}
 \description{
 A list of methylation probes. Used to remove cross reactive probes during
 IDAT file processing.

@@ -15,7 +15,9 @@ main(directory = getwd(),
 normalize = TRUE,
 useBeta = FALSE,
 arrayType = "450K",
-useSampleSheet = TRUE)
+useSampleSheet = TRUE,
+doParallel = TRUE,
+writeBeta = TRUE)
 
 }
 
@@ -36,11 +38,20 @@ If FALSE, process raw intensity data (IDAT).
 }
 
 \item{arrayType}{
-Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
+Type of DNA methylation array used (options: "27K", "450K", "EPIC", "EPICv2"
+or "MSA").
 }
 
 \item{useSampleSheet}{
-Whether or not to use Sample_Sheet.csv.
+Logical. If TRUE use Sample_Sheet.csv.
+}
+
+\item{doParallel}{
+Logical. If TRUE use parallel processing in .csv file reads.
+}
+
+\item{writeBeta }{
+Logical. If TRUE write extracted beta values from processed IDAT files.
 }
 }
 

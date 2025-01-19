@@ -11,36 +11,33 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
  
 packages_to_install <- c(
-  "minfi",
-  "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
-  "IlluminaHumanMethylationEPICmanifest",
-  "methylclock",
-  "methylclockData",
-  "FlowSorted.CordBlood.450k",
-  "IlluminaHumanMethylation450kmanifest",
-  "IlluminaHumanMethylation450kanno.ilmn12.hg19",
-  "IlluminaHumanMethylation27kmanifest",
-  "IlluminaHumanMethylation27kanno.ilmn12.hg19",
-  "AnnotationHub",
-  "AnnotationHubData",
-  "base64",
-  "beanplot",
-  "ggplot2",
-  "dplyr",
-  "tidyr",
-  "annotate",
-  "magick",
-  "pdftools",
-  "S4Vectors"
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+	"reshape2",
+    "minfi",
+    "FlowSorted.CordBlood.450k",
+	"FlowSorted.Blood.EPIC",
+    "IlluminaHumanMethylation27kanno.ilmn12.hg19",
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+    "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+    "IlluminaHumanMethylationEPICv2anno.20a1.hg38",
+    "IlluminaHumanMethylationMSAanno.ilm10a1.hg38",
+	"IlluminaHumanMethylationEPICv2manifest",
+	"IlluminaHumanMethylationEPICmanifest",
+	"IlluminaHumanMethylation450kmanifest",
+	"IlluminaHumanMethylation27kmanifest",
+	"IlluminaHumanMethylationMSAmanifest",
+	"sesame",
+    "methylclock"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
     }
 }
-if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
-        devtools::install_github("yiluyucheng/dnaMethyAge")
-}
+
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 2. Once installed, the primary function of the package is used by invoking the ‘main’ function with the required parameters.     
@@ -50,8 +47,10 @@ library(EpigeneticAgePipeline)
 main(directory = directory, #directory containing IDAT/beta values/supporting data
     normalize = TRUE, #should normalize beta values?
     useBeta = FALSE, #should use beta values contained within a betaValues.csv file?
-    arrayType = "450K", #specification of array type used to geneerate idat files ("450K", "27K", "EPIC)
-    useSampleSheet = FALSE #should use phenotypic data found within a Sample_Sheet.csv file?
+    arrayType = "450K", #specification of array type used to generate idat files 
+    useSampleSheet = FALSE, #should use phenotypic data found within a Sample_Sheet.csv file?
+	doParallel = TRUE, #should utilize parallel processing when reading beta values?
+	writeBeta = TRUE, #should write beta values from processed IDAT files
 )
 ```
  
@@ -113,6 +112,14 @@ If IDAT files are provided, methylation data can be used to determine cell count
 - Granulocytes
 - Monocytes
 - Nucleated Red Blood cells
+
+If IDAT files are in EPICv2 or Methylation Screening Array format:
+- B Cells
+- CD4T Cells
+- CD8T Cells
+- Natural Killer Cells
+- Monocytes
+- Neutrophil
  
 ### Introduction to Residual Generation
  
@@ -162,7 +169,9 @@ main(directory = getwd(),
 normalize = TRUE,
 useBeta = FALSE,
 arrayType = "450K",
-useSampleSheet = TRUE)
+useSampleSheet = TRUE,
+doParallel = TRUE,
+writeBeta = TRUE)
 ```
 **directory** argument:  
 String. Directory containing input data files (default: current working directory).
@@ -174,10 +183,17 @@ Logical. Perform normalization of beta values if TRUE.
 Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).
  
 **arrayType** argument:  
-Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
+Type of DNA methylation array used (options: "27K", "450K", "EPIC", "EPICv2"
+or "MSA").
  
 **useSampleSheet** argument:  
 Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
+
+**doParallel** argument:  
+Logical. If TRUE use parallel processing in .csv file reads.
+
+**writeBeta** argument:
+Logical. If TRUE write extracted beta values from processed IDAT files.
  
 #### Output  
  
@@ -185,7 +201,7 @@ Logical. If TRUE, will expect a Sample_Sheet.csv containing phenotypic data.
 A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
  
 **matrixplot{Clockname}.pdf:**  
-A set of .pdf files illustrating a the correaltions between a specific epigenetic age estimate and covariates.
+A set of .pdf files illustrating the correaltions between a specific epigenetic age estimate and covariates.
  
 **epigeneticAge.txt:**  
 A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing into a spreadsheet program than output.txt.
@@ -196,6 +212,9 @@ A set of .png files showing a line plot of an epigenetic age estimate against ch
 **SampleIDandAge.png:**  
 A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
 smaller sample sizes.
+
+**{Clockname}SampleData.csv**  
+.csv file containing covariate data, including clock data.
  
 ### Using the generateResiduals function
 ```
@@ -203,7 +222,9 @@ generateResiduals(directory = getwd(),
 useBeta = FALSE,
 arrayType = "450K",
 ignoreCor = FALSE,
-PCs = 5)
+PCs = 5,
+threshold = 3,
+doParallel = TRUE)
 
 ``` 
 **directory** argument:  
@@ -213,7 +234,7 @@ Directory containing input data files (default: current working directory).
 Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).  
  
 **arrayType** argument:  
-Type of DNA methylation array used (options: "27K", "450K", or "EPIC").  
+Type of DNA methylation array used (options: "27K", "450K", "EPIC", "EPICv2" or "MSA").  
 
 **ignoreCor** argument:
 Logical. If TRUE then removing highly correlated (>=0.6) covariates will not be an
@@ -221,11 +242,28 @@ option, default FALSE.
 
 **PCs** argument:
 Numerical. Number of PC's to generate. Default is 5.
+
+**threshold** argument:
+Numerical. Threshold for MAD outlier detection. Default is 3.
+median +- threshold * MAD
+
+**doParallel** argument:
+Logical. Use parallel processing if reading beta values. Default is TRUE.
  
 #### Output  
  
 **Residuals.csv:**  
 A .csv file containing residuals from the linear model.
+
+**EpiAgeSampleData.csv**  
+.csv file containing covariate data, including clock data.
+
+**matrixplotEpiAge.pdf:**  
+.pdf file illustrating the correaltions between specific epigenetic age estimate and covariates.
+
+**Outliers.csv**  
+A .csv file containing samples that were deemed to be outliers
+during PCA.
  
 ### Description of Client-Side Input Files
 **Sample_Sheet.csv**  
@@ -236,7 +274,7 @@ A .csv file containing residuals from the linear model.
 Raw IDAT files containing unprocessed methylation data for each sample.
  
 **betaValues.csv**  
-If IDAT files are not available, processed beta values can be provided. The **first colulmn** should contain CpG names. The rest of the columns should contain sample names. 
+If IDAT files are not available, processed beta values can be provided. The **first colulmn** should contain CpG names. The rest of the columns should contain sample names.
  
 ### Guidelines for Sample_Sheet.csv 
 **To format a variable in Sample_Sheet.csv:**  

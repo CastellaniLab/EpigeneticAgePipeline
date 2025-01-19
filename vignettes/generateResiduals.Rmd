@@ -34,40 +34,38 @@ can be adjusted.
 To install the EpigeneticAgePipeline, which will include the data used
 in the upcoming example:
 
-``` r
-if (!require("BiocManager", quietly = TRUE)) {
+``` r 
+if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-}
+ 
 packages_to_install <- c(
-    "minfi",
-    "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
-    "IlluminaHumanMethylationEPICmanifest",
-    "methylclock",
-    "methylclockData",
-    "FlowSorted.CordBlood.450k",
-    "IlluminaHumanMethylation450kmanifest",
-    "IlluminaHumanMethylation450kanno.ilmn12.hg19",
-    "IlluminaHumanMethylation27kmanifest",
-    "IlluminaHumanMethylation27kanno.ilmn12.hg19",
-    "AnnotationHub",
-    "AnnotationHubData",
-    "base64",
-    "beanplot",
     "ggplot2",
-    "dplyr",
-    "tidyr",
-    "annotate",
+    "glmmTMB",
+    "devtools",
     "magick",
-    "pdftools"
+	"reshape2",
+    "minfi",
+    "FlowSorted.CordBlood.450k",
+	"FlowSorted.Blood.EPIC",
+    "IlluminaHumanMethylation27kanno.ilmn12.hg19",
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+    "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+    "IlluminaHumanMethylationEPICv2anno.20a1.hg38",
+    "IlluminaHumanMethylationMSAanno.ilm10a1.hg38",
+	"IlluminaHumanMethylationEPICv2manifest",
+	"IlluminaHumanMethylationEPICmanifest",
+	"IlluminaHumanMethylation450kmanifest",
+	"IlluminaHumanMethylation27kmanifest",
+	"IlluminaHumanMethylationMSAmanifest",
+	"sesame",
+    "methylclock"
 )
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
     }
 }
-if (!requireNamespace("yiluyucheng/dnaMethyAge", quietly = TRUE)) {
-        devtools::install_github("yiluyucheng/dnaMethyAge")
-}
+
 remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 
