@@ -229,6 +229,7 @@ smaller sample sizes.
 ```
 generateResiduals(directory = getwd(),
 useBeta = FALSE,
+formula = NULL,
 arrayType = "450K",
 ignoreCor = FALSE,
 PCs = 5,
@@ -243,6 +244,14 @@ Directory containing input data files (default: current working directory).
  
 **useBeta** argument:  
 Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).  
+
+**formula** argument:  
+String. If the user wants to use a custom formula, one may input it as a string.
+If using PC's, input in the format of "PC1".  
+Adult blood cell names: "Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK"  
+Cord blood cell names: "Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC", "NK"  
+Example:  
+"myAge ~ Age + BMI + Smoking_Status + PC1"  
  
 **arrayType** argument:  
 Type of DNA methylation array used (options: "27K", "450K", "EPIC", "EPICv2" or "MSA").  

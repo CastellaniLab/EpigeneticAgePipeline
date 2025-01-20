@@ -11,8 +11,9 @@ post epigenetic age measure generation.
 \usage{
 generateResiduals(directory = getwd(),
 useBeta = FALSE,
+formula = NULL,
 arrayType = "450K",
-ignoreCor = FALSE,
+ignoreCor = TRUE,
 PCs = 5,
 threshold = 3,
 doParallel = TRUE,
@@ -31,6 +32,15 @@ Logical. If TRUE,
 expect a .csv containing beta values
 (scaled between 0 and 1).
 If FALSE, process raw intensity data (IDAT).
+}
+
+\item{formula}{
+String. If the user wants to use a custom formula, one may input it as a string.
+If using PC's, input in the format of "PC1".
+Adult blood cell names: "Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK"
+Cord blood cell names: "Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC", "NK"
+Example:
+"myAge ~ Age + BMI + Smoking_Status + PC1"
 }
 
 \item{arrayType}{
@@ -63,6 +73,7 @@ Logical. If TRUE include cell counts for analysis.
 Logical. If TRUE asssume adult blood sample during cell count generation, else
 assuming cord blood.
 }
+
 
 }
 

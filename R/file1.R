@@ -430,22 +430,18 @@ processIDAT <- function(directory, arrayType) {
     probes_before <- dim(mSetSqFlt)[1]
     #    Remove    Sex    Probes
     if (arrayType == "EPIC") {
-        ann <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+        ann <- IlluminaHumanMethylationEPICanno.ilm10b4.hg19::Locations
     } else if (arrayType == "EPICv2") {
-        ann <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+        ann <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Locations
     } else if (arrayType == "450K") {
-        ann <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+        ann <- IlluminaHumanMethylation450kanno.ilmn12.hg19::Locations
     } else if (arrayType == "MSA") {
-        ann <- getAnnotation(IlluminaHumanMethylationMSAanno.ilm10a1.hg38)
+        ann <- IlluminaHumanMethylationMSAanno.ilm10a1.hg38::Locations
     } else {
         ann <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Locations
     }
     sexProbes <- ann[which(ann$chr %in% c("chrX", "chrY")), ]
-    if (arrayType != "27K") {
-        keep <- !(featureNames(mSetSqFlt) %in% sexProbes$Name)
-    } else {
-        keep <- !(featureNames(mSetSqFlt) %in% rownames(sexProbes))
-    }
+    keep <- !(featureNames(mSetSqFlt) %in% rownames(sexProbes))
     mSetSqFlt <- mSetSqFlt[keep, ]
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message("-----    ",
@@ -461,10 +457,10 @@ processIDAT <- function(directory, arrayType) {
     myEnv$bVals <- getBeta(mSetSqFlt)
     myEnv$bVals <- myEnv$bVals[,order(colnames(myEnv$bVals))]
     if (arrayType == "EPICv2") {
-        suffix <- rownames(getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38))
-        wSuffixEPIC <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)$EPICv1_Loci
-        wSuffix450 <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)$Methyl450_Loci
-        wSuffix27 <- getAnnotation(IlluminaHumanMethylationEPICv2anno.20a1.hg38)$Methyl27_Loci
+        suffix <- rownames(IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other)
+        wSuffixEPIC <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other$EPICv1_Loci
+        wSuffix450 <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other$Methyl450_Loci
+        wSuffix27 <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other$Methyl27_Loci
         matchedIndices <- match(rownames(myEnv$bVals), suffix)
         rownames(myEnv$bVals) <- wSuffixEPIC[matchedIndices]
         emptyIndices <- which(rownames(myEnv$bVals) == "")
@@ -674,11 +670,13 @@ corCovariates <- function(x) {
 }
 
 # Generating regression formula
-formulaGeneration <- function(string, columnsUsed) {
+formulaGeneration <- function(columnsUsed) {
     formula_string <- ""
     if (!("Column" %in% columnsUsed) && "Row" %in% columnsUsed && "Slide"
         %in% columnsUsed && "Batch" %in% columnsUsed) {
-        formula_string <- paste(
+        columnsUsed <- setdiff(columnsUsed, c("Row", "Slide", "Batch"))
+        string <- paste0(columnsUsed, collapse = " + ")
+        formula_string <- paste0(
             "EpiAge",
             " ~ ",
             string,
@@ -687,36 +685,39 @@ formulaGeneration <- function(string, columnsUsed) {
             " + ",
             "(1|Batch)"
         )
-    } else if (!("Slide" %in% columnsUsed) && "Row" %in% columnsUsed && "Column"
-               %in% columnsUsed && "Batch" %in% columnsUsed) {
-        formula_string <- paste(
-            "EpiAge",
-            "~",
-            string,
-            " + ",
-            "Row + Column",
-            " + ",
-            "(1|Batch)"
-        )
     } else if ("Row" %in% columnsUsed && "Column" %in% columnsUsed && "Slide"
                %in% columnsUsed && "Batch" %in% columnsUsed) {
-        formula_string <- paste(
+        columnsUsed <- setdiff(columnsUsed, c("Row", "Column", "Batch", "Slide"))
+        string <- paste0(columnsUsed, collapse = " + ")
+        formula_string <- paste0(
             "EpiAge",
-            "~",
+            " ~ ",
             string,
             " + ",
-            "((Row+Column)|Slide)",
+            "(Row + Column|Slide)",
             " + ",
             "(1|Batch)"
         )
     } else if (!("Row" %in% columnsUsed) && "Column" %in% columnsUsed && "Slide"
         %in% columnsUsed && "Batch" %in% columnsUsed) {
-        formula_string <- paste(
+        columnsUsed <- setdiff(columnsUsed, c("Column", "Batch", "Slide"))
+        string <- paste0(columnsUsed, collapse = " + ")
+        formula_string <- paste0(
             "EpiAge",
             " ~ ",
             string,
             " + ",
             "(Column|Slide)",
+            " + ",
+            "(1|Batch)"
+        )
+    } else if ("Batch" %in% columnsUsed) {
+        columnsUsed <- setdiff(columnsUsed, c("Batch"))
+        string <- paste0(columnsUsed, collapse = " + ")
+        formula_string <- paste0(
+            "EpiAge",
+            " ~ ",
+            string,
             " + ",
             "(1|Batch)"
         )
@@ -727,11 +728,14 @@ formulaGeneration <- function(string, columnsUsed) {
 }
 
 # Definition for function used for residual generation
-residGeneration <- function(pdata) {
+residGeneration <- function(pdata, formula) {
     columns <- colnames(pdata)
     columnsUsed <- columns[columns != "EpiAge"]
-    string <- paste(columnsUsed, collapse = " + ")
-    formula_string <- formulaGeneration(string, columnsUsed)
+    if (is.null(formula)) {
+        formula_string <- formulaGeneration(columnsUsed)
+    } else {
+        formula_string <- formula
+    }
     runlme <- function(formula) {
         lme1 <- glmmTMB(formula,
                             data = pdata,
@@ -797,8 +801,8 @@ pcaGeneration <- function(PCs, threshold) {
 }
 
 # Residual and PCA Generation function
-generateResiduals <- function(directory = getwd(), useBeta = FALSE,
-                            arrayType = "450K", ignoreCor = FALSE, PCs = 5, threshold = 3,
+generateResiduals <- function(directory = getwd(), formula = NULL, useBeta = FALSE,
+                            arrayType = "450K", ignoreCor = TRUE, PCs = 5, threshold = 3,
                             doParallel = TRUE, doCellCounts = TRUE, useAdult = FALSE) {
     myEnv$baseDirectory <- sub("/$", "", getwd())
     setwd(directory)
@@ -831,10 +835,10 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         myEnv$pdataSVs <-
             cbind(myEnv$pdataSVs, pca_scores[, seq(from = 1, to = PCs)])
     }
-    if (!"EpiAge" %in% colnames(myEnv$pdataSVs)) {
+    if (!"EpiAge" %in% colnames(myEnv$pdataSVs) & !is.null(formula)) {
         warning(
             "You did not specify a column called EpiAge@@@1 in your",
-            "Sample_Sheet.csv"
+            "Sample_Sheet.csv", ", rename or use custom formula"
         )
         return()
     }
@@ -842,14 +846,18 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE,
         CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
         addCellCountsToPdataSVs(CC, arrayType, useAdult)
     }
-    processAgeType(myEnv$pdataSVs, "EpiAge", " ")
+    if (is.null(formula)) {
+        processAgeType(myEnv$pdataSVs, "EpiAge", " ")
+    } else {
+        processAgeType(myEnv$pdataSVs, gsub(" ", "", sub("~.*", "", formula)), " ")
+    }
     x <- corCovariates(" ")
     if (!ignoreCor) {
         removeCovariates()
     }
     myEnv$listofCors <- c()
     myEnv$corsToRemove <- c()
-    myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs)
+    myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs, formula)
     write.csv(myEnv$outliersCSV, paste0(myEnv$baseDirectory, "/OutlierSamples.csv"))
     write.csv(myEnv$residualsCSV, paste0(myEnv$baseDirectory, "/Residuals.csv"))
     setwd(myEnv$baseDirectory)
