@@ -43,9 +43,7 @@ usage of the **main()** function.
 ### Cell Count Estimation
 
 -   Utilizes methylation data from IDAT files (if provided) to
-    **estimate cell counts** for specific cell types including B Cells,
-    CD4T Cells, CD8T Cells, Granulocytes, Monocytes, and Nucleated Red
-    Blood cells.
+    **estimate cell counts** for specific cell types.
 
 # Installation
 

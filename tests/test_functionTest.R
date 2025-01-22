@@ -3,6 +3,7 @@ test_that("Testing betaValues file processing", {
     library(EpigeneticAgePipeline)
     EpigeneticAgePipeline:::loadTestData()
     directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
+    setwd(directory)
     main(
         directory = directory,
         normalize = TRUE,

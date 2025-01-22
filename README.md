@@ -9,7 +9,8 @@
 ```
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
- 
+
+# Full Install
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
@@ -33,6 +34,96 @@ packages_to_install <- c(
     "methylclock"
 )
 
+# If only using extracted beta values
+packages_to_install <- c(
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+    "reshape2",
+    "minfi",
+    "sesame",
+    "methylclock"
+)
+
+# For 27K Only
+packages_to_install <- c(
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+    "reshape2",
+    "minfi",
+    "IlluminaHumanMethylation27kanno.ilmn12.hg19",
+    "IlluminaHumanMethylation27kmanifest",
+    "sesame",
+    "methylclock"
+)
+
+# For 450K Only
+packages_to_install <- c(
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+    "reshape2",
+    "minfi",
+    "FlowSorted.CordBloodCombined.450k",
+    "FlowSorted.Blood.EPIC",
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+    "IlluminaHumanMethylation450kmanifest",
+    "sesame",
+    "methylclock"
+)
+
+# For EPICv1 Only
+packages_to_install <- c(
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+    "reshape2",
+    "minfi",
+    "FlowSorted.CordBloodCombined.450k",
+    "FlowSorted.Blood.EPIC",
+    "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+    "IlluminaHumanMethylationEPICmanifest",
+    "sesame",
+    "methylclock"
+)
+
+# For EPICv2 Only
+packages_to_install <- c(
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+    "reshape2",
+    "minfi",
+    "FlowSorted.CordBloodCombined.450k",
+    "FlowSorted.Blood.EPIC",
+    "IlluminaHumanMethylationEPICv2anno.20a1.hg38",
+    "IlluminaHumanMethylationEPICv2manifest",
+    "sesame",
+    "methylclock"
+)
+
+# For MSA Only
+packages_to_install <- c(
+    "ggplot2",
+    "glmmTMB",
+    "devtools",
+    "magick",
+    "reshape2",
+    "minfi",
+    "FlowSorted.CordBloodCombined.450k",
+    "FlowSorted.Blood.EPIC",
+    "IlluminaHumanMethylationMSAanno.ilm10a1.hg38",
+    "IlluminaHumanMethylationMSAmanifest",
+    "sesame",
+    "methylclock"
+)
+
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
         BiocManager::install(package)
@@ -46,7 +137,7 @@ remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
 ```
 library(EpigeneticAgePipeline)
 main(directory = directory, #directory containing IDAT/beta values/supporting data
-    normalize = TRUE, #should normalize beta values?
+    normalize = TRUE, #should normalize beta values? (for Horvath, Horvath2, Hannum, Levine Clocks, Horvath's normalization from methylclock)
     useBeta = FALSE, #should use beta values contained within a betaValues.csv file?
     arrayType = "450K", #specification of array type used to generate idat files 
     useSampleSheet = FALSE, #should use phenotypic data found within a Sample_Sheet.csv file?
@@ -138,7 +229,7 @@ graph TD
     A["Start"]
     B{"Available Variables"}
     C["formula_string = 'EpiAge ~ Xi + (Row|Slide) + (1|Batch)'"]
-    D["formula_string = 'EpiAge ~ Xi + Row + Column + (1|Batch)'"]
+    D["formula_string = 'EpiAge ~ Xi + (1|Batch)'"]
     E["formula_string = 'EpiAge ~ Xi + (Row+Column|Slide) + (1|Batch)'"]
     F["formula_string = 'EpiAge ~ Xi + (Column|Slide) + (1|Batch)'"]
     G["formula_string = 'EpiAge ~ Xi'"]
@@ -146,7 +237,7 @@ graph TD
  
     A --> B
     B -->|Not 'Column', Yes 'Row', 'Slide', 'Batch'| C
-    B -->|Not 'Slide', Yes 'Row', 'Column', 'Batch'| D
+    B -->|Not 'Slide', 'Row', 'Column', Yes 'Batch'| D
     B -->|Yes 'Row', 'Column', 'Slide', 'Batch'| E
     B -->|Not 'Row', Yes 'Column', 'Slide', 'Batch'| F
     B -->|Else| G
@@ -346,3 +437,68 @@ setExperimentHubOption("CACHE", newcache)
 eh = ExperimentHub()
 ```
 
+
+### Package References  
+
+Aryee MJ, Jaffe AE, Corrada-Bravo H, Ladd-Acosta C, Feinberg AP, Hansen KD, Irizarry RA (2014). “Minfi: A flexible and
+  comprehensive Bioconductor package for the analysis of Infinium DNA Methylation microarrays.” _Bioinformatics_,
+  *30*(10), 1363-1369. doi:10.1093/bioinformatics/btu049 <https://doi.org/10.1093/bioinformatics/btu049>.
+
+Triche TJ, Weisenberger DJ, Van Den Berg D, Laird PW, Siegmund KD (2013). “Low-level processing of Illumina Infinium DNA
+  Methylation BeadArrays.” _Nucleic Acids Research_, *41*(7), e90. doi:10.1093/nar/gkt090
+  <https://doi.org/10.1093/nar/gkt090>.
+
+Fortin J, Triche TJ, Hansen KD (2017). “Preprocessing, normalization and integration of the Illumina
+  HumanMethylationEPIC array with minfi.” _Bioinformatics_, *33*(4). doi:10.1093/bioinformatics/btw691
+  <https://doi.org/10.1093/bioinformatics/btw691>.
+
+Dolors Pelegri-Siso, Paula de Prado, Justiina Ronkainen, Mariona Bustamante, Juan R Gonzalez, methylclock: a
+  Bioconductor package to estimate DNA methylation age, Bioinformatics, Volume 37, Issue 12, 15 June 2021, Pages
+  1759–1760, https://doi.org/10.1093/bioinformatics/btaa825.
+
+Wang Y (2025). _dnaMethyAge: Predict epigenetic age from DNA methylation data and calculate age acceleration._. R
+  package version 0.2.0, commit f8ef2c7a781193cef426a28de4d1c6eed4bc7654, <https://github.com/yiluyucheng/dnaMethyAge>.
+
+Fortin J, Hansen KD (2016).
+  _IlluminaHumanMethylation27kanno.ilmn12.hg19:
+  Annotation for Illumina's 27k methylation arrays_. R
+  package version 0.6.0.
+
+Hansen KD (2021).
+  _IlluminaHumanMethylation450kanno.ilmn12.hg19:
+  Annotation for Illumina's 450k methylation arrays_. R
+  package version 0.6.1.
+
+Hansen KD (2017).
+  _IlluminaHumanMethylationEPICanno.ilm10b4.hg19:
+  Annotation for Illumina's EPIC methylation arrays_. R
+  package version 0.6.0,
+  <https://bitbucket.com/kasperdanielhansen/Illumina_EPIC>.
+
+Gu Z (2024).
+  _IlluminaHumanMethylationEPICv2anno.20a1.hg38:
+  Annotation for Illumina's EPIC v2.0 methylation
+  arrays_. R package version 1.0.0,
+  <https://www.illumina.com/products/by-type/microarray-kits   /infinium-methylation-epic.html>.
+
+MacDonald JW (2024).
+  _IlluminaHumanMethylationMSAanno.ilm10a1.hg38:
+  Annotation for Illumina's MSA methylation arrays_. R
+  package version 0.1.0,
+  <https://github.com/jmacdon/IlluminaHumanMethylationMSAanno.ilm10a1.hg38>.
+
+Salas LA, Gervin K, Jones MC (2024).
+  _FlowSorted.CordBloodCombined.450k: Illumina 450k/EPIC
+  data on FACS and MACS umbilical blood cells_.
+  doi:10.18129/B9.bioc.FlowSorted.CordBloodCombined.450k
+  <https://doi.org/10.18129/B9.bioc.FlowSorted.CordBloodCombined.450k>,
+  R package version 1.22.0,
+  <https://bioconductor.org/packages/FlowSorted.CordBloodCombined.450k>.
+
+Salas LA, Koestler DC (2024). _FlowSorted.Blood.EPIC:
+  Illumina EPIC data on immunomagnetic sorted peripheral
+  adult blood cells_.
+  doi:10.18129/B9.bioc.FlowSorted.Blood.EPIC
+  <https://doi.org/10.18129/B9.bioc.FlowSorted.Blood.EPIC>,
+  R package version 2.10.0,
+  <https://bioconductor.org/packages/FlowSorted.Blood.EPIC>.

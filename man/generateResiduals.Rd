@@ -131,6 +131,7 @@ https://github.com/CastellaniLab/EpigeneticAgePipeline
 library(EpigeneticAgePipeline)
 EpigeneticAgePipeline:::loadTestData()
 directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
+setwd(directory)
 generateResiduals(
     directory = directory,
     useBeta = TRUE,
@@ -143,5 +144,69 @@ message("Residuals")
 knitr::kable(read.csv(paste0(directory, "Residuals.csv")))
 }
 
+\references{
+Aryee MJ, Jaffe AE, Corrada-Bravo H, Ladd-Acosta C, Feinberg AP, Hansen KD, Irizarry RA (2014). “Minfi: A flexible and
+  comprehensive Bioconductor package for the analysis of Infinium DNA Methylation microarrays.” _Bioinformatics_,
+  *30*(10), 1363-1369. doi:10.1093/bioinformatics/btu049 <https://doi.org/10.1093/bioinformatics/btu049>.
+
+Triche TJ, Weisenberger DJ, Van Den Berg D, Laird PW, Siegmund KD (2013). “Low-level processing of Illumina Infinium DNA
+  Methylation BeadArrays.” _Nucleic Acids Research_, *41*(7), e90. doi:10.1093/nar/gkt090
+  <https://doi.org/10.1093/nar/gkt090>.
+
+Fortin J, Triche TJ, Hansen KD (2017). “Preprocessing, normalization and integration of the Illumina
+  HumanMethylationEPIC array with minfi.” _Bioinformatics_, *33*(4). doi:10.1093/bioinformatics/btw691
+  <https://doi.org/10.1093/bioinformatics/btw691>.
+
+Dolors Pelegri-Siso, Paula de Prado, Justiina Ronkainen, Mariona Bustamante, Juan R Gonzalez, methylclock: a
+  Bioconductor package to estimate DNA methylation age, Bioinformatics, Volume 37, Issue 12, 15 June 2021, Pages
+  1759–1760, https://doi.org/10.1093/bioinformatics/btaa825.
+
+Wang Y (2025). _dnaMethyAge: Predict epigenetic age from DNA methylation data and calculate age acceleration._. R
+  package version 0.2.0, commit f8ef2c7a781193cef426a28de4d1c6eed4bc7654, <https://github.com/yiluyucheng/dnaMethyAge>.
+
+Fortin J, Hansen KD (2016).
+  _IlluminaHumanMethylation27kanno.ilmn12.hg19:
+  Annotation for Illumina's 27k methylation arrays_. R
+  package version 0.6.0.
+
+Hansen KD (2021).
+  _IlluminaHumanMethylation450kanno.ilmn12.hg19:
+  Annotation for Illumina's 450k methylation arrays_. R
+  package version 0.6.1.
+
+Hansen KD (2017).
+  _IlluminaHumanMethylationEPICanno.ilm10b4.hg19:
+  Annotation for Illumina's EPIC methylation arrays_. R
+  package version 0.6.0,
+  <https://bitbucket.com/kasperdanielhansen/Illumina_EPIC>.
+
+Gu Z (2024).
+  _IlluminaHumanMethylationEPICv2anno.20a1.hg38:
+  Annotation for Illumina's EPIC v2.0 methylation
+  arrays_. R package version 1.0.0,
+  <https://www.illumina.com/products/by-type/microarray-kits   /infinium-methylation-epic.html>.
+
+MacDonald JW (2024).
+  _IlluminaHumanMethylationMSAanno.ilm10a1.hg38:
+  Annotation for Illumina's MSA methylation arrays_. R
+  package version 0.1.0,
+  <https://github.com/jmacdon/IlluminaHumanMethylationMSAanno.ilm10a1.hg38>.
+
+Salas LA, Gervin K, Jones MC (2024).
+  _FlowSorted.CordBloodCombined.450k: Illumina 450k/EPIC
+  data on FACS and MACS umbilical blood cells_.
+  doi:10.18129/B9.bioc.FlowSorted.CordBloodCombined.450k
+  <https://doi.org/10.18129/B9.bioc.FlowSorted.CordBloodCombined.450k>,
+  R package version 1.22.0,
+  <https://bioconductor.org/packages/FlowSorted.CordBloodCombined.450k>.
+
+Salas LA, Koestler DC (2024). _FlowSorted.Blood.EPIC:
+  Illumina EPIC data on immunomagnetic sorted peripheral
+  adult blood cells_.
+  doi:10.18129/B9.bioc.FlowSorted.Blood.EPIC
+  <https://doi.org/10.18129/B9.bioc.FlowSorted.Blood.EPIC>,
+  R package version 2.10.0,
+  <https://bioconductor.org/packages/FlowSorted.Blood.EPIC>.
+}
 
 

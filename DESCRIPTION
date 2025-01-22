@@ -23,16 +23,23 @@ Encoding: UTF-8
 NeedsCompilation: no
 VignetteBuilder: knitr
 Packaged: 2023-09-26 16:33:54 UTC;
-Depends: R (>= 3.5.0)
+Depends: R (>= 4.3.0)
 Imports:
     ggplot2,
     glmmTMB,
     devtools,
     magick,
     reshape2,
-    BiocManager
-Suggests:
+    BiocManager,
     minfi,
+    S4Vectors,
+    ggpubr,
+    methylclock,
+    preprocessCore,
+    readr,
+    sesame,
+    knitr
+Suggests:
     FlowSorted.CordBloodCombined.450k,
     FlowSorted.Blood.EPIC,
     IlluminaHumanMethylation27kanno.ilmn12.hg19,
@@ -44,7 +51,5 @@ Suggests:
     IlluminaHumanMethylationEPICmanifest,
     IlluminaHumanMethylation450kmanifest,
     IlluminaHumanMethylation27kmanifest,
-    IlluminaHumanMethylationMSAmanifest,
-    sesame,
-    methylclock
+    IlluminaHumanMethylationMSAmanifest
 RoxygenNote: 7.3.1

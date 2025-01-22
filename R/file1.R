@@ -85,7 +85,7 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
                                               annotation = "ilm10a1.hg38")
             }
-            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- getBeta(minfi::preprocessNoob(rgSet))
             IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
                 which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
             ]
@@ -97,7 +97,7 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 lessThanOne = FALSE
             )
         } else if (arrayType == "EPICv2") {
-            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- getBeta(minfi::preprocessNoob(rgSet))
             Betas <- sesame::betasCollapseToPfx(Betas)
             IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
                 which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
@@ -110,7 +110,7 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 lessThanOne = FALSE
             )
         } else {
-            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- getBeta(minfi::preprocessNoob(rgSet))
             IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy[
                 which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy %in% rownames(Betas))
             ]
@@ -131,7 +131,7 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
                                               annotation = "ilm10a1.hg38")
             }
-            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- getBeta(minfi::preprocessNoob(rgSet))
             IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
                 which(FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood %in% rownames(Betas))
             ]
@@ -143,7 +143,7 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 lessThanOne = FALSE
             )
         } else {
-            Betas <- getBeta(preprocessNoob(rgSet))
+            Betas <- getBeta(minfi::preprocessNoob(rgSet))
             Betas <- sesame::betasCollapseToPfx(Betas)
             IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
                 which(FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood %in% rownames(Betas))
@@ -722,6 +722,7 @@ formulaGeneration <- function(columnsUsed) {
             "(1|Batch)"
         )
     } else {
+        string <- paste0(columnsUsed, collapse = " + ")
         formula_string <- paste("EpiAge", "~", string)
     }
     return(formula_string)
@@ -801,7 +802,7 @@ pcaGeneration <- function(PCs, threshold) {
 }
 
 # Residual and PCA Generation function
-generateResiduals <- function(directory = getwd(), formula = NULL, useBeta = FALSE,
+generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NULL,
                             arrayType = "450K", ignoreCor = TRUE, PCs = 5, threshold = 3,
                             doParallel = TRUE, doCellCounts = TRUE, useAdult = FALSE) {
     myEnv$baseDirectory <- sub("/$", "", getwd())
