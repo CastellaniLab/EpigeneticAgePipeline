@@ -37,8 +37,8 @@ If FALSE, process raw intensity data (IDAT).
 \item{formula}{
 String. If the user wants to use a custom formula, one may input it as a string.
 If using PC's, input in the format of "PC1".
-Adult blood cell names: "Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK"
-Cord blood cell names: "Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC", "NK"
+Adult blood cell names: "Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK" (if using EPICv2 or MSA)
+Cord blood cell names: "Bcell", "CD4T", "CD8T", "Gran" (if using EPIC or 450K), "Mono", "nRBC", "NK", "Neu"(if using EPICv2 or MSA)
 Example:
 "myAge ~ Age + BMI + Smoking_Status + PC1"
 }

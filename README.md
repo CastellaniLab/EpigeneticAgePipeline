@@ -7,17 +7,21 @@
 1. Install the following packages which act as dependencies for the pipeline.
  
 ```
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+if (!require("BiocManager", quietly = TRUE)) {
+	install.packages("BiocManager")
+}
+
 
 # Full Install
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
     "minfi",
+	"FlowSorted.CordBlood.450k",
     "FlowSorted.CordBloodCombined.450k",
     "FlowSorted.Blood.EPIC",
     "IlluminaHumanMethylation27kanno.ilmn12.hg19",
@@ -38,6 +42,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -50,6 +55,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -64,12 +70,13 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
     "minfi",
-    "FlowSorted.CordBloodCombined.450k",
-    "FlowSorted.Blood.EPIC",
+	"FlowSorted.CordBlood.450k",
+	"FlowSorted.Blood.450k",
     "IlluminaHumanMethylation450kanno.ilmn12.hg19",
     "IlluminaHumanMethylation450kmanifest",
     "sesame",
@@ -80,14 +87,17 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
     "minfi",
-    "FlowSorted.CordBloodCombined.450k",
-    "FlowSorted.Blood.EPIC",
+	"FlowSorted.CordBlood.450k",
+	"FlowSorted.Blood.450k",
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
     "IlluminaHumanMethylationEPICmanifest",
+	"IlluminaHumanMethylation450kanno.ilmn12.hg19",
+	"IlluminaHumanMethylation450kmanifest",
     "sesame",
     "methylclock"
 )
@@ -96,6 +106,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -112,6 +123,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
+	"ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -205,14 +217,17 @@ If IDAT files are provided, methylation data can be used to determine cell count
 - CD8T Cells
 - Granulocytes
 - Monocytes
+- Natural Killer Cells *if using EPICv2 or MSA Platform
 - Nucleated Red Blood cells  
+
 
 useAdult == TRUE  
 - B Cells  
 - CD4T Cells  
 - CD8T Cells  
+- Granulocytes *if using EPIC or 450K
 - Monocytes  
-- Neutrophils  
+- Neutrophils  *if using EPICv2 or MSA Platform
 - Natural Killer Cells  
 
 
@@ -267,7 +282,8 @@ useBeta = FALSE,
 arrayType = "450K",
 useSampleSheet = TRUE,
 doParallel = TRUE,
-writeBeta = TRUE)
+writeBeta = TRUE,
+useAdult = FALSE)
 ```
 **directory** argument:  
 String. Directory containing input data files (default: current working directory).

@@ -29,6 +29,7 @@ main <- function(directory = getwd(),
     CC <- NULL
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
         CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
+        print(CC)
     }
     if (useBeta == FALSE) {
         if (writeBeta ) {
@@ -78,7 +79,7 @@ startup <- function() {
 estimateCellCounts <- function(rgSet, arrayType, useAdult) {
     message("Generating cell counts...")
     if (useAdult) {
-        if (arrayType == "EPIC" || arrayType == "MSA") {
+        if (arrayType == "MSA") {
             if (arrayType == "MSA" &&
                 (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
                  minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
@@ -110,21 +111,12 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 lessThanOne = FALSE
             )
         } else {
-            Betas <- getBeta(minfi::preprocessNoob(rgSet))
-            IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy[
-                which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy %in% rownames(Betas))
-            ]
-            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
-                Betas[IDOLOptimizedCpGsBlood, ],
-                FlowSorted.Blood.EPIC::IDOLOptimizedCpGs450klegacy.compTable[IDOLOptimizedCpGsBlood, ],
-                contrastWBC = NULL,
-                nonnegative = TRUE,
-                lessThanOne = FALSE
-            )
+            FlowSorted.Blood.450k::FlowSorted.Blood.450k
+            CC <- minfi::estimateCellCounts(rgSet)
         }
         return(CC)
     } else {
-        if (arrayType != "EPICv2") {
+        if (arrayType == "MSA") {
             if (arrayType == "MSA" &&
                 (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
                  minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
@@ -142,7 +134,7 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 nonnegative = TRUE,
                 lessThanOne = FALSE
             )
-        } else {
+        } else if (arrayType == "EPICv2") {
             Betas <- getBeta(minfi::preprocessNoob(rgSet))
             Betas <- sesame::betasCollapseToPfx(Betas)
             IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
@@ -155,6 +147,9 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
                 nonnegative = TRUE,
                 lessThanOne = FALSE
             )
+        } else {
+            FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
+            CC <- minfi::estimateCellCounts(rgSet, compositeCellType = "CordBlood", cellTypes = c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC"))
         }
         return(CC)
     }
@@ -177,10 +172,14 @@ preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType, useAdult) {
 
 # Adding cell counts to pdataSVs
 addCellCountsToPdataSVs <- function(CC, arrayType, useAdult) {
-    if (useAdult) {
+    if (useAdult && (arrayType == "EPICv2" || arrayType == "MSA")) {
         cellTypes <- c("Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK")
+    } else if (useAdult) {
+        cellTypes <- c("CD8T","CD4T", "NK","Bcell","Mono","Gran")
+    } else if (useAdult == FALSE && (arrayType == "EPICv2" || arrayType == "MSA")) {
+        cellTypes <- c("CD8T", "CD4T", "NK", "Bcell", "Mono", "Gran", "nRBC")
     } else {
-        cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC", "NK")
+        cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
     }
     for (cellType in cellTypes) {
         myEnv$pdataSVs[[cellType]] <- as.numeric(CC[, cellType])
