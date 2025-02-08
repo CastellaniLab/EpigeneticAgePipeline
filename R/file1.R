@@ -24,12 +24,11 @@ main <- function(directory = getwd(),
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(directory, arrayType)
+        processIDAT(directory, arrayType, useSampleSheet)
     }
     CC <- NULL
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
         CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
-        print(CC)
     }
     if (useBeta == FALSE) {
         if (writeBeta ) {
@@ -56,7 +55,7 @@ main <- function(directory = getwd(),
     }
     exportResults(results, myEnv$bVals, finalOutput)
     setwd(myEnv$baseDirectory)
-    on.exit(detach(myEnv))
+    detach(myEnv)
 }
 
 # Function for loading tools and setting variables
@@ -350,15 +349,54 @@ createGroupedBarChart <- function(data, x, y, fill, title) {
 }
 
 # Definition of processIDAT function starts here
-processIDAT <- function(directory, arrayType) {
+processIDAT <- function(directory, arrayType, useSampleSheet) {
     dataDirectory <- directory
     myEnv$rgSet <- read.metharray.exp(dataDirectory, force = TRUE)
+    if (useSampleSheet) {
+        message("Checking dimensionality")
+        sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
+        message("Number of samples in Sample_Sheet:", nrow(sampleData))
+        message("Number of samples from IDAT Files:", length(list.files(path = dataDirectory, pattern = "\\.idat$")) / 2)
+        if ((length(list.files(path = dataDirectory, pattern = "\\.idat$")) / 2) != nrow(sampleData)) {
+            message("The number of samples in Sample_Sheet is not equal to the number of samples")
+            stop()
+        }
+    }
 
     if (arrayType == "MSA" &&
         (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
          minfi::annotation(myEnv$rgSet)["annotation"] != "ilm10a1.hg38")) {
         minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationMSA",
                                       annotation = "ilm10a1.hg38")
+    }
+
+    if (arrayType == "EPICv2" &&
+        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationEPICv2" ||
+         minfi::annotation(myEnv$rgSet)["annotation"] != "20a1.hg38")) {
+        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationEPICv2",
+                                            annotation = "20a1.hg38")
+    }
+
+    if (arrayType == "EPIC" &&
+        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationEPIC" ||
+         minfi::annotation(myEnv$rgSet)["annotation"] != "ilm10b4.hg19")) {
+        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationEPIC",
+                                            annotation = "ilm10b4.hg19")
+        message("Test")
+    }
+
+    if (arrayType == "450K" &&
+        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylation450k" ||
+         minfi::annotation(myEnv$rgSet)["annotation"] != "ilmn12.hg19")) {
+        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylation450k",
+                                            annotation = "ilmn12.hg19")
+    }
+
+    if (arrayType == "27K" &&
+        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylation27k" ||
+         minfi::annotation(myEnv$rgSet)["annotation"] != "ilmn12.hg19")) {
+        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylation450k",
+                                            annotation = "ilmn12.hg19")
     }
 
     #    Calculate    the    detection    p-values
@@ -368,6 +406,13 @@ processIDAT <- function(directory, arrayType) {
     keep <- colMeans(detP) < 0.05
     myEnv$rgSet <- myEnv$rgSet[, keep]
     samples_removed <- samples_before - dim(detP)[2]
+    if (samples_removed != 0) {
+        message("The following samples were found to be too poor quality, please remove from analysis:")
+        for (name in names(keep[keep == FALSE])) {
+            message(name)
+        }
+        stop()
+    }
     message(
         "-----    ",
         samples_removed,
@@ -550,10 +595,10 @@ createAnalysisDF <- function(directory) {
     sampleData <- as.data.frame(sampleData)
     for (i in colnames(sampleData)) {
         newVarName <- gsub("\\...[1-2]$", "", i)
-        if (grepl("...1", i)) {
+        if (grepl("\\.\\.\\.1", i)) {
             message(paste0("Reading variable as numeric, ", i))
             myEnv$pdataSVs[[newVarName]] <- as.numeric(sampleData[[i]])
-        } else if (grepl("...2", i)) {
+        } else if (grepl("\\.\\.\\.2", i)) {
             if (i == "Array...2") {
                 row <- as.factor(gsub(
                     "R(\\d+).*",
@@ -819,7 +864,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NU
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(directory, arrayType)
+        processIDAT(directory, arrayType, useSampleSheet = TRUE)
     }
     if (PCs != 0) {
         pca_scores <- pcaGeneration(PCs, threshold)
@@ -861,6 +906,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NU
     write.csv(myEnv$outliersCSV, paste0(myEnv$baseDirectory, "/OutlierSamples.csv"))
     write.csv(myEnv$residualsCSV, paste0(myEnv$baseDirectory, "/Residuals.csv"))
     setwd(myEnv$baseDirectory)
+    detach(myEnv)
 }
 
 #FUNCTION FROM:

@@ -211,7 +211,7 @@ NOTE: To generate **GrimAge**, chronological age must be included ("Age@@@1"), a
  
 If IDAT files are provided, methylation data can be used to determine cell counts of the following cell types .
  
- useAdult == FALSE
+ useAdult == FALSE, Assumes cord blood sample, Uses FlowSorted.CordBloodCombined.450k (MSA/EPICv2) or FlowSorted.CordBlood.450k  
 - B Cells
 - CD4T Cells
 - CD8T Cells
@@ -221,7 +221,7 @@ If IDAT files are provided, methylation data can be used to determine cell count
 - Nucleated Red Blood cells  
 
 
-useAdult == TRUE  
+useAdult == TRUE, Assumes peripheral blood samples, Uses FlowSorted.Blood.EPIC (MSA/EPICv2) or FlowSorted.Blood.450k  
 - B Cells  
 - CD4T Cells  
 - CD8T Cells  
@@ -309,7 +309,7 @@ Logical. If TRUE write extracted beta values from processed IDAT files.
 
 **useAdult** argument:  
 Logical. If TRUE asssume adult blood sample during cell count generation, else
-assuming cord blood.
+assuming cord blood. To view the differences in the cell counts generated [see cell counts section](#cell-counts).
  
 #### Output  
  
@@ -382,7 +382,7 @@ Logical. If TRUE include cell counts for analysis.
 
 **useAdult** argument:  
 Logical. If TRUE asssume adult blood sample during cell count generation, else
-assuming cord blood.  
+assuming cord blood. To view the differences in the cell counts generated [see cell counts section](#cell-counts).
  
 #### Output  
  
