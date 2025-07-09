@@ -9,9 +9,8 @@ main <- function(directory = getwd(),
                  doParallel = TRUE,
                  writeBeta = TRUE,
                  useAdult = FALSE) {
-    myEnv$baseDirectory <- sub("/$", "", getwd())
-    setwd(directory)
     startup()
+    setwd(directory)
     if (useBeta) {
         if (doParallel) {
             message("Reading betaValues.csv, utilizing parallel processing...")
@@ -49,18 +48,28 @@ main <- function(directory = getwd(),
         results$GrimAge <- NA
         results$GrimAgeAccel <- NA
     }
-    finalOutput <- ""
-    if (ncol(myEnv$pdataSVs) != 0) {
+    finalOutput <- " "
+    if (ncol(myEnv$pdataSVs) != 0 && nrow(myEnv$pdataSVs) > 1) {
         finalOutput <- processAllAgeTypes(results)
+    } else {
+        message("Skipping covariate correlation analysis: only one observation or variable present.")
     }
     exportResults(results, myEnv$bVals, finalOutput)
     setwd(myEnv$baseDirectory)
-    detach(myEnv)
+    detach("myEnv")
 }
 
 # Function for loading tools and setting variables
 startup <- function() {
     message("Loading dependencies...")
+
+    if ("myEnv" %in% search()) {
+        detach("myEnv")
+    }
+    rm(list = ls(envir = myEnv), envir = myEnv)
+
+    assign("baseDirectory", sub("/$", "", getwd()), envir = myEnv)
+
     assign("bVals", 0, envir = myEnv)
     assign("rgSet", 0, envir = myEnv)
     assign("listofCors", c(), envir = myEnv)
@@ -71,7 +80,7 @@ startup <- function() {
     assign("residualsCSV", 0, envir = myEnv)
     data("PC-clocks", envir = myEnv, package = "EpigeneticAgePipeline")
     data("DunedinPACE", envir = myEnv, package = "EpigeneticAgePipeline")
-    attach(myEnv)
+    attach(myEnv, name = "myEnv")
 }
 
 # Function for getting cell counts
@@ -160,9 +169,9 @@ preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType, useAdult) {
     myEnv$pdataSVs <- data.frame(row.names = colnames(bVals))
     if (useSampleSheet) {
         createAnalysisDF(getwd())
-        if ("EpiAge" %in% colnames(myEnv$pdataSVs)) {
-            myEnv$pdataSVs$EpiAge <- NULL
-        }
+        #if ("EpiAge" %in% colnames(myEnv$pdataSVs)) {
+            #myEnv$pdataSVs$EpiAge <- NULL
+        #}
     }
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
         addCellCountsToPdataSVs(CC, arrayType, useAdult)
@@ -382,7 +391,6 @@ processIDAT <- function(directory, arrayType, useSampleSheet) {
          minfi::annotation(myEnv$rgSet)["annotation"] != "ilm10b4.hg19")) {
         minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationEPIC",
                                             annotation = "ilm10b4.hg19")
-        message("Test")
     }
 
     if (arrayType == "450K" &&
@@ -521,7 +529,7 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...) {
     on.exit(par(usr = usr))
     par(usr = c(0, 1, 0, 1))
     r <- abs(cor(x, y, use = "complete.obs"))
-    myEnv$listofCors <- append(myEnv$listofCors, r)
+    #myEnv$listofCors <- append(myEnv$listofCors, r)
     txt <- format(c(r, 0.123456789), digits = digits)[1]
     txt <- paste0(prefix, txt)
     if (missing(cex.cor)) cex.cor <- 0.8 / strwidth(txt)
@@ -548,18 +556,18 @@ processAgeType <- function(data, ageType, output) {
         ageType,
         colnames[colnames != ageType]
     )]
-    if ("V1" %in% names(myEnv$pdataSVs)) {
-        myEnv$pdataSVs$V1 <- NULL
-    }
+    #if ("V1" %in% names(myEnv$pdataSVs)) {
+        #myEnv$pdataSVs$V1 <- NULL
+    #}
     write.csv(myEnv$pdataSVs, file = paste0(myEnv$baseDirectory, "/", ageType,"SampleData.csv"))
+    validColumns <- c()
     for (i in colnames(myEnv$pdataSVs)) {
-        if (length(unique(myEnv$pdataSVs[[i]])) == 1) {
-            myEnv$pdataSVs[[i]] <- NULL
+        if (length(unique(myEnv$pdataSVs[[i]])) != 1) {
+            validColumns <- c(validColumns, i)
         }
     }
-    diag.labels <- colnames(myEnv$pdataSVs)
-    pdataColumns <-
-        names(myEnv$pdataSVs)[names(myEnv$pdataSVs) != ageType]
+    diag.labels <- validColumns
+    pdataColumns <- setdiff(validColumns, ageType)
     plot.formula <- as.formula(paste(
         ageType, "~",
         paste(pdataColumns,
@@ -568,10 +576,9 @@ processAgeType <- function(data, ageType, output) {
     ))
     generateMatrixPlot(plot.formula, diag.labels, ageType)
     finalOutput <- paste(output, "\n", ageType, "Covariates\n")
-    finalOutput <- corCovariates(finalOutput)
-    covariate_data <- myEnv$pdataSVs
+    finalOutput <- corCovariates(finalOutput, validColumns)
     if (ageType != "EpiAge") {
-        myEnv$listofCors <- c()
+        #myEnv$listofCors <- c()
         myEnv$corsToRemove <- c()
     }
     return(finalOutput)
@@ -589,7 +596,7 @@ generateMatrixPlot <- function(plotFormula, diagLabels, ageType) {
 
 # Definition for function for creating the df used for analyses
 createAnalysisDF <- function(directory) {
-    message("Reading Sample_Sheet.csv...")
+    message("Reading Sample_Sheet.csv (assuming data is sorted A-Z on sample id's)...")
     setwd(directory)
     sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
     sampleData <- as.data.frame(sampleData)
@@ -664,54 +671,45 @@ removeCovariates <- function() {
 }
 
 # Definition for function used to find highly correlated covariates
-corCovariates <- function(x) {
-    corDf <- myEnv$pdataSVs
-    corDf <- corDf[seq.default(from = 1, to = (ncol(myEnv$pdataSVs))), ]
-    row.names(corDf) <- colnames(corDf)
-    corDf[, ] <- 0
-    counter <- 1
-    for (i in seq.default(from = 1, to = (ncol(corDf))))
-    {
-        for (j in seq.default(from = i, to = (ncol(corDf)) - 1))
-        {
-            corDf[j + 1, i] <- myEnv$listofCors[counter]
-            counter <- counter + 1
-        }
-    }
-    corDf <- corDf[-nrow(corDf), ]
-    for (i in seq.default(from = 1, to = (ncol(corDf)))) {
-        for (j in seq.default(from = i, to = (ncol(corDf)) - 1)) {
-            if (!is.na(corDf[j + 1, i])) {
-                if (corDf[j + 1, i] > 0.6) {
-                    covariate1 <- rownames(corDf)[j + 1]
-                    covariate2 <- colnames(corDf)[i]
-                    x <- paste(
-                        x, "\n", covariate1, " and ", covariate2,
-                        " are highly correlated: ", corDf[j + 1, i], "\n"
-                    )
-                    message("\n")
-                    message( covariate1, " and ", covariate2,
-                        " are highly correlated: ", corDf[j + 1, i]
-                    )
-                    message("\n")
-                    if (!(covariate1 %in% myEnv$corsToRemove)) {
-                        myEnv$corsToRemove <- append(
-                            myEnv$corsToRemove,
-                            covariate1
-                        )
-                    }
-                    if (!(covariate2 %in% myEnv$corsToRemove)) {
-                        myEnv$corsToRemove <- append(
-                            myEnv$corsToRemove,
-                            covariate2
-                        )
-                    }
-                }
+corCovariates <- function(reportText, validColumns) {
+    # Subset pdataSVs to validColumns for correlation
+    corDf <- myEnv$pdataSVs[, validColumns, drop = FALSE]
+
+    # Compute correlation matrix directly, safely handling factors and NAs
+    corDfNumeric <- data.frame(
+        lapply(corDf, function(col) {
+            if (is.factor(col) || is.character(col)) {
+                as.numeric(as.factor(col))
+            } else {
+                as.numeric(col)
+            }
+        }),
+        check.names = FALSE,
+        row.names = rownames(corDf)
+    )
+
+    corMatrix <- cor(corDfNumeric, use = "pairwise.complete.obs")
+
+    # Find and report high correlations
+    for (i in seq_len(ncol(corMatrix) - 1)) {
+        for (j in seq(i + 1, ncol(corMatrix))) {
+            corrValue <- corMatrix[i, j]
+            if (!is.na(corrValue) && abs(corrValue) > 0.6) {
+                covariate1 <- colnames(corMatrix)[i]
+                covariate2 <- colnames(corMatrix)[j]
+                reportText <- paste0(
+                    reportText, "\n", covariate1, " and ", covariate2,
+                    " are highly correlated: ", round(corrValue, 3), "\n"
+                )
+                message("\n", covariate1, " and ", covariate2,
+                        " are highly correlated: ", round(corrValue, 3), "\n")
+                myEnv$corsToRemove <- union(myEnv$corsToRemove, c(covariate1, covariate2))
             }
         }
     }
-    return(x)
+    return(reportText)
 }
+
 
 # Generating regression formula
 formulaGeneration <- function(columnsUsed) {
@@ -849,9 +847,8 @@ pcaGeneration <- function(PCs, threshold) {
 generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NULL,
                             arrayType = "450K", ignoreCor = TRUE, PCs = 5, threshold = 3,
                             doParallel = TRUE, doCellCounts = TRUE, useAdult = FALSE) {
-    myEnv$baseDirectory <- sub("/$", "", getwd())
-    setwd(directory)
     startup()
+    setwd(directory)
     if (useBeta == TRUE) {
         if (doParallel) {
             message("Reading betaValues.csv, utilizing parallel processing...")
@@ -870,11 +867,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NU
         pca_scores <- pcaGeneration(PCs, threshold)
     }
     # Processing and Writing Residuals ####
-    myEnv$pdataSVs <- as.data.frame(matrix(NA,
-        nrow = ncol(myEnv$bVals),
-        ncol = 1
-    ))
-    rownames(myEnv$pdataSVs) <- colnames(myEnv$bVals)
+    myEnv$pdataSVs <- data.frame(row.names = colnames(myEnv$bVals))
     createAnalysisDF(directory)
     if (PCs != 0) {
         myEnv$pdataSVs <-
@@ -897,16 +890,16 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NU
         processAgeType(myEnv$pdataSVs, gsub(" ", "", sub("~.*", "", formula)), " ")
     }
     x <- corCovariates(" ")
-    if (!ignoreCor) {
+    if (!ignoreCor && is.null(formula)) {
         removeCovariates()
     }
-    myEnv$listofCors <- c()
+    #myEnv$listofCors <- c()
     myEnv$corsToRemove <- c()
     myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs, formula)
     write.csv(myEnv$outliersCSV, paste0(myEnv$baseDirectory, "/OutlierSamples.csv"))
     write.csv(myEnv$residualsCSV, paste0(myEnv$baseDirectory, "/Residuals.csv"))
     setwd(myEnv$baseDirectory)
-    detach(myEnv)
+    detach("myEnv")
 }
 
 #FUNCTION FROM:

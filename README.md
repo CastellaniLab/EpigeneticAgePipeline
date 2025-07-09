@@ -16,12 +16,12 @@ if (!require("BiocManager", quietly = TRUE)) {
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
     "minfi",
-	"FlowSorted.CordBlood.450k",
+    "FlowSorted.CordBlood.450k",
     "FlowSorted.CordBloodCombined.450k",
     "FlowSorted.Blood.EPIC",
     "IlluminaHumanMethylation27kanno.ilmn12.hg19",
@@ -42,7 +42,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -55,7 +55,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -70,13 +70,13 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
     "minfi",
-	"FlowSorted.CordBlood.450k",
-	"FlowSorted.Blood.450k",
+    "FlowSorted.CordBlood.450k",
+    "FlowSorted.Blood.450k",
     "IlluminaHumanMethylation450kanno.ilmn12.hg19",
     "IlluminaHumanMethylation450kmanifest",
     "sesame",
@@ -87,17 +87,17 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
     "minfi",
-	"FlowSorted.CordBlood.450k",
-	"FlowSorted.Blood.450k",
+    "FlowSorted.CordBlood.450k",
+    "FlowSorted.Blood.450k",
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
     "IlluminaHumanMethylationEPICmanifest",
-	"IlluminaHumanMethylation450kanno.ilmn12.hg19",
-	"IlluminaHumanMethylation450kmanifest",
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+    "IlluminaHumanMethylation450kmanifest",
     "sesame",
     "methylclock"
 )
@@ -106,7 +106,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -123,7 +123,7 @@ packages_to_install <- c(
 packages_to_install <- c(
     "ggplot2",
     "glmmTMB",
-	"ggpubr",
+    "ggpubr",
     "devtools",
     "magick",
     "reshape2",
@@ -135,6 +135,7 @@ packages_to_install <- c(
     "sesame",
     "methylclock"
 )
+
 
 for (package in packages_to_install) {
     if (!requireNamespace(package, quietly = TRUE)) {
