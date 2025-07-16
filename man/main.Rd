@@ -11,20 +11,26 @@ for generating epigenetic age and performing covariate analysis.
 }
 
 \usage{
-main(directory = getwd(),
+main(inputDirectory = getwd(),
+outputDirectory = inputDirectory,
 normalize = TRUE,
 useBeta = FALSE,
 arrayType = "450K",
 useSampleSheet = TRUE,
 doParallel = TRUE,
 writeBeta = TRUE,
-useAdult = FALSE)
+useAdult = FALSE,
+useImputation = FALSE)
 
 }
 
 \arguments{
-\item{directory}{
-Directory containing input data files (default: current working directory).
+\item{inputDirectory}{
+String. Directory containing input data files (default: current working directory).
+}
+
+\item{outputDirectory}{
+String. Directory to output created files (default: inputDirectory).
 }
 
 \item{normalize}{
@@ -60,6 +66,11 @@ Logical. If TRUE asssume adult blood sample during cell count generation, else
 assuming cord blood.
 }
 
+\item{useImputation}{
+Logical. If TRUE use mean values from GSE40279 to fill in missing CpG's during
+GrimAge and DunedinPACE calculation.
+}
+
 }
 
 \details{
@@ -73,7 +84,7 @@ IDAT Files:
 IDAT files containing methylation data for each sample. Should be contained in
 the directory passed.
 
-betaValues.csv:
+betaValues.csv or betaValues.csv.gz:
 If IDAT files are not available, a .csv containing beta values (CpG names first
 column, then sample columns) can be provided.
 
@@ -122,9 +133,8 @@ If a variable contains factor type data, append "@@@2" to the column name.
 Ex. variable "isSmoker" would become "isSmoker@@@2".
 
 To generate GrimAge, chronological age must be included ("Age@@@1"),
-as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1",
-"M" or "Male". Valid values for female sex would be "2", "F", or "Female".
-Mind capatalization.
+as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1", or "Male".
+Valid values for female sex would be "2", or "Female". Mind capatalization.
 
 For a more detailed guide, visit the github page:
 https://github.com/CastellaniLab/EpigeneticAgePipeline
@@ -137,18 +147,16 @@ Citations:
 \examples{
 #Example of using the main function
 library(EpigeneticAgePipeline)
-EpigeneticAgePipeline:::loadTestData()
-directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
-setwd(directory)
+directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
 main(
-    directory = directory,
+    inputDirectory = directory,
+    outputDirectory = getwd(),
     normalize = TRUE,
     useBeta = TRUE,
     arrayType = "450K",
     useSampleSheet = FALSE
 )
-knitr::kable(read.table(paste0(directory, "epigeneticAge.txt")))
-EpigeneticAgePipeline:::removeTestData()
+knitr::kable(read.table("epigeneticAge.txt"))
 }
 
 \references{

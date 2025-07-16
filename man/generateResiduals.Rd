@@ -9,7 +9,8 @@ post epigenetic age measure generation.
 }
 
 \usage{
-generateResiduals(directory = getwd(),
+generateResiduals(inputDirectory = directory,
+outputDirectory = inputDirectory,
 useBeta = FALSE,
 formula = NULL,
 arrayType = "450K",
@@ -23,8 +24,12 @@ useAdult = FALSE)
 }
 
 \arguments{
-\item{directory}{
+\item{inputDirectory}{
 Directory containing input data files (default: current working directory).
+}
+
+\item{outputDirectory}{
+Directory to output created files (default: inputDirectory).
 }
 
 \item{useBeta}{
@@ -88,7 +93,7 @@ IDAT Files:
 IDAT files containing methylation data for each sample. Should be contained in
 the directory passed.
 
-betaValues.csv:
+betaValues.csv or betaValues.csv.gz:
 If IDAT files are not available, processed beta values can be provided
 
 }
@@ -129,19 +134,18 @@ https://github.com/CastellaniLab/EpigeneticAgePipeline
 \examples{
 #Example of using generateResiduals function
 library(EpigeneticAgePipeline)
-EpigeneticAgePipeline:::loadTestData()
-directory <- paste0(path.package("EpigeneticAgePipeline"),"/data/")
-setwd(directory)
+directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
 generateResiduals(
-    directory = directory,
+    inputDirectory = directory,
+    outputDirectory = getwd(),
     useBeta = TRUE,
     arrayType = "450K",
     ignoreCor = TRUE
 )
 message("Outliers")
-knitr::kable(read.csv(paste0(directory, "OutlierSamples.csv")))
+knitr::kable(read.csv("OutlierSamples.csv"))
 message("Residuals")
-knitr::kable(read.csv(paste0(directory, "Residuals.csv")))
+knitr::kable(read.csv("Residuals.csv"))
 }
 
 \references{

@@ -1,33 +1,40 @@
 globalVariables("myEnv")
 myEnv <- new.env(parent = emptyenv())
 # Main function starts here
-main <- function(directory = getwd(),
+main <- function(inputDirectory = getwd(),
+                 outputDirectory = inputDirectory,
                  normalize = TRUE,
                  useBeta = FALSE,
                  arrayType = "450K",
                  useSampleSheet = TRUE,
                  doParallel = TRUE,
                  writeBeta = TRUE,
-                 useAdult = FALSE) {
-    startup()
-    setwd(directory)
+                 useAdult = FALSE,
+                 useImputation = FALSE) {
+    old_wd <- getwd()
+    on.exit(setwd(old_wd), add = TRUE)
+    startup(outputDirectory, useImputation)
+    setwd(inputDirectory)
     if (useBeta) {
         if (doParallel) {
-            message("Reading betaValues.csv, utilizing parallel processing...")
-            myEnv$bVals <- as.data.frame(data.table::fread("betaValues.csv"))
+            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
+            message(paste0("Reading ", file, ", utilizing parallel processing..."))
+            myEnv$bVals <- as.data.frame(data.table::fread(file))
             rownames(myEnv$bVals) <- myEnv$bVals$V1
             myEnv$bVals$V1 <- NULL
         } else {
-            message("Reading betaValues.csv...")
-            myEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
+            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
+            message(paste0("Reading ", file, "..."))
+            myEnv$bVals <- read.csv(file, row.names = 1)
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(directory, arrayType, useSampleSheet)
+        processIDAT(inputDirectory, arrayType, useSampleSheet)
     }
     CC <- NULL
     if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
         CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
+        assign("CellCountsDf", CC, envir = .GlobalEnv)
     }
     if (useBeta == FALSE) {
         if (writeBeta ) {
@@ -55,12 +62,10 @@ main <- function(directory = getwd(),
         message("Skipping covariate correlation analysis: only one observation or variable present.")
     }
     exportResults(results, myEnv$bVals, finalOutput)
-    setwd(myEnv$baseDirectory)
-    detach("myEnv")
 }
 
 # Function for loading tools and setting variables
-startup <- function() {
+startup <- function(outputDirectory, useImputation = FALSE) {
     message("Loading dependencies...")
 
     if ("myEnv" %in% search()) {
@@ -68,7 +73,7 @@ startup <- function() {
     }
     rm(list = ls(envir = myEnv), envir = myEnv)
 
-    assign("baseDirectory", sub("/$", "", getwd()), envir = myEnv)
+    assign("baseDirectory", sub("/$", "", outputDirectory), envir = myEnv)
 
     assign("bVals", 0, envir = myEnv)
     assign("rgSet", 0, envir = myEnv)
@@ -78,6 +83,7 @@ startup <- function() {
     assign("exportDf", 0, envir = myEnv)
     assign("outliersCSV", 0, envir = myEnv)
     assign("residualsCSV", 0, envir = myEnv)
+    assign("useImputation", useImputation, envir = myEnv)
     data("PC-clocks", envir = myEnv, package = "EpigeneticAgePipeline")
     data("DunedinPACE", envir = myEnv, package = "EpigeneticAgePipeline")
     attach(myEnv, name = "myEnv")
@@ -161,7 +167,6 @@ estimateCellCounts <- function(rgSet, arrayType, useAdult) {
         }
         return(CC)
     }
-
 }
 
 # Creating pdataSVs dataframe
@@ -223,9 +228,9 @@ calculateGrimAge <- function(df) {
         Age = myEnv$pdataSVs$Age,
         Sex = as.character(myEnv$pdataSVs$Sex))
     for (i in seq(from = 1, to = length(grimDf$Sex))) {
-        if (grimDf$Sex[i] == "M" | grimDf$Sex[i] == 1) {
+        if (grimDf$Sex[i] == 1) {
             grimDf$Sex[i] <- "Male"
-        } else if (grimDf$Sex[i] == "F" | grimDf$Sex[i] == 2) {
+        } else if (grimDf$Sex[i] == 2) {
             grimDf$Sex[i] <- "Female"
         }
     }
@@ -249,14 +254,20 @@ exportResults <- function(results, bVals, finalOutput) {
         plotDf$age <- myEnv$pdataSVs$Age
         createGroupedBarChart(plotDf, "sample", "value", "Age_Measure",
             "Sample ID and Type of Age Measure")
-        myEnv$exportDf <- results[, c("id", "Horvath", "Hannum",
-            "Levine", "GrimAge", "skinHorvath", "DunedinPACE", "GrimAgeAccel", "age")]
+        myEnv$exportDf <- results[, c("id", "Horvath", "ageAcc.Horvath",
+                                      "ageAcc2.Horvath", "ageAcc3.Horvath",
+                                      "Hannum", "ageAcc.Levine", "ageAcc2.Levine",
+                                      "ageAcc3.Levine","Levine", "GrimAge", "skinHorvath",
+                                      "DunedinPACE", "GrimAgeAccel", "age")]
     } else if ("Age" %in% colnames(myEnv$pdataSVs)) {
         plotDf <- preparePlotDf(results, myEnv$pdataSVs)
         createGroupedBarChart(plotDf, "sample", "value", "Age_Measure",
                               "Sample ID and Type of Age Measure")
-        myEnv$exportDf <- results[, c("id", "Horvath", "Hannum",
-                                      "Levine", "skinHorvath", "DunedinPACE", "age")]
+        myEnv$exportDf <- results[, c("id", "Horvath", "ageAcc.Horvath",
+                                      "ageAcc2.Horvath", "ageAcc3.Horvath",
+                                      "Hannum", "ageAcc.Levine", "ageAcc2.Levine",
+                                      "ageAcc3.Levine","Levine", "skinHorvath",
+                                      "DunedinPACE", "age")]
     } else {
         myEnv$exportDf <- results[, c("id", "Horvath", "Hannum", "Levine",
                                 "skinHorvath", "DunedinPACE")]
@@ -281,6 +292,7 @@ writeResults <- function(finalOutput, exportDf, results) {
     formattedResults <- kable(results[,c("id", "Horvath", "skinHorvath",
         "Hannum", "Levine", "GrimAge", "DunedinPACE", "GrimAgeAccel")], format = "markdown")
     exportDf <- as.data.frame(exportDf)
+    assign("EpiAgeResultsDf", exportDf, envir = .GlobalEnv)
     write.table(exportDf, file = paste0(myEnv$baseDirectory,"/epigeneticAge.txt"))
     write_file(finalOutput, file = paste0(myEnv$baseDirectory,"/output.txt"))
     write(formattedResults, file = paste0(myEnv$baseDirectory,"/results.md"))
@@ -844,31 +856,36 @@ pcaGeneration <- function(PCs, threshold) {
 }
 
 # Residual and PCA Generation function
-generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NULL,
+generateResiduals <- function(inputDirectory = getwd(),
+                            outputDirectory = inputDirectory, useBeta = FALSE, formula = NULL,
                             arrayType = "450K", ignoreCor = TRUE, PCs = 5, threshold = 3,
                             doParallel = TRUE, doCellCounts = TRUE, useAdult = FALSE) {
-    startup()
-    setwd(directory)
+    old_wd <- getwd()
+    on.exit(setwd(old_wd), add = TRUE)
+    startup(outputDirectory)
+    setwd(inputDirectory)
     if (useBeta == TRUE) {
         if (doParallel) {
-            message("Reading betaValues.csv, utilizing parallel processing...")
-            myEnv$bVals <- as.data.frame(data.table::fread("betaValues.csv"))
+            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
+            message(paste0("Reading ", file, ", utilizing parallel processing..."))
+            myEnv$bVals <- as.data.frame(data.table::fread(file))
             rownames(myEnv$bVals) <- myEnv$bVals$V1
             myEnv$bVals$V1 <- NULL
         } else {
-            message("Reading betaValues.csv...")
-            myEnv$bVals <- read.csv("betaValues.csv", row.names = 1)
+            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
+            message(paste0("Reading ", file, "..."))
+            myEnv$bVals <- read.csv(file, row.names = 1)
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(directory, arrayType, useSampleSheet = TRUE)
+        processIDAT(inputDirectory, arrayType, useSampleSheet = TRUE)
     }
     if (PCs != 0) {
         pca_scores <- pcaGeneration(PCs, threshold)
     }
     # Processing and Writing Residuals ####
     myEnv$pdataSVs <- data.frame(row.names = colnames(myEnv$bVals))
-    createAnalysisDF(directory)
+    createAnalysisDF(inputDirectory)
     if (PCs != 0) {
         myEnv$pdataSVs <-
             cbind(myEnv$pdataSVs, pca_scores[, seq(from = 1, to = PCs)])
@@ -882,6 +899,7 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NU
     }
     if (!is.numeric(myEnv$rgSet) && arrayType != "27K" && doCellCounts) {
         CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
+        assign("CellCountsDf", CC, envir = .GlobalEnv)
         addCellCountsToPdataSVs(CC, arrayType, useAdult)
     }
     if (is.null(formula)) {
@@ -898,8 +916,6 @@ generateResiduals <- function(directory = getwd(), useBeta = FALSE, formula = NU
     myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs, formula)
     write.csv(myEnv$outliersCSV, paste0(myEnv$baseDirectory, "/OutlierSamples.csv"))
     write.csv(myEnv$residualsCSV, paste0(myEnv$baseDirectory, "/Residuals.csv"))
-    setwd(myEnv$baseDirectory)
-    detach("myEnv")
 }
 
 #FUNCTION FROM:
@@ -923,7 +939,17 @@ methyAge <- function(betas, clock, age_info=NA) {
         myEnv$coefs <- setNames(myEnv$coefs$Coefficient, myEnv$coefs$Probe)
         betas <- rbind(betas, Intercept=1)
         betas <- betas[rownames(betas) %in% names(myEnv$coefs), ]
-        betas[is.na(betas)] <- 0
+
+        if (myEnv$useImputation) {
+            message("Performing imputation")
+            data(list='golden_ref', envir=myEnv, package = "EpigeneticAgePipeline")
+            ref_mean <- setNames(myEnv$golden_ref$Mean, rownames(myEnv$golden_ref))
+            ref_mean <- ref_mean[names(ref_mean) %in% names(myEnv$coefs)]
+            betas <- meanImputation(mt=betas, ref=ref_mean, only_ref_rows=FALSE)
+        } else {
+            betas[is.na(betas)] <- 0
+        }
+
         m_age <- t(betas) %*% matrix(data=myEnv$coefs[rownames(betas)])
     }
     m_age <- data.frame(Sample=rownames(m_age), mAge=as.numeric(m_age))
@@ -1010,38 +1036,66 @@ getAccel <- function(c_age, m_age){
     return(accel)
 }
 
-loadTestData <- function() {
-    myEnv <- new.env(parent = emptyenv())
-    data("CpGNames", package = "EpigeneticAgePipeline", envir = myEnv)
-    CpGNames <- myEnv$CpGNames
-    df <- data.frame(matrix(runif(length(CpGNames) * 9),
-        nrow = length(CpGNames), ncol = 9))
-    colnames(df) <- paste0("Sample", 1:9)
-    rownames(df) <- CpGNames
-    SampleSheet <- data.frame(
-        Sex...2 = ifelse(runif(9) < 0.3, "Male", "Female"),
-        Age...1 = sample(0:100, 9, replace = TRUE),
-        EpiAge...1 = sample(0:100, 9, replace = TRUE)
-    )
-    write.csv(SampleSheet, paste0(system.file(package =
-        "EpigeneticAgePipeline"),"/data/Sample_Sheet.csv"))
-    write.csv(df, paste0(system.file(package = "EpigeneticAgePipeline"),
-        "/data/betaValues.csv"))
+#FUNCTION FROM:
+#https://github.com/yiluyucheng/dnaMethyAge
+meanImputation <- function(mt, ref, cut_off=0.9, only_ref_rows=TRUE){
+    mt <- as.matrix(mt)
+    if(only_ref_rows){
+        mt <- mt[rownames(mt) %in% names(ref), ]
+    }
+    t_mt <- rowSums(mt)
+    row_mean <- rowMeans(mt[is.na(t_mt),], na.rm=TRUE)
+    na_row <- intersect(rownames(mt)[is.na(t_mt)], names(ref))
+    for (p in na_row){
+        n_miss <- sum(is.na(mt[p,]))
+        if(n_miss / nrow(mt) > cut_off) {
+            #mt[p,][is.na(mt[p,])] <- ref[p]
+            mt[p,] <- ref[p]
+        }else{
+            mt[p,][is.na(mt[p,])] <- row_mean[p]
+        }
+
+    }
+    ## replace missing rows with reference values
+    miss_row <- setdiff(names(ref), rownames(mt))
+    mt <- rbind(mt, matrix(rep(ref[miss_row], ncol(mt)), ncol=ncol(mt),
+                           dimnames = list(miss_row, colnames(mt))))
+
+    return(mt)
 }
 
-removeTestData <- function() {
-    filePath <- paste0(system.file(package = "EpigeneticAgePipeline"),
-        "/data/betaValues.csv")
-    filePath2 <- paste0(system.file(package = "EpigeneticAgePipeline"),
-        "/data/Sample_Sheet.csv")
-    if (file.exists(filePath)) {
-        unlink(filePath)
-        unlink(filePath2)
-        message("Test data deleted")
-    } else {
-        message("Test data not yet loaded")
-    }
-}
+#loadTestData <- function() {
+    #myEnv <- new.env(parent = emptyenv())
+    #data("CpGNames", package = "EpigeneticAgePipeline", envir = myEnv)
+    #CpGNames <- myEnv$CpGNames
+    #df <- data.frame(matrix(runif(length(CpGNames) * 9),
+        #nrow = length(CpGNames), ncol = 9))
+    #colnames(df) <- paste0("Sample", 1:9)
+    #rownames(df) <- CpGNames
+    #SampleSheet <- data.frame(
+        #Sex...2 = ifelse(runif(9) < 0.3, "Male", "Female"),
+        #Age...1 = sample(0:100, 9, replace = TRUE),
+        #EpiAge...1 = sample(0:100, 9, replace = TRUE)
+    #)
+    #write.csv(SampleSheet, paste0(system.file(package =
+        #"EpigeneticAgePipeline"),"/data/Sample_Sheet.csv"))
+    #write.csv(df, paste0(system.file(package = "EpigeneticAgePipeline"),
+        #"/data/betaValues.csv"))
+#}
+
+#removeTestData <- function() {
+    #filePath <- paste0(system.file(package = "EpigeneticAgePipeline"),
+        #"/data/betaValues.csv")
+    #filePath2 <- paste0(system.file(package = "EpigeneticAgePipeline"),
+        #"/data/Sample_Sheet.csv")
+    #if (file.exists(filePath)) {
+        #unlink(filePath)
+        #unlink(filePath2)
+        #message("Test data deleted")
+    #} else {
+        #message("Test data not yet loaded")
+    #}
+#}
 
 
 

@@ -149,14 +149,16 @@ remotes::install_github('CastellaniLab/EpigeneticAgePipeline')
  See ‘Usage Guidelines’ below for more details. 
 ```
 library(EpigeneticAgePipeline)
-main(directory = directory, #directory containing IDAT/beta values/supporting data
+main(inputDirectory = getwd(), #directory containing input data files  
+    outputDirectory = inputDirectory, #directory to output created files  
     normalize = TRUE, #should normalize beta values? (for Horvath, Horvath2, Hannum, Levine Clocks, Horvath's normalization from methylclock)
     useBeta = FALSE, #should use beta values contained within a betaValues.csv file?
     arrayType = "450K", #specification of array type used to generate idat files 
     useSampleSheet = FALSE, #should use phenotypic data found within a Sample_Sheet.csv file?
     doParallel = TRUE, #should utilize parallel processing when reading beta values?
     writeBeta = TRUE, #should write beta values from processed IDAT files
-    useAdult = FALSE #should assume using adult blood samples for cell counts or cord blood?
+    useAdult = FALSE, #should assume using adult blood samples for cell counts or cord blood?
+	useImputation = FALSE #should use mean values from GSE40279 to fill in missing CpG's during GrimAge and dunedinPACE calculation?  
 )
 ```
  
@@ -198,7 +200,7 @@ https://www.nature.com/articles/s43587-022-00248-2
 - CpG Sites: Uses 78464 CpG sites.
 - Array Type: Trained using Illumina 450K and EPIC array types.
 - Cell Type: Designed primarily for blood samples.
-NOTE: To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex are "1", "M" or "Male". Valid values for female sex are "2", "F", or "Female".    
+NOTE: To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex are "1" or "Male". Valid values for female sex are "2" or "Female".    
  
 **DunedinPACE:**
  https://elifesciences.org/articles/73420
@@ -277,7 +279,8 @@ Once the formula is constructed, the linear model is generated using the Gaussia
 ## Usage Guidelines 
 ### Using the main Function
 ```
-main(directory = getwd(), 
+main(inputDirectory = getwd(),
+outputDirectory = inputDirectory,
 normalize = TRUE,
 useBeta = FALSE,
 arrayType = "450K",
@@ -286,8 +289,11 @@ doParallel = TRUE,
 writeBeta = TRUE,
 useAdult = FALSE)
 ```
-**directory** argument:  
-String. Directory containing input data files (default: current working directory).
+**inputDirectory** argument:  
+String. Directory containing input data files (default: current working directory).  
+
+**outputDirectory** argument:  
+String. Directory to output created files (default: inputDirectory).    
  
 **normalize** argument:  
 Logical. Perform normalization of beta values if TRUE.
@@ -310,32 +316,48 @@ Logical. If TRUE write extracted beta values from processed IDAT files.
 
 **useAdult** argument:  
 Logical. If TRUE asssume adult blood sample during cell count generation, else
-assuming cord blood. To view the differences in the cell counts generated [see cell counts section](#cell-counts).
+assuming cord blood. To view the differences in the cell counts generated [see cell counts section](#cell-counts).  
+
+**useImputation** argument:  
+Logical. If TRUE use mean values from GSE40279 to fill in missing CpG's during GrimAge and DunedinPACE calculation.  
  
 #### Output  
- 
-**output.txt:**  
-A .txt file containing epigenetic age/acceleration estimates, covariate data and residual data.
- 
-**matrixplot{Clockname}.pdf:**  
-A set of .pdf files illustrating the correaltions between a specific epigenetic age estimate and covariates.
- 
-**epigeneticAge.txt:**  
-A .txt file showing epigenetic age/acceleration estimates. This file is better suited for importing into a spreadsheet program than output.txt.
- 
-**plot{Clockname}.pdf:**  
-A set of .png files showing a line plot of an epigenetic age estimate against chronological age.
- 
-**SampleIDandAge.png:**  
-A .png file containing a grouped bar chart showing each sample and their associated epigenetic age estimates as well as chronological age. Note that this file is typically a more useful analysis tool when using 
-smaller sample sizes.
+
+**output.txt**  
+A `.txt` file containing textual summaries of epigenetic age estimates and covariate correlation results.  
+
+**epigeneticAge.txt**  
+A `.txt` file with epigenetic clock estimates for each sample. Structured for easy spreadsheet import.
+
+**results.md**  
+Markdown-formatted summary table of epigenetic age results.
+
+**SampleIDandAge.png**  
+Grouped bar chart showing each sample's epigenetic age measures alongside chronological age.
+
+**matrixplot{Clockname}.pdf**  
+Correlation matrix plots between a specific epigenetic clock (e.g., Horvath, GrimAge) and covariates.
+
+**plot_{Clockname}.png**  
+Scatter plots with regression lines between chronological age and each epigenetic age estimate.
 
 **{Clockname}SampleData.csv**  
-.csv file containing covariate data, including clock data.
+CSV files containing covariates and clock estimates per sample.  
+
+**EpiAgeResultsDf** *(R object in .GlobalEnv)*  
+Data frame of epigenetic clock estimates exported for immediate use in the R session.  
+
+**CellCountsDf** *(R object in .GlobalEnv, if applicable)*  
+Cell count estimates assigned to global environment if IDAT processing and cell counting were done.  
+
+**myEnv** *(R environment)*  
+Environment used to store intermediate and final objects.  Useful for accessing pipeline results programmatically across functions.
+
  
 ### Using the generateResiduals function
 ```
-generateResiduals(directory = getwd(),
+generateResiduals(inputDirectory = getwd(),
+outputDirectory = inputDirectory,
 useBeta = FALSE,
 formula = NULL,
 arrayType = "450K",
@@ -347,8 +369,11 @@ doCellCounts = TRUE,
 useAdult = FALSE)
 
 ``` 
-**directory** argument:  
-Directory containing input data files (default: current working directory). 
+**inputDirectory** argument:  
+String. Directory containing input data files (default: current working directory).  
+
+**outputDirectory** argument:  
+String. Directory to output created files (default: inputDirectory).   
  
 **useBeta** argument:  
 Logical. If TRUE, will expect a betaValues.csv file containing beta values (scaled between 0 and 1). If FALSE, process raw intensity data (IDAT).  
@@ -386,19 +411,28 @@ Logical. If TRUE asssume adult blood sample during cell count generation, else
 assuming cord blood. To view the differences in the cell counts generated [see cell counts section](#cell-counts).
  
 #### Output  
- 
-**Residuals.csv:**  
-A .csv file containing residuals from the linear model.
+
+**Residuals.csv**  
+Residuals from the linear model used to regress out covariates from EpiAge.
+
+**OutlierSamples.csv**  
+Samples identified as outliers using MAD-based detection across principal components.
 
 **EpiAgeSampleData.csv**  
-.csv file containing covariate data, including clock data.
+Processed covariate and clock data used for residual modeling, includes PCs and cell counts if applicable.
 
-**matrixplotEpiAge.pdf:**  
-.pdf file illustrating the correaltions between specific epigenetic age estimate and covariates.
+**matrixplotEpiAge.pdf**  
+Matrix plot visualizing relationships between EpiAge and other covariates.
 
-**Outliers.csv**  
-A .csv file containing samples that were deemed to be outliers
-during PCA.
+**EpiAgeResultsDf** *(R object in .GlobalEnv)*  
+Data frame of EpiAge and covariates with residuals calculated; usable immediately in the R session.
+
+**CellCountsDf** *(R object in .GlobalEnv, if applicable)*  
+Cell count estimates generated via reference-based deconvolution, only if IDAT data and `doCellCounts = TRUE`.
+
+**myEnv** *(R environment)*  
+Environment used to store intermediate and final objects.  Useful for accessing pipeline results programmatically across functions.
+
  
 ### Description of Client-Side Input Files
 **Sample_Sheet.csv**  
@@ -408,8 +442,9 @@ during PCA.
 **IDAT Files**  
 Raw IDAT files containing unprocessed methylation data for each sample.
  
-**betaValues.csv**  
+**betaValues.csv** or **betaValues.csv.gz**  
 If IDAT files are not available, processed beta values can be provided. The **first colulmn** should contain CpG names. The rest of the columns should contain sample names.
+Package will preferentially load the .gz version.
  
 ### Guidelines for Sample_Sheet.csv 
 **To format a variable in Sample_Sheet.csv:**  
@@ -419,7 +454,7 @@ If a variable contains **factor** type data, append "@@@2" to the column name.
  
 Ex. variable "isSmoker" would become "isSmoker@@@2".  
  
-To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex are "1", "M" or "Male". Valid values for female sex are "2", "F", or "Female".    
+To generate **GrimAge**, chronological age must be included ("Age@@@1"), as well as sample sex ("Sex@@@2"). Valid values for male sex are "1" or "Male". Valid values for female sex are "2" or "Female".    
  
 If using the **generateResiduals** function, name the column with epigenetic age values "EpiAge@@@1".  
  
