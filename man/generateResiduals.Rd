@@ -4,144 +4,168 @@
 \title{Generate Epigenetic Age Residual Data}
 
 \description{
-A function used to perform principal component analysis and residual generation
-post epigenetic age measure generation.
+Performs principal component analysis (PCA) and residual generation
+after epigenetic age measures are available. Optionally includes
+cell-type proportions, derives array layout covariates, and exports
+diagnostic plots and tables.
 }
 
 \usage{
-generateResiduals(inputDirectory = directory,
-outputDirectory = inputDirectory,
-useBeta = FALSE,
-formula = NULL,
-arrayType = "450K",
-ignoreCor = TRUE,
-PCs = 5,
-threshold = 3,
-doParallel = TRUE,
-doCellCounts = TRUE,
-useAdult = FALSE)
-
+generateResiduals(
+  inputDirectory = getwd(),
+  outputDirectory = inputDirectory,
+  sampleSheetFile = "Sample_Sheet.csv",
+  columnTypes = NULL,
+  useBeta = FALSE,
+  formula = NULL,
+  arrayType = "450K",
+  ignoreCor = TRUE,
+  PCs = 5,
+  threshold = 3,
+  doParallel = TRUE,
+  doCellCounts = TRUE,
+  tissue = "bloodAdult",
+  cellDeconvMethod = "CP",
+  placentaTrimester = "third"
+)
 }
 
 \arguments{
 \item{inputDirectory}{
-Directory containing input data files (default: current working directory).
+String. Directory containing input data files (default: current working directory).
 }
 
 \item{outputDirectory}{
-Directory to output created files (default: inputDirectory).
+String. Directory to write outputs (default: \code{inputDirectory}).
+}
+
+\item{sampleSheetFile}{
+String. File name of the sample sheet (default: \code{"Sample_Sheet.csv"}).
+}
+
+\item{columnTypes}{
+Named integer vector or \code{NULL}. Declares sample-sheet column types:
+\code{1 = factor}, \code{2 = numeric}.\\
+Example: \code{c("EpiAge"=2,"Age"=2,"Sex"=1,"Batch"=1,"Array"=1)}.\\
+If \code{Array} is in \code{RXCY} format (e.g., \code{R01C05}), \code{Row} and \code{Column} are derived automatically.
+\emph{Required} when reading a sample sheet.
 }
 
 \item{useBeta}{
-Logical. If TRUE,
-expect a .csv containing beta values
-(scaled between 0 and 1).
-If FALSE, process raw intensity data (IDAT).
+Logical. If \code{TRUE}, expect \code{betaValues.csv} (or \code{.csv.gz}) with beta values
+(first column CpG IDs, remaining columns samples). If \code{FALSE}, process raw IDATs.
 }
 
 \item{formula}{
-String. If the user wants to use a custom formula, one may input it as a string.
-If using PC's, input in the format of "PC1".
-Adult blood cell names: "Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK" (if using EPICv2 or MSA)
-Cord blood cell names: "Bcell", "CD4T", "CD8T", "Gran" (if using EPIC or 450K), "Mono", "nRBC", "NK", "Neu"(if using EPICv2 or MSA)
-Example:
-"myAge ~ Age + BMI + Smoking_Status + PC1"
+String or \code{NULL}. Custom model formula (e.g., \code{"EpiAge ~ Age + BMI + Smoking_Status + PC1"}).\\
+PCs are referenced as \code{PC1}, \code{PC2}, ...\\
+Adult blood cells: \code{Bcell, CD4T, CD8T, Mono, Neu, NK}.\\
+Cord blood cells: \code{Bcell, CD4T, CD8T, Gran, Mono, nRBC, NK}.\\
+Saliva cells: \code{Epithelial, Immune}.\\
+Placenta cells: \code{Trophoblasts, Stromal, Hofbauer, Endothelial, nRBC, Syncytiotrophoblast}.\\
+Frontal cortex cells: \code{NeuN_neg, NeuN_pos}.\\
+Buccal cells: \code{NeuN_neg, NeuN_pos}.\\
+If \code{NULL}, a formula is constructed dynamically from available covariates.
 }
 
 \item{arrayType}{
-Type of DNA methylation array used (options: "27K", "450K", or "EPIC").
+String. DNA methylation array platform: \code{"27K"}, \code{"450K"}, \code{"EPIC"}, \code{"EPICv2"}, or \code{"MSA"}.
 }
 
 \item{ignoreCor}{
-Logical. If TRUE then removing highly correlated (>=0.6) covariates will not be an
-option.
+Logical. If \code{TRUE}, skip pruning of highly correlated covariates (|r| > 0.6); if \code{FALSE}, an interactive removal step is offered.
 }
 
 \item{PCs}{
-Numerical. Number of PC's to generate.
+Integer. Number of principal components to compute/include (default: \code{5}).
 }
 
 \item{threshold}{
-Numerical. Threshold for MAD outlier detection.
-median +- threshold * MAD
+Numeric. MAD-based outlier threshold; flags samples outside \code{median ± threshold × MAD} (default: \code{3}).
 }
 
 \item{doParallel}{
-Logical. If TRUE, use parallel processing if reading beta values.
+Logical. If \code{TRUE}, use parallelized CSV reading for large \code{betaValues.csv}.
 }
 
 \item{doCellCounts}{
-Logical. If TRUE include cell counts for analysis.
+Logical. If \code{TRUE}, estimate and include cell-type proportions in the model (requires IDATs).
 }
 
-\item{useAdult}{
-Logical. If TRUE asssume adult blood sample during cell count generation, else
-assuming cord blood.
+\item{tissue}{
+String. Reference panel for cell deconvolution: \code{"bloodAdult"}, \code{"bloodCord"}, \code{"saliva"}, \code{"placenta"}, \code{"brainDLPFC"} or \code{"buccal"}.
 }
 
+\item{cellDeconvMethod}{
+String. Cell proportion method: \code{"CP"} (constrained projection) or \code{"RPC"} (robust partial correlations; \pkg{EpiDISH}).
+}
 
+\item{placentaTrimester}{
+String. When \code{tissue = "placenta"}, choose \code{"first"} or \code{"third"} trimester reference.
+}
 }
 
 \details{
-Input Files:
+\strong{Input Files}
 
-Sample_Sheet.csv:
-.csv file containing phenotypic data for each sample
-*See note for conventions
+\emph{Sample_Sheet.csv:} One row per sample, one column per variable.
+Variable types are declared via \code{columnTypes}. If an \code{Array} column in \code{RXCY}
+format is present, \code{Row} and \code{Column} are derived automatically for mixed-effects terms.
 
-IDAT Files:
-IDAT files containing methylation data for each sample. Should be contained in
-the directory passed.
+\emph{IDAT files:} Raw intensity files for each sample in \code{inputDirectory}.
 
-betaValues.csv or betaValues.csv.gz:
-If IDAT files are not available, processed beta values can be provided
-
+\emph{betaValues.csv / betaValues.csv.gz:} Optional precomputed beta matrix; first column CpG IDs, remaining columns samples.
 }
 
 \value{
-The function will return the follwing:
+Writes results to \code{outputDirectory} and assigns selected objects to \code{.GlobalEnv}:
 
-Residuals.csv: A .csv file containing sample residual data, with your epigenetic
-age measure against your independent variables.
-
-Outliers.csv: A .csv file containing samples that were deemed to be outliers
-during PCA.
+\itemize{
+  \item \code{Residuals.csv}: Residuals from the fitted (G)LMM regressing the chosen age measure on covariates/PCs/cell counts.
+  \item \code{OutlierSamples.csv}: Samples flagged by MAD-based outlier detection across selected PCs.
+  \item \code{\{AgeType\}SampleData.csv}: Covariate frame used in modeling (e.g., \code{EpiAgeSampleData.csv}).
+  \item \code{matrixplot\{AgeType\}.png}: Correlation matrix of the target age measure versus covariates (e.g., \code{matrixplotEpiAge.png}).
+  \item \code{CellCountsDf} (R object, if applicable): Estimated cell-type proportions assigned to \code{.GlobalEnv}.
+  \item \code{myEnv} (R environment): Stores intermediate/final objects (\code{bVals}, \code{pdataSVs}, \code{outliersCSV}, \code{residualsCSV}, ...).
+}
 }
 
-
 \note{
-Naming Conventions for Data in "Sample_Sheet.csv":
-
-When using the generateResiduals function, name the column with epigenetic age
-values "EpiAge@@@1".
-
-To include a variable from Sample_Sheet.csv:
-If a variable contains numeric type data, append "@@@1" to the column name
-
-If a variable contains factor type data, append "@@@2" to the column name.
-
-Ex. variable "isSmoker" would become "isSmoker@@@2".
-
-To generate GrimAge, chronological age must be included ("Age@@@1"),
-as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1",
-"M" or "Male". Valid values for female sex would be "2", "F", or "Female".
-
-For a more detailed guide, visit the github page:
-https://github.com/CastellaniLab/EpigeneticAgePipeline
-
+\strong{Sample sheet typing via \code{columnTypes}} — declare variable types with a named integer vector: \code{1 = factor}, \code{2 = numeric}.
+For GrimAge/PCGrimAge, include \code{Age} (numeric) and \code{Sex} (factor); valid sex encodings include \code{1}/\code{Male} and \code{2}/\code{Female} (case-insensitive).
+If an \code{Array} column is supplied in \code{RXCY} format (e.g., \code{R01C05}), \code{Row} and \code{Column} are auto-derived for random-effects construction.
 }
 
 \examples{
-#Example of using generateResiduals function
+# Example of using generateResiduals
 library(EpigeneticAgePipeline)
-directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
-generateResiduals(
-    inputDirectory = directory,
-    outputDirectory = getwd(),
-    useBeta = TRUE,
-    arrayType = "450K",
-    ignoreCor = TRUE
+
+directory <- paste0(path.package("EpigeneticAgePipeline"), "/extdata/")
+
+ct <- c(
+  "EpiAge" = 2,
+  "Age"    = 2,
+  "Sex"    = 1
 )
+
+generateResiduals(
+  inputDirectory   = directory,
+  outputDirectory  = getwd(),
+  sampleSheetFile  = "Sample_Sheet.csv",
+  columnTypes      = ct,
+  useBeta          = TRUE,
+  formula          = NULL,
+  arrayType        = "450K",
+  ignoreCor        = TRUE,
+  PCs              = 5,
+  threshold        = 3,
+  doParallel       = TRUE,
+  doCellCounts     = TRUE,
+  tissue           = "bloodAdult",
+  cellDeconvMethod = "CP",
+  placentaTrimester= "third"
+)
+
 message("Outliers")
 knitr::kable(read.csv("OutlierSamples.csv"))
 message("Residuals")

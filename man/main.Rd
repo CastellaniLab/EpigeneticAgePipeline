@@ -4,24 +4,28 @@
 \title{Epigenetic Age Generation}
 
 \description{
-A comprehensive function designed for
-processing and analyzing DNA methylation data.
-Its goal is to provide a simple solution
-for generating epigenetic age and performing covariate analysis.
+A comprehensive function for processing and analyzing DNA methylation data.
+It generates epigenetic age measures, optional accelerations, cell-type
+estimates, and covariate analyses with plotting and export utilities.
 }
 
 \usage{
-main(inputDirectory = getwd(),
-outputDirectory = inputDirectory,
-normalize = TRUE,
-useBeta = FALSE,
-arrayType = "450K",
-useSampleSheet = TRUE,
-doParallel = TRUE,
-writeBeta = TRUE,
-useAdult = FALSE,
-useImputation = FALSE)
-
+main(
+  inputDirectory = getwd(),
+  outputDirectory = inputDirectory,
+  normalize = TRUE,
+  useBeta = FALSE,
+  arrayType = "450K",
+  useSampleSheet = TRUE,
+  sampleSheetFile = "Sample_Sheet.csv",
+  columnTypes = NULL,
+  doParallel = TRUE,
+  writeBeta = TRUE,
+  tissue = "bloodAdult",
+  cellDeconvMethod = "CP",
+  placentaTrimester = "third",
+  useImputation = FALSE
+)
 }
 
 \arguments{
@@ -30,132 +34,128 @@ String. Directory containing input data files (default: current working director
 }
 
 \item{outputDirectory}{
-String. Directory to output created files (default: inputDirectory).
+String. Directory to write outputs (default: \code{inputDirectory}).
 }
 
 \item{normalize}{
-Logical. Perform normalization of beta values if TRUE. (Horvath's normalization, from methylclock)
+Logical. If \code{TRUE}, apply Horvath-style normalization (as implemented in \pkg{methylclock}) when computing CpG-based clocks.
 }
 
 \item{useBeta}{
-Logical. If TRUE,
-expect a .csv containing beta values
-(scaled between 0 and 1).
-If FALSE, process raw intensity data (IDAT).
+Logical. If \code{TRUE}, expect a \code{betaValues.csv} (or \code{.csv.gz}) with beta values
+(first column CpG IDs, remaining columns sample IDs). If \code{FALSE}, process raw IDATs.
 }
 
 \item{arrayType}{
-Type of DNA methylation array used (options: "27K", "450K", "EPIC", "EPICv2"
-or "MSA").
+String. DNA methylation array platform: \code{"27K"}, \code{"450K"}, \code{"EPIC"}, \code{"EPICv2"}, or \code{"MSA"}.
 }
 
 \item{useSampleSheet}{
-Logical. If TRUE use Sample_Sheet.csv.
+Logical. If \code{TRUE}, read phenotypic/covariate data from \code{sampleSheetFile}.
+}
+
+\item{sampleSheetFile}{
+String. File name of the sample sheet (default: \code{"Sample_Sheet.csv"}).
+}
+
+\item{columnTypes}{
+Named integer vector or \code{NULL}. Declares types for columns in the sample sheet: \code{1 = factor}, \code{2 = numeric}.\\
+Example: \code{c("Age"=2, "Sex"=1, "Batch"=1, "BMI"=2, "Array"=1)}.\\
+If an \code{Array} column is present in \code{RXCY} format (e.g., \code{R01C05}), \code{Row} and \code{Column} are derived automatically.
+When \code{useSampleSheet = TRUE}, this argument is required.
 }
 
 \item{doParallel}{
-Logical. If TRUE use parallel processing in .csv file reads.
+Logical. If \code{TRUE}, use parallelized CSV reading for large \code{betaValues.csv}.
 }
 
-\item{writeBeta }{
-Logical. If TRUE write extracted beta values from processed IDAT files.
+\item{writeBeta}{
+Logical. If \code{TRUE}, write \code{extractedBetaValues.csv} after IDAT processing (ignored when \code{useBeta = TRUE}).
 }
 
-\item{useAdult}{
-Logical. If TRUE asssume adult blood sample during cell count generation, else
-assuming cord blood.
+\item{tissue}{
+String. Reference panel for cell deconvolution: \code{"bloodAdult"}, \code{"bloodCord"}, \code{"saliva"}, \code{"placenta"}, \code{"brainDLPFC"} or \code{"buccal"}.
+}
+
+\item{cellDeconvMethod}{
+String. Cell proportion method: \code{"CP"} (constrained projection) or \code{"RPC"} (robust partial correlations; \pkg{EpiDISH}).
+}
+
+\item{placentaTrimester}{
+String. When \code{tissue = "placenta"}, choose \code{"first"} or \code{"third"} trimester reference (via \pkg{planet}).
 }
 
 \item{useImputation}{
-Logical. If TRUE use mean values from GSE40279 to fill in missing CpG's during
-GrimAge and DunedinPACE calculation.
+Logical. If \code{TRUE}, perform mean-imputation of missing CpGs for CpG/PC clocks using packaged reference means.
+Note: DunedinPACE applies reference-target quantile normalization and fills missing CpGs to its reference irrespective of this flag.
 }
-
 }
 
 \details{
-Input Files:
+\strong{Input Files}
 
-Sample_Sheet.csv:
-.csv file containing phenotypic data for each sample
-*See note for conventions
+\emph{Sample_Sheet.csv:} A CSV with one row per sample and one column per variable.
+Types are declared via \code{columnTypes} (see \samp{columnTypes} argument). If an \code{Array} column
+is supplied in \code{RXCY} format, \code{Row} and \code{Column} are derived automatically.
 
-IDAT Files:
-IDAT files containing methylation data for each sample. Should be contained in
-the directory passed.
+\emph{IDAT files:} Raw intensity files (RG) for each sample in \code{inputDirectory}.
 
-betaValues.csv or betaValues.csv.gz:
-If IDAT files are not available, a .csv containing beta values (CpG names first
-column, then sample columns) can be provided.
-
+\emph{betaValues.csv / betaValues.csv.gz:} Optional precomputed beta matrix; first column CpG IDs, remaining columns samples.
+When both exist, the \code{.gz} version is preferred.
 }
 
 \value{
-The function will return the follwing:
+The function writes files to \code{outputDirectory} and assigns selected objects to \code{.GlobalEnv}:
 
-output.txt: A .txt file containing
-epigenetic age/acceleration estimates,
-covariate data and residual data.
-
-matrixplot[Clockname].pdf: A set of .pdf files
-illustrating a the correaltions between a specific
-epigenetic age estimate and covariates.
-
-epigeneticAge.txt: A .txt
-file showing epigenetic age/acceleration estimates,
-as well as some covariate data.
-This file is better suited for importing
-generated data into a spreadsheet program.
-
-plot_[Clockname].png: A set of
-.png files showing a line
-plot of an epigenetic age
-estimate against chronological age.
-
-SampleIDandAge.png:
-A .png file containing a grouped bar chart showing each
-sample and their assocaited epigenetic age
-estimates as well as chronological age.
-Note that this file is typically a more useful
-analysis tool when using smaller sample sizes.
-
+\itemize{
+  \item \code{output.txt}: Text summary of covariate--clock correlations across processed age measures.
+  \item \code{epigeneticAge.txt}: Numeric table of epigenetic age estimates per sample (spreadsheet-friendly).
+  \item \code{results.md}: Markdown table summarizing epigenetic age results.
+  \item \code{extractedBetaValues.csv} (conditional): Written if \code{useBeta = FALSE} and \code{writeBeta = TRUE}.
+  \item \code{GroupedAge.png}: Grouped bar chart of age measures per sample (includes chronological age when available).
+  \item \code{matrixplot\{ClockName\}.png}: Correlation matrix per clock versus covariates.
+  \item \code{plot_\{ClockName\}.png}: Scatter plots of DNAm age vs. chronological age (per clock when \code{Age} is present).
+  \item \code{\{ClockName\}SampleData.csv}: Per-clock covariate frames used in plotting/correlation.
+  \item \code{EpiAgeResultsDf} (R object): Data frame of numeric results assigned to \code{.GlobalEnv}.
+  \item \code{CellCountsDf} (R object, if applicable): Estimated cell-type proportions assigned to \code{.GlobalEnv}.
+  \item \code{myEnv} (R environment): Working environment storing intermediate/final objects (\code{bVals}, \code{pdataSVs}, etc.).
+}
 }
 
-
 \note{
-Naming Conventions for Data in "Sample_Sheet.csv":
+\strong{Sample sheet typing via \code{columnTypes}}
 
-To include a variable from Sample_Sheet.csv:
-If a variable contains numeric type data, append "@@@1" to the column name
+Declare variable types with a named integer vector: \code{1 = factor}, \code{2 = numeric}.
+Required for \code{useSampleSheet = TRUE}.
+\emph{GrimAge requirements:} Include \code{Age} (numeric) and \code{Sex} (factor). Valid sex encodings include \code{1}/\code{Male} and \code{2}/\code{Female} (case-insensitive).
+If an \code{Array} column is supplied in \code{RXCY} format, \code{Row} and \code{Column} are auto-derived for mixed-effects modeling.
 
-If a variable contains factor type data, append "@@@2" to the column name.
-
-Ex. variable "isSmoker" would become "isSmoker@@@2".
-
-To generate GrimAge, chronological age must be included ("Age@@@1"),
-as well as sample sex ("Sex@@@2"). Valid values for male sex would be "1", or "Male".
-Valid values for female sex would be "2", or "Female". Mind capatalization.
-
-For a more detailed guide, visit the github page:
-https://github.com/CastellaniLab/EpigeneticAgePipeline
-
-Citations:
-
-
+For additional guidance, see the package repository.
 }
 
 \examples{
-#Example of using the main function
+# Example of using the main function
 library(EpigeneticAgePipeline)
-directory <- paste0(path.package("EpigeneticAgePipeline"),"/extdata/")
+
+directory <- paste0(path.package("EpigeneticAgePipeline"), "/extdata/")
+
 main(
-    inputDirectory = directory,
-    outputDirectory = getwd(),
-    normalize = TRUE,
-    useBeta = TRUE,
-    arrayType = "450K",
-    useSampleSheet = FALSE
+  inputDirectory   = directory,
+  outputDirectory  = getwd(),
+  normalize        = TRUE,
+  useBeta          = TRUE,
+  arrayType        = "450K",
+  useSampleSheet   = FALSE,
+  sampleSheetFile  = "Sample_Sheet.csv",
+  columnTypes      = ct,
+  doParallel       = TRUE,
+  writeBeta        = TRUE,
+  tissue           = "bloodAdult",
+  cellDeconvMethod = "CP",
+  placentaTrimester= "third",
+  useImputation    = FALSE
 )
+
 knitr::kable(read.table("epigeneticAge.txt"))
 }
 

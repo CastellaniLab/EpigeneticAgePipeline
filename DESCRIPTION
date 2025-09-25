@@ -54,5 +54,10 @@ Suggests:
     IlluminaHumanMethylationEPICmanifest,
     IlluminaHumanMethylation450kmanifest,
     IlluminaHumanMethylation27kmanifest,
-    IlluminaHumanMethylationMSAmanifest
+    IlluminaHumanMethylationMSAmanifest,
+    BeadSorted.Saliva.EPIC,
+    planet,
+    FlowSorted.DLPFC.450k,
+    ExperimentHub,
+    EpiDISH
 RoxygenNote: 7.3.1

@@ -6,15 +6,14 @@ importFrom("graphics", "abline", "pairs", "par", "points", "rect", "strwidth",
 "text")
 importFrom("minfi", "estimateCellCounts", "read.metharray.exp", "detectionP",
 "preprocessRaw", "mapToGenome", "ratioConvert", "featureNames",
-"dropLociWithSnps", "getBeta")
+"dropLociWithSnps", "getBeta", "qcReport")
 importFrom("knitr", "kable")
 importFrom("reshape2", "melt")
-importFrom("ggplot2", "ggplot", "aes_string", "geom_bar", "labs",
-"scale_fill_manual", "theme_minimal", "ggsave", "element_rect")
 importFrom("ggpubr", "ggscatter", "stat_cor")
 importFrom("readr", "write_file")
 importFrom("glmmTMB", "glmmTMB", "glmmTMBControl")
 importFrom("grDevices", "cairo_pdf", "dev.off")
+import(ggplot2)
 import(preprocessCore)
 import(stats)
 import(reshape2)

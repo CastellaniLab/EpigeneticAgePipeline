@@ -7,54 +7,74 @@ main <- function(inputDirectory = getwd(),
                  useBeta = FALSE,
                  arrayType = "450K",
                  useSampleSheet = TRUE,
+                 sampleSheetFile = "Sample_Sheet.csv",
+                 columnTypes = NULL,
                  doParallel = TRUE,
                  writeBeta = TRUE,
-                 useAdult = FALSE,
+                 tissue = "bloodAdult",
+                 cellDeconvMethod = "CP",
+                 placentaTrimester = "third",
                  useImputation = FALSE) {
+
+    if ((missing(columnTypes) || is.null(columnTypes) || length(columnTypes) == 0) && useSampleSheet == TRUE) {
+        stop("columnTypes is required if useSampleSheet = TRUE and must be a named integer vector: 1=factor, 2=numeric.\n
+             eg. c(\"Age\"=2=, \"Sex\"=1, \"Batch\"=1, \"BMI\"=2, \"Row\"=1, \"Column\"=1)")
+    }
     old_wd <- getwd()
     on.exit(setwd(old_wd), add = TRUE)
     startup(outputDirectory, useImputation)
     setwd(inputDirectory)
+
     if (useBeta) {
+        file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
         if (doParallel) {
-            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
             message(paste0("Reading ", file, ", utilizing parallel processing..."))
             myEnv$bVals <- as.data.frame(data.table::fread(file))
             rownames(myEnv$bVals) <- myEnv$bVals$V1
             myEnv$bVals$V1 <- NULL
+            myEnv$origSampleNames <- colnames(myEnv$bVals)
         } else {
-            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
             message(paste0("Reading ", file, "..."))
             myEnv$bVals <- read.csv(file, row.names = 1)
+            myEnv$origSampleNames <- colnames(myEnv$bVals)
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(inputDirectory, arrayType, useSampleSheet)
+        processIDAT(inputDirectory, arrayType, useSampleSheet, sampleSheetFile)
     }
-    CC <- NULL
-    if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
+    preparePdataSVs(myEnv$bVals, useSampleSheet, sampleSheetFile, columnTypes)
+    #CC <- NULL
+    #if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
+        CC <- estimateCellCountsFlexible(
+            myEnv$rgSet,
+            arrayType = arrayType,
+            tissue = tissue,
+            method = cellDeconvMethod,
+            placentaTrimester = placentaTrimester
+        )
+        addCellCountsToPdataSvs(CC)
         assign("CellCountsDf", CC, envir = .GlobalEnv)
+    #}
+
+    if (!useBeta && writeBeta) {
+        message("Writing extracted beta values...")
+        write.csv(myEnv$bVals, file = paste0(myEnv$baseDirectory, "/extractedBetaValues.csv"))
     }
-    if (useBeta == FALSE) {
-        if (writeBeta ) {
-            message("Writing extracted beta values...")
-            write.csv(myEnv$bVals, file = paste0(myEnv$baseDirectory, "/extractedBetaValues.csv"))
-        }
-    }
-    preparePdataSVs(myEnv$bVals, useSampleSheet, CC, arrayType, useAdult)
+
     message("Generating epigenetic age...")
-    results <- calculateDNAmAge(myEnv$bVals, myEnv$pdataSVs,
-                                normalize)
-    clockname <- "DunedinPACE"
-    results$DunedinPACE <- calculateDunedinPACE()
-    if ("Age" %in% colnames(myEnv$pdataSVs) &&
-                            "Sex" %in% colnames(myEnv$pdataSVs)) {
-        results <- calculateGrimAge(results)
-    } else {
-        results$GrimAge <- NA
-        results$GrimAgeAccel <- NA
+    results <- calculateDNAmAge(myEnv$bVals, myEnv$pdataSVs, normalize)
+    if ("age" %in% names(results)) {
+        results$age <- NULL
     }
+    results$DunedinPACE <- calculateDunedinPACE()
+    names(results) <- gsub("skinHorvath", "Horvath_SkinBlood", names(results))
+
+    if ("Age" %in% colnames(myEnv$pdataSVs) && "Sex" %in% colnames(myEnv$pdataSVs)) {
+        results <- calculateGrimAge(results)
+    }
+    results <- calculatePC(results)
+    results <- recomputeAccels(results)
+
     finalOutput <- " "
     if (ncol(myEnv$pdataSVs) != 0 && nrow(myEnv$pdataSVs) > 1) {
         finalOutput <- processAllAgeTypes(results)
@@ -62,15 +82,14 @@ main <- function(inputDirectory = getwd(),
         message("Skipping covariate correlation analysis: only one observation or variable present.")
     }
     exportResults(results, myEnv$bVals, finalOutput)
+    clockSummary()
 }
 
 # Function for loading tools and setting variables
 startup <- function(outputDirectory, useImputation = FALSE) {
     message("Loading dependencies...")
 
-    if ("myEnv" %in% search()) {
-        detach("myEnv")
-    }
+    if ("myEnv" %in% search()) detach("myEnv")
     rm(list = ls(envir = myEnv), envir = myEnv)
 
     assign("baseDirectory", sub("/$", "", outputDirectory), envir = myEnv)
@@ -84,124 +103,28 @@ startup <- function(outputDirectory, useImputation = FALSE) {
     assign("outliersCSV", 0, envir = myEnv)
     assign("residualsCSV", 0, envir = myEnv)
     assign("useImputation", useImputation, envir = myEnv)
+    assign("PC_Coefs", 0, envir = myEnv)
+    assign("DunedinPACE_Coefs", 0, envir = myEnv)
+    assign("origSampleNames", 0, envir = myEnv)
+    assign("failedSamples", 0, envir = myEnv)
+
     data("PC-clocks", envir = myEnv, package = "EpigeneticAgePipeline")
     data("DunedinPACE", envir = myEnv, package = "EpigeneticAgePipeline")
+    data(list = "GrimAge_V1", envir = myEnv, package = "EpigeneticAgePipeline")
+    data(list = "GrimAge_V2", envir = myEnv, package = "EpigeneticAgePipeline")
     attach(myEnv, name = "myEnv")
 }
 
-# Function for getting cell counts
-estimateCellCounts <- function(rgSet, arrayType, useAdult) {
-    message("Generating cell counts...")
-    if (useAdult) {
-        if (arrayType == "MSA") {
-            if (arrayType == "MSA" &&
-                (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
-                 minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
-                minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
-                                              annotation = "ilm10a1.hg38")
-            }
-            Betas <- getBeta(minfi::preprocessNoob(rgSet))
-            IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
-                which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
-            ]
-            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
-                Betas[IDOLOptimizedCpGsBlood, ],
-                FlowSorted.Blood.EPIC::IDOLOptimizedCpGs.compTable[IDOLOptimizedCpGsBlood, ],
-                contrastWBC = NULL,
-                nonnegative = TRUE,
-                lessThanOne = FALSE
-            )
-        } else if (arrayType == "EPICv2") {
-            Betas <- getBeta(minfi::preprocessNoob(rgSet))
-            Betas <- sesame::betasCollapseToPfx(Betas)
-            IDOLOptimizedCpGsBlood <- FlowSorted.Blood.EPIC::IDOLOptimizedCpGs[
-                which(FlowSorted.Blood.EPIC::IDOLOptimizedCpGs %in% rownames(Betas))
-            ]
-            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
-                Betas[IDOLOptimizedCpGsBlood, ],
-                FlowSorted.Blood.EPIC::IDOLOptimizedCpGs.compTable[IDOLOptimizedCpGsBlood, ],
-                contrastWBC = NULL,
-                nonnegative = TRUE,
-                lessThanOne = FALSE
-            )
-        } else {
-            FlowSorted.Blood.450k::FlowSorted.Blood.450k
-            CC <- minfi::estimateCellCounts(rgSet)
-        }
-        return(CC)
-    } else {
-        if (arrayType == "MSA") {
-            if (arrayType == "MSA" &&
-                (minfi::annotation(rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
-                 minfi::annotation(rgSet)["annotation"] != "ilm10a1.hg38")) {
-                minfi::annotation(rgSet) <- c(array = "IlluminaHumanMethylationMSA",
-                                              annotation = "ilm10a1.hg38")
-            }
-            Betas <- getBeta(minfi::preprocessNoob(rgSet))
-            IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
-                which(FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood %in% rownames(Betas))
-            ]
-            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
-                Betas[IDOLOptimizedCpGsBlood, ],
-                FlowSorted.CordBloodCombined.450k::FlowSorted.CordBloodCombined.450k.compTable[IDOLOptimizedCpGsBlood, ],
-                contrastWBC = NULL,
-                nonnegative = TRUE,
-                lessThanOne = FALSE
-            )
-        } else if (arrayType == "EPICv2") {
-            Betas <- getBeta(minfi::preprocessNoob(rgSet))
-            Betas <- sesame::betasCollapseToPfx(Betas)
-            IDOLOptimizedCpGsBlood <- FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood[
-                which(FlowSorted.CordBloodCombined.450k::IDOLOptimizedCpGsCordBlood %in% rownames(Betas))
-            ]
-            CC <- FlowSorted.Blood.EPIC::projectCellType_CP(
-                Betas[IDOLOptimizedCpGsBlood, ],
-                FlowSorted.CordBloodCombined.450k::FlowSorted.CordBloodCombined.450k.compTable[IDOLOptimizedCpGsBlood, ],
-                contrastWBC = NULL,
-                nonnegative = TRUE,
-                lessThanOne = FALSE
-            )
-        } else {
-            FlowSorted.CordBlood.450k::FlowSorted.CordBlood.450k
-            CC <- minfi::estimateCellCounts(rgSet, compositeCellType = "CordBlood", cellTypes = c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC"))
-        }
-        return(CC)
-    }
-}
-
 # Creating pdataSVs dataframe
-preparePdataSVs <- function(bVals, useSampleSheet, CC, arrayType, useAdult) {
-    myEnv$pdataSVs <- data.frame(row.names = colnames(bVals))
-    if (useSampleSheet) {
-        createAnalysisDF(getwd())
-        #if ("EpiAge" %in% colnames(myEnv$pdataSVs)) {
-            #myEnv$pdataSVs$EpiAge <- NULL
-        #}
-    }
-    if (!is.numeric(myEnv$rgSet) & arrayType != "27K") {
-        addCellCountsToPdataSVs(CC, arrayType, useAdult)
-    }
-}
-
-# Adding cell counts to pdataSVs
-addCellCountsToPdataSVs <- function(CC, arrayType, useAdult) {
-    if (useAdult && (arrayType == "EPICv2" || arrayType == "MSA")) {
-        cellTypes <- c("Bcell", "CD4T", "CD8T", "Mono", "Neu", "NK")
-    } else if (useAdult) {
-        cellTypes <- c("CD8T","CD4T", "NK","Bcell","Mono","Gran")
-    } else if (useAdult == FALSE && (arrayType == "EPICv2" || arrayType == "MSA")) {
-        cellTypes <- c("CD8T", "CD4T", "NK", "Bcell", "Mono", "Gran", "nRBC")
-    } else {
-        cellTypes <- c("Bcell", "CD4T", "CD8T", "Gran", "Mono", "nRBC")
-    }
-    for (cellType in cellTypes) {
-        myEnv$pdataSVs[[cellType]] <- as.numeric(CC[, cellType])
+preparePdataSVs <- function(bVals, useSampleSheet, sampleSheetFile, columnTypes) {
+    myEnv$pdataSVs <- data.frame(row.names = myEnv$origSampleNames)
+    if (isTRUE(useSampleSheet)) {
+        createAnalysisDF(getwd(), sampleSheetFile = sampleSheetFile, columnTypes = columnTypes)
     }
 }
 
 # Calculating epigenetic age
 calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
-    results <- NULL
     betaValues <- as.matrix(bVals)
     if ("Age" %in% colnames(pdataSVs)) {
         results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize,
@@ -224,6 +147,7 @@ calculateDunedinPACE <- function() {
 # Calculating GrimAge
 calculateGrimAge <- function(df) {
     message("Calculating GrimAge...")
+    sampleIds <- colnames(myEnv$bVals)
     grimDf <- data.frame(Sample = colnames(myEnv$bVals),
         Age = myEnv$pdataSVs$Age,
         Sex = as.character(myEnv$pdataSVs$Sex))
@@ -234,63 +158,108 @@ calculateGrimAge <- function(df) {
             grimDf$Sex[i] <- "Female"
         }
     }
-    grimDf$Sex <- as.factor(grimDf$Sex)
-    grimage <-
-        methyAge(betas = myEnv$bVals, clock = "PCGrimAge",
-            age_info = grimDf)
 
-    df$GrimAgeAccel <- grimage$Age_Acceleration
-    df$GrimAge <- grimage$mAge
+    getAccelVec <- function(age, dnamAge) {
+        keep <- !is.na(age) & !is.na(dnamAge)
+        out  <- rep(NA_real_, length(dnamAge))
+        if (sum(keep) >= 2) out[keep] <- resid(lm(dnamAge[keep] ~ age[keep]))
+        out
+    }
+
+    grimDf$Sex <- as.factor(grimDf$Sex)
+    grimAgePcRes <- methyAge(betas = myEnv$bVals, clock = "PCGrimAge", age_info = grimDf)
+    idxPc <- match(sampleIds, grimAgePcRes$Sample)
+    df$GrimAge_PC      <- grimAgePcRes$mAge[idxPc]
+    #df$GrimAgeAccel_PC <- grimAgePcRes$PCGrimAge_Acceleration[idxPc]
+
+    parsedV1 <- parseGrimAgeTable(myEnv$GrimAge_V1)
+    grimAgeV1Res <- computeGrimAgeV1(
+        betas   = myEnv$bVals,
+        ageInfo = grimDf,
+        comps   = parsedV1$components,
+        hazard  = parsedV1$hazard,
+        cal     = parsedV1$cal
+    )
+    idxV1 <- match(sampleIds, grimAgeV1Res$Sample)
+    grimAgeV1 <- grimAgeV1Res$mAge[idxV1]
+    df$GrimAge_V1      <- grimAgeV1
+    #df$GrimAgeAccel_V1 <- getAccelVec(grimDf$Age, grimAgeV1)
+
+    parsedV2 <- parseGrimAgeTable(myEnv$GrimAge_V2)
+
+    grimAgeV2Res <- computeGrimAgeV2(
+        betas   = myEnv$bVals,
+        ageInfo = grimDf,
+        comps   = parsedV2$components,
+        hazard  = parsedV2$hazard,
+        cal     = parsedV2$cal
+    )
+    idxV2 <- match(sampleIds, grimAgeV2Res$Sample)
+    grimAgeV2 <- grimAgeV2Res$mAge[idxV2]
+    df$GrimAge_V2      <- grimAgeV2
+    #df$GrimAgeAccel_V2 <- getAccelVec(grimDf$Age, grimAgeV2)
+
     return(df)
+}
+
+calculatePC <- function (results) {
+    Horvath_PC <- methyAge(betas = myEnv$bVals, clock = "PCHorvathS2013")
+    Hannum_PC <- methyAge(betas = myEnv$bVals, clock = "PCHannumG2013")
+    Levine_PC <- methyAge(betas = myEnv$bVals, clock = "PCPhenoAge")
+    Horvath_SkinBlood_PC <- methyAge(betas = myEnv$bVals, clock = "PCHorvathS2018")
+    results$Horvath_PC <- Horvath_PC$mAge
+    results$Hannum_PC <- Hannum_PC$mAge
+    results$Levine_PC <- Levine_PC$mAge
+    results$Horvath_SkinBlood_PC <- Horvath_SkinBlood_PC$mAge
+    return(results)
 }
 
 # Exporting results
 exportResults <- function(results, bVals, finalOutput) {
-    if ("Age" %in% colnames(myEnv$pdataSVs) &&
-        "Sex" %in% colnames(myEnv$pdataSVs)) {
-        plotDf <- preparePlotDf(results, myEnv$pdataSVs)
-        plotDf$age <- NULL
-        plotDf$grimage <- results$GrimAge
-        plotDf$age <- myEnv$pdataSVs$Age
-        createGroupedBarChart(plotDf, "sample", "value", "Age_Measure",
-            "Sample ID and Type of Age Measure")
-        myEnv$exportDf <- results[, c("id", "Horvath", "ageAcc.Horvath",
-                                      "ageAcc2.Horvath", "ageAcc3.Horvath",
-                                      "Hannum", "ageAcc.Levine", "ageAcc2.Levine",
-                                      "ageAcc3.Levine","Levine", "GrimAge", "skinHorvath",
-                                      "DunedinPACE", "GrimAgeAccel", "age")]
-    } else if ("Age" %in% colnames(myEnv$pdataSVs)) {
-        plotDf <- preparePlotDf(results, myEnv$pdataSVs)
-        createGroupedBarChart(plotDf, "sample", "value", "Age_Measure",
-                              "Sample ID and Type of Age Measure")
-        myEnv$exportDf <- results[, c("id", "Horvath", "ageAcc.Horvath",
-                                      "ageAcc2.Horvath", "ageAcc3.Horvath",
-                                      "Hannum", "ageAcc.Levine", "ageAcc2.Levine",
-                                      "ageAcc3.Levine","Levine", "skinHorvath",
-                                      "DunedinPACE", "age")]
-    } else {
-        myEnv$exportDf <- results[, c("id", "Horvath", "Hannum", "Levine",
-                                "skinHorvath", "DunedinPACE")]
-    }
-    writeResults(finalOutput, myEnv$exportDf, results)
-}
+    # Build exportDf with all numeric columns (clocks + accelerations + age if present)
+    numCols <- vapply(results, is.numeric, logical(1))
+    exportDf <- results[, numCols, drop = FALSE]
+    if ("id" %in% colnames(results)) exportDf <- cbind(id = results$id, exportDf)
 
-# Making data frame for plotting
-preparePlotDf <- function(results, pdataSVs) {
-    data.frame(
-        sample = colnames(myEnv$bVals),
-        horvath = results$Horvath,
-        skinhorvath = results$skinHorvath,
-        hannum = results$Hannum,
-        levine = results$Levine,
-        age = pdataSVs$Age
-    )
+    plotCols <- pickPlotClocks(results)
+
+    # Grouped bar chart: Age + clocks if Age exists
+    if (length(plotCols) > 0 && "Age" %in% colnames(myEnv$pdataSVs)) {
+        plotDf <- data.frame(
+            sample = colnames(myEnv$bVals),
+            age = myEnv$pdataSVs$Age,
+            results[, plotCols, drop = FALSE],
+            check.names = FALSE
+        )
+        createGroupedBarChart(
+            data = plotDf,
+            x = "sample",
+            y = "value",
+            fill = "Age_Measure",
+            title = "Sample ID and Type of Age Measure"
+        )
+    } else if (length(plotCols) > 0) {
+        plotDf <- data.frame(
+            sample = colnames(myEnv$bVals),
+            results[, plotCols, drop = FALSE],
+            check.names = FALSE
+        )
+        createGroupedBarChart(
+            data = plotDf,
+            x = "sample",
+            y = "value",
+            fill = "Age_Measure",
+            title = "Sample ID and Type of Age Measure"
+        )
+    }
+
+    myEnv$exportDf <- exportDf
+    writeResults(finalOutput, myEnv$exportDf, results)
 }
 
 # Writing out results
 writeResults <- function(finalOutput, exportDf, results) {
-    formattedResults <- kable(results[,c("id", "Horvath", "skinHorvath",
-        "Hannum", "Levine", "GrimAge", "DunedinPACE", "GrimAgeAccel")], format = "markdown")
+    formattedResults <- kable(exportDf, format = "markdown")
     exportDf <- as.data.frame(exportDf)
     assign("EpiAgeResultsDf", exportDf, envir = .GlobalEnv)
     write.table(exportDf, file = paste0(myEnv$baseDirectory,"/epigeneticAge.txt"))
@@ -301,263 +270,16 @@ writeResults <- function(finalOutput, exportDf, results) {
 # Definition for initiation function for process age type
 processAllAgeTypes <- function(results) {
     finalOutput <- ""
-    ageTypes <- c("Horvath", "skinHorvath", "Hannum", "Levine", "DunedinPACE")
+    ageTypes <- getClockColumns(results)
+    ageTypes <- c(ageTypes, grep("accel|ageAcc", colnames(results), value = TRUE, ignore.case = TRUE))
+
+    ageTypes <- setdiff(ageTypes, "age")  # age is a covariate, not a clock
+
     for (ageType in ageTypes) {
         finalOutput <- processAgeType(results, ageType, finalOutput)
-        myEnv$pdataSVs[[ageType]] <- NULL
-    }
-    if ("Age" %in% colnames(myEnv$pdataSVs) &&
-       "Sex" %in% colnames(myEnv$pdataSVs)) {
-        finalOutput <- processAgeType(results, "GrimAge", finalOutput)
-        myEnv$pdataSVs$GrimAge <- NULL
-        finalOutput <- processAgeType(results, "GrimAgeAccel", finalOutput)
-        myEnv$pdataSVs$GrimAgeAccel <- NULL
+        if (ageType %in% names(myEnv$pdataSVs)) myEnv$pdataSVs[[ageType]] <- NULL
     }
     return(finalOutput)
-}
-
-# Definition for function used for generating the grouped bar chart
-createGroupedBarChart <- function(data, x, y, fill, title) {
-    meltedDf <- melt(data, id.vars = x, variable.name = fill)
-
-    customPalette <- c( "age" = "red", "horvath" = "#66c2a5",
-                        "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2", "levine" = "#3288dd"
-    )
-
-    if ("Age" %in% colnames(myEnv$pdataSVs) &&
-        "Sex" %in% colnames(myEnv$pdataSVs)) {
-        customPalette <- c( "age" = "red", "horvath" = "#66c2a5",
-                            "skinhorvath" = "#3288bd", "hannum" = "#5e4fa2",
-                            "levine" = "#3288dd", "grimage" = "#3798de")
-    }
-
-    plot <- ggplot(
-        data = meltedDf,
-        aes_string(
-            x = x,
-            y = y,
-            fill = fill
-        )
-    ) +
-        geom_bar(stat = "identity", width = 1, position = ggplot2::position_dodge(width = 0.6)) +
-        labs(x = x, y = "Age", title = title) +
-        scale_fill_manual(values = customPalette) +
-        theme_minimal()
-
-    plot <- plot +
-        ggplot2::theme(
-            plot.background = element_rect(fill = "white"),
-            axis.text.x = ggplot2::element_text(angle = 65, hjust = 1) # Adjust x-axis text for better readability
-        )
-
-    ggsave(paste0(myEnv$baseDirectory,"/SampleIDandAge.png"), plot = plot, width = 35, height = 10, units = "in", dpi = 300)
-
-    for (i in 2:(ncol(data) - 1))
-    {
-        plot <- ggscatter(data,
-            x = "age", y = colnames(data)[i],
-            add = "reg.line", #
-            add.params = list(color = "blue", fill = "lightgray")
-        )
-        plot <- plot + stat_cor(method = "pearson")
-        ggsave(
-            filename = paste0(myEnv$baseDirectory, "/plot_", colnames(data)[i], ".png"),
-            plot = plot,
-            width = 1000, height = 1000,
-            units = "px"
-        )
-    }
-}
-
-# Definition of processIDAT function starts here
-processIDAT <- function(directory, arrayType, useSampleSheet) {
-    dataDirectory <- directory
-    myEnv$rgSet <- read.metharray.exp(dataDirectory, force = TRUE)
-    if (useSampleSheet) {
-        message("Checking dimensionality")
-        sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
-        message("Number of samples in Sample_Sheet:", nrow(sampleData))
-        message("Number of samples from IDAT Files:", length(list.files(path = dataDirectory, pattern = "\\.idat$")) / 2)
-        if ((length(list.files(path = dataDirectory, pattern = "\\.idat$")) / 2) != nrow(sampleData)) {
-            message("The number of samples in Sample_Sheet is not equal to the number of samples")
-            stop()
-        }
-    }
-
-    if (arrayType == "MSA" &&
-        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationMSA" ||
-         minfi::annotation(myEnv$rgSet)["annotation"] != "ilm10a1.hg38")) {
-        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationMSA",
-                                      annotation = "ilm10a1.hg38")
-    }
-
-    if (arrayType == "EPICv2" &&
-        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationEPICv2" ||
-         minfi::annotation(myEnv$rgSet)["annotation"] != "20a1.hg38")) {
-        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationEPICv2",
-                                            annotation = "20a1.hg38")
-    }
-
-    if (arrayType == "EPIC" &&
-        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylationEPIC" ||
-         minfi::annotation(myEnv$rgSet)["annotation"] != "ilm10b4.hg19")) {
-        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylationEPIC",
-                                            annotation = "ilm10b4.hg19")
-    }
-
-    if (arrayType == "450K" &&
-        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylation450k" ||
-         minfi::annotation(myEnv$rgSet)["annotation"] != "ilmn12.hg19")) {
-        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylation450k",
-                                            annotation = "ilmn12.hg19")
-    }
-
-    if (arrayType == "27K" &&
-        (minfi::annotation(myEnv$rgSet)["array"] != "IlluminaHumanMethylation27k" ||
-         minfi::annotation(myEnv$rgSet)["annotation"] != "ilmn12.hg19")) {
-        minfi::annotation(myEnv$rgSet) <- c(array = "IlluminaHumanMethylation450k",
-                                            annotation = "ilmn12.hg19")
-    }
-
-    #    Calculate    the    detection    p-values
-    detP <- detectionP(myEnv$rgSet)
-    detP <- detP[complete.cases(detP),]
-    samples_before <- dim(myEnv$rgSet)[2]
-    keep <- colMeans(detP) < 0.05
-    myEnv$rgSet <- myEnv$rgSet[, keep]
-    samples_removed <- samples_before - dim(detP)[2]
-    if (samples_removed != 0) {
-        message("The following samples were found to be too poor quality, please remove from analysis:")
-        for (name in names(keep[keep == FALSE])) {
-            message(name)
-        }
-        stop()
-    }
-    message(
-        "-----    ",
-        samples_removed,
-        " sample(s) removed due to poor quality"
-    )
-
-    mSetSq <- myEnv$rgSet
-    mSetSq <- preprocessRaw(mSetSq)
-    mSetSq <- mapToGenome(mSetSq)
-    mSetSq <- ratioConvert(mSetSq)
-    detP <- detP[match(featureNames(mSetSq), rownames(detP)), ]
-    probes_before <- dim(mSetSq)[1]
-    keep <- rowSums(detP < 0.01) == ncol(mSetSq)
-    mSetSqFlt <- mSetSq[keep, ]
-    probes_removed <- probes_before - dim(mSetSqFlt)[1]
-    message(
-        "-----    ",
-        probes_removed,
-        " probe(s) removed for failing in ",
-        "one or more samples"
-    )
-    probes_before <- dim(mSetSqFlt)[1]
-    #    Remove    probes    with    SNPs    at    CpG    site
-    mSetSqFlt <- dropLociWithSnps(mSetSqFlt)
-    probes_removed <- probes_before - dim(mSetSqFlt)[1]
-    message(
-        "-----    ",
-        probes_removed,
-        " probe(s)  removed ",
-        "for having SNPs at CpG site"
-    )
-    probes_before <- dim(mSetSqFlt)[1]
-    #    Exclude    cross    reactive    probes
-    if (arrayType == "450K") {
-        data("ChenEtAlList", envir = myEnv, package = "EpigeneticAgePipeline")
-        xReactiveProbes <- myEnv$ChenEtAlList
-    } else if (arrayType == "27K") {
-        data("non_specific_probes_Illumina27k", envir = myEnv,
-            package = "EpigeneticAgePipeline")
-        xReactiveProbes <- myEnv$non_specific_probes_Illumina27k
-    } else if (arrayType == "EPIC") {
-        data("PidsleyCrossReactiveProbesEPIC", envir = myEnv,
-            package = "EpigeneticAgePipeline")
-        xReactiveProbes <- myEnv$PidsleyCrossReactiveProbesEPIC
-    } else if (arrayType == "EPICv2" || arrayType == "MSA") {
-        data("epicV2CR", envir = myEnv,
-             package = "EpigeneticAgePipeline")
-        xReactiveProbes <- myEnv$epicV2CR
-    }
-
-    keep <-
-        !(sub("_.*", "", featureNames(mSetSqFlt))
-        %in% xReactiveProbes$TargetID)
-    mSetSqFlt <- mSetSqFlt[keep, ]
-    probes_removed <- probes_before - dim(mSetSqFlt)[1]
-    message( "-----    ", probes_removed,
-            " probe(s) removed for being cross reactive"
-    )
-    probes_before <- dim(mSetSqFlt)[1]
-    #    Remove    Sex    Probes
-    if (arrayType == "EPIC") {
-        ann <- IlluminaHumanMethylationEPICanno.ilm10b4.hg19::Locations
-    } else if (arrayType == "EPICv2") {
-        ann <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Locations
-    } else if (arrayType == "450K") {
-        ann <- IlluminaHumanMethylation450kanno.ilmn12.hg19::Locations
-    } else if (arrayType == "MSA") {
-        ann <- IlluminaHumanMethylationMSAanno.ilm10a1.hg38::Locations
-    } else {
-        ann <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Locations
-    }
-    sexProbes <- ann[which(ann$chr %in% c("chrX", "chrY")), ]
-    keep <- !(featureNames(mSetSqFlt) %in% rownames(sexProbes))
-    mSetSqFlt <- mSetSqFlt[keep, ]
-    probes_removed <- probes_before - dim(mSetSqFlt)[1]
-    message("-----    ",
-        probes_removed, " probe(s)  removed ", "for  being  on  sex  chromosomes"
-    )
-    #    Print    out    the    number    of    probes    remaining
-    message(
-        "-----    ",
-        dim(mSetSqFlt)[1],
-        " probe(s) remaining for analysis"
-    )
-    #    Calculate    methylation    beta    values
-    myEnv$bVals <- getBeta(mSetSqFlt)
-    myEnv$bVals <- myEnv$bVals[,order(colnames(myEnv$bVals))]
-    if (arrayType == "EPICv2") {
-        suffix <- rownames(IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other)
-        wSuffixEPIC <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other$EPICv1_Loci
-        wSuffix450 <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other$Methyl450_Loci
-        wSuffix27 <- IlluminaHumanMethylationEPICv2anno.20a1.hg38::Other$Methyl27_Loci
-        matchedIndices <- match(rownames(myEnv$bVals), suffix)
-        rownames(myEnv$bVals) <- wSuffixEPIC[matchedIndices]
-        emptyIndices <- which(rownames(myEnv$bVals) == "")
-        rownames(myEnv$bVals)[emptyIndices] <- wSuffix450[matchedIndices][emptyIndices]
-        emptyIndices <- which(rownames(myEnv$bVals) == "")
-        rownames(myEnv$bVals)[emptyIndices] <- wSuffix27[matchedIndices][emptyIndices]
-        myEnv$bVals <- myEnv$bVals[rownames(myEnv$bVals) != "", ]
-    }
-}
-
-# Definition for function used in matrix generation
-panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor = 2, ...) {
-    usr <- par("usr")
-    on.exit(par(usr = usr))
-    par(usr = c(0, 1, 0, 1))
-    r <- abs(cor(x, y, use = "complete.obs"))
-    #myEnv$listofCors <- append(myEnv$listofCors, r)
-    txt <- format(c(r, 0.123456789), digits = digits)[1]
-    txt <- paste0(prefix, txt)
-    if (missing(cex.cor)) cex.cor <- 0.8 / strwidth(txt)
-    text(0.5, 0.5, txt, cex = cex.cor)
-}
-
-# Definition for function used in matrix generation
-mydiag.panel <- function(x, labels, ...) {
-    ll <- par("usr")
-    rect(ll[1], ll[3], ll[2], ll[4], col = "#CC7178")
-}
-
-# Definition for function used in matrix generation
-twolines <- function(x, y) {
-    points(x, y, pch = 20)
-    abline(lm(y ~ x), col = "#CC7178")
 }
 
 # Definition for function used for processing epigenetic age measures
@@ -568,9 +290,7 @@ processAgeType <- function(data, ageType, output) {
         ageType,
         colnames[colnames != ageType]
     )]
-    #if ("V1" %in% names(myEnv$pdataSVs)) {
-        #myEnv$pdataSVs$V1 <- NULL
-    #}
+
     write.csv(myEnv$pdataSVs, file = paste0(myEnv$baseDirectory, "/", ageType,"SampleData.csv"))
     validColumns <- c()
     for (i in colnames(myEnv$pdataSVs)) {
@@ -590,60 +310,97 @@ processAgeType <- function(data, ageType, output) {
     finalOutput <- paste(output, "\n", ageType, "Covariates\n")
     finalOutput <- corCovariates(finalOutput, validColumns)
     if (ageType != "EpiAge") {
-        #myEnv$listofCors <- c()
         myEnv$corsToRemove <- c()
     }
     return(finalOutput)
 }
 
-# Definition for function used for generating the correlation matrices
-generateMatrixPlot <- function(plotFormula, diagLabels, ageType) {
-    cairo_pdf(paste0(myEnv$baseDirectory, "/matrixplot", ageType, ".pdf"),
-            width = 14, height = 14, fallback_resolution = 1000)
-    pairs(plotFormula, data = myEnv$pdataSVs, upper.panel = twolines,
-            labels = diagLabels, diag.panel = mydiag.panel,
-            lower.panel = panel.cor, label.pos = 0.5, main = "")
-    dev.off()
+# Definition for function for creating the df used for analyses
+createAnalysisDF <- function(directory,
+                             sampleSheetFile = "Sample_Sheet.csv",
+                             columnTypes) {
+    if (is.null(names(columnTypes)) || any(names(columnTypes) == "")) {
+        stop("columnTypes must be a *named* integer vector. Names are column names in the sample sheet.")
+    }
+    if (!all(columnTypes %in% c(1L, 2L))) {
+        stop("columnTypes values must be 1 (factor) or 2 (numeric).")
+    }
+
+    setwd(directory)
+    if (!file.exists(sampleSheetFile)) {
+        stop("Sample sheet file not found: ", file.path(directory, sampleSheetFile))
+    }
+    message("Reading ", sampleSheetFile)
+    sampleData <- read.csv(sampleSheetFile, header = TRUE, check.names = FALSE)
+    sampleData <- as.data.frame(sampleData)
+
+    # Validate requested columns (allow Row/Column derived from 'Array')
+    reqCols <- setdiff(names(columnTypes), c("Row","Column"))
+    missingCols <- setdiff(reqCols, colnames(sampleData))
+    if (length(missingCols) > 0) {
+        stop("Missing required column(s) in sample sheet: ", paste(missingCols, collapse = ", "))
+    }
+
+    # Build pdataSVs strictly from requested columns
+    for (nm in names(columnTypes)) {
+        flag <- as.integer(columnTypes[[nm]])
+        if (nm == "Array") {
+            arr <- as.character(sampleData[["Array"]])
+            rowVals <- as.factor(gsub("R(\\d+).*", "\\1", arr))
+            colVals <- as.factor(gsub(".*C(\\d+)", "\\1", arr))
+            myEnv$pdataSVs$Row <- rowVals
+            myEnv$pdataSVs$Column <- colVals
+            next
+        }
+        vec <- sampleData[[nm]]
+        if (flag == 2L) {
+            message("Reading variable as numeric: ", nm)
+            myEnv$pdataSVs[[nm]] <- suppressWarnings(as.numeric(vec))
+        } else { # 1L
+            message("Reading variable as factor: ", nm)
+            myEnv$pdataSVs[[nm]] <- as.factor(vec)
+        }
+    }
+
+    # Warn on one-level covariates (still allowed)
+    for (nm in names(myEnv$pdataSVs)) {
+        if (length(unique(myEnv$pdataSVs[[nm]])) == 1) {
+            message("\nCovariate with only 1 unique level detected (", nm, "); consider excluding.\n")
+        }
+    }
+
+    if (!is.null(myEnv$failedSamples) && length(myEnv$failedSamples) > 0) {
+        keep_rows <- !(rownames(myEnv$pdataSVs) %in% myEnv$failedSamples)
+        removed_n <- sum(!keep_rows)
+        myEnv$pdataSVs <- myEnv$pdataSVs[keep_rows, , drop = FALSE]
+        message("Removed ", removed_n, " failed sample(s) from pdataSVs.")
+    }
+
 }
 
-# Definition for function for creating the df used for analyses
-createAnalysisDF <- function(directory) {
-    message("Reading Sample_Sheet.csv (assuming data is sorted A-Z on sample id's)...")
-    setwd(directory)
-    sampleData <- read.csv("Sample_Sheet.csv", header = TRUE)
-    sampleData <- as.data.frame(sampleData)
-    for (i in colnames(sampleData)) {
-        newVarName <- gsub("\\...[1-2]$", "", i)
-        if (grepl("\\.\\.\\.1", i)) {
-            message(paste0("Reading variable as numeric, ", i))
-            myEnv$pdataSVs[[newVarName]] <- as.numeric(sampleData[[i]])
-        } else if (grepl("\\.\\.\\.2", i)) {
-            if (i == "Array...2") {
-                row <- as.factor(gsub(
-                    "R(\\d+).*",
-                    "\\1",
-                    sampleData[[i]]
-                ))
-                column <- as.factor(gsub(
-                    ".*C(\\d+)",
-                    "\\1",
-                    sampleData[[i]]
-                ))
-                message(paste0("Reading Row and Column data from Array"))
-                myEnv$pdataSVs$Row <- row
-                myEnv$pdataSVs$Column <- column
-            } else {
-                message(paste0("Reading variable as factor, ", i))
-                myEnv$pdataSVs[[newVarName]] <- as.factor(sampleData[[i]])
-            }
-        }
-    }
-    for (i in colnames(myEnv$pdataSVs)) {
-        if (length(unique(myEnv$pdataSVs[[i]])) == 1 & i != "V1") {
-            message("\nCovariate with only 1 unique level detected,",
-                    "consider excluding\n")
-        }
-    }
+getClockColumns <- function(results) {
+    # keep numeric columns that have at least one non-NA
+    isNum <- vapply(results, is.numeric, logical(1))
+    keep <- names(results)[isNum]
+    # Drop obvious non-clock columns
+    drop <- c("id")  # 'age' stays for plotting alongside clocks
+    setdiff(keep, drop)
+}
+
+pickPlotClocks <- function(results) {
+    # 1) numeric columns only
+    is_num <- vapply(results, is.numeric, logical(1))
+    cols <- names(results)[is_num]
+
+    # 2) drop acceleration columns of any type
+    accel_pat <- "(^|\\.)ageAcc(2|3)?\\.|accel"
+    cols <- cols[!grepl(accel_pat, cols, ignore.case = TRUE)]
+
+    # 3) drop obvious non-clocks
+    cols <- setdiff(cols, c("Age", "age", "id", "DunedinPACE"))
+
+    # keep original order
+    cols
 }
 
 # Definition for function used for user specified covariate removal
@@ -713,8 +470,6 @@ corCovariates <- function(reportText, validColumns) {
                     reportText, "\n", covariate1, " and ", covariate2,
                     " are highly correlated: ", round(corrValue, 3), "\n"
                 )
-                message("\n", covariate1, " and ", covariate2,
-                        " are highly correlated: ", round(corrValue, 3), "\n")
                 myEnv$corsToRemove <- union(myEnv$corsToRemove, c(covariate1, covariate2))
             }
         }
@@ -722,380 +477,192 @@ corCovariates <- function(reportText, validColumns) {
     return(reportText)
 }
 
+recomputeAccels <- function(results) {
+    # need Age to compute any acceleration
+    if (!"Age" %in% names(myEnv$pdataSVs)) return(results)
 
-# Generating regression formula
-formulaGeneration <- function(columnsUsed) {
-    formula_string <- ""
-    if (!("Column" %in% columnsUsed) && "Row" %in% columnsUsed && "Slide"
-        %in% columnsUsed && "Batch" %in% columnsUsed) {
-        columnsUsed <- setdiff(columnsUsed, c("Row", "Slide", "Batch"))
-        string <- paste0(columnsUsed, collapse = " + ")
-        formula_string <- paste0(
-            "EpiAge",
-            " ~ ",
-            string,
-            " + ",
-            "(Row|Slide)",
-            " + ",
-            "(1|Batch)"
-        )
-    } else if ("Row" %in% columnsUsed && "Column" %in% columnsUsed && "Slide"
-               %in% columnsUsed && "Batch" %in% columnsUsed) {
-        columnsUsed <- setdiff(columnsUsed, c("Row", "Column", "Batch", "Slide"))
-        string <- paste0(columnsUsed, collapse = " + ")
-        formula_string <- paste0(
-            "EpiAge",
-            " ~ ",
-            string,
-            " + ",
-            "(Row + Column|Slide)",
-            " + ",
-            "(1|Batch)"
-        )
-    } else if (!("Row" %in% columnsUsed) && "Column" %in% columnsUsed && "Slide"
-        %in% columnsUsed && "Batch" %in% columnsUsed) {
-        columnsUsed <- setdiff(columnsUsed, c("Column", "Batch", "Slide"))
-        string <- paste0(columnsUsed, collapse = " + ")
-        formula_string <- paste0(
-            "EpiAge",
-            " ~ ",
-            string,
-            " + ",
-            "(Column|Slide)",
-            " + ",
-            "(1|Batch)"
-        )
-    } else if ("Batch" %in% columnsUsed) {
-        columnsUsed <- setdiff(columnsUsed, c("Batch"))
-        string <- paste0(columnsUsed, collapse = " + ")
-        formula_string <- paste0(
-            "EpiAge",
-            " ~ ",
-            string,
-            " + ",
-            "(1|Batch)"
-        )
+    # find cell counts (prefer myEnv, fall back to .GlobalEnv)
+    CC <- if (exists("CellCountsDf", envir = myEnv, inherits = FALSE)) {
+        get("CellCountsDf", envir = myEnv)
+    } else if (exists("CellCountsDf", envir = .GlobalEnv, inherits = FALSE)) {
+        get("CellCountsDf", envir = .GlobalEnv)
     } else {
-        string <- paste0(columnsUsed, collapse = " + ")
-        formula_string <- paste("EpiAge", "~", string)
-    }
-    return(formula_string)
-}
-
-# Definition for function used for residual generation
-residGeneration <- function(pdata, formula) {
-    columns <- colnames(pdata)
-    columnsUsed <- columns[columns != "EpiAge"]
-    if (is.null(formula)) {
-        formula_string <- formulaGeneration(columnsUsed)
-    } else {
-        formula_string <- formula
-    }
-    runlme <- function(formula) {
-        lme1 <- glmmTMB(formula,
-                            data = pdata,
-                            family = "gaussian",
-                            control = glmmTMBControl(optCtrl = list(
-                                iter.max = 10000,
-                                eval.max = 10000
-                            ))
-        )
-        smodel <- lme1
-        return(smodel)
-    }
-    lme_formula <- formula_string
-    message(lme_formula)
-    lme_formula <- as.formula(lme_formula)
-    lme_summary <- try(runlme(lme_formula), silent = FALSE)
-    resids <- residuals(lme_summary)
-    return(resids)
-}
-
-# Definition for function specifically used for generating pca's
-pcaGeneration <- function(PCs, threshold) {
-    myEnv$bVals <- na.omit(myEnv$bVals)
-    bValst <- t(myEnv$bVals)
-    bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
-    pca_scores <- as.data.frame(bpca$x)
-    constant <- threshold
-    sample_outliers <- c()
-    alloutliers <- c()
-
-
-    if (ncol(pca_scores) < PCs) {
-        loopNum <- ncol(pca_scores)
-    } else {
-        loopNum <- PCs
+        warning("CellCountsDf not found; leaving accelerations unchanged.")
+        return(results)
     }
 
+    # meffil-style tiny-variance filter
+    ok <- which(apply(CC, 2, stats::IQR, na.rm = TRUE) > 1e-6)
+    if (length(ok)) CC <- CC[, ok, drop = FALSE]
 
-    for (i in seq.default(from = 1, to = loopNum))
-    {
-        median <- median(bpca$x[, i])
-        MAD <- stats::mad(bpca$x[,i])
-        upper <- median + constant * MAD
-        lower <- median - constant * MAD
+    sids <- as.character(results$id)
 
-        a <- subset(
-            rownames(bpca$x),
-            bpca$x[, i] > upper)
-        b <- subset(
-            rownames(bpca$x),
-            bpca$x[, i] < lower)
+    # Build the design data.frame expected by methylclock:::ageAcc2
+    df <- data.frame(
+        age = myEnv$pdataSVs$Age,
+        CC,
+        check.names = FALSE
+    )
 
-        out <- c(a, b)
-        sample_outliers <- c(sample_outliers, out)
-        alloutliers <- c(alloutliers, sample_outliers)
-        sample_outliers <- c()
-    }
+    is_num <- vapply(results, is.numeric, logical(1))
+    candidates <- names(results)[is_num]
+    candidates <- setdiff(candidates, c("Age", "DunedinPACE"))
+    candidates <- candidates[!grepl("accel|ageAcc", candidates, ignore.case = TRUE)]
+    labs <- candidates
 
-    myEnv$outliersCSV <- unique(alloutliers)
-    bpca <- prcomp(bValst, center = TRUE, scale = FALSE)
-    pca_scores <- as.data.frame(bpca$x)
-    return(pca_scores)
-}
+    # Always skip DunedinPACE even if passed in explicitly
+    labs <- setdiff(labs, "DunedinPACE")
 
-# Residual and PCA Generation function
-generateResiduals <- function(inputDirectory = getwd(),
-                            outputDirectory = inputDirectory, useBeta = FALSE, formula = NULL,
-                            arrayType = "450K", ignoreCor = TRUE, PCs = 5, threshold = 3,
-                            doParallel = TRUE, doCellCounts = TRUE, useAdult = FALSE) {
-    old_wd <- getwd()
-    on.exit(setwd(old_wd), add = TRUE)
-    startup(outputDirectory)
-    setwd(inputDirectory)
-    if (useBeta == TRUE) {
-        if (doParallel) {
-            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
-            message(paste0("Reading ", file, ", utilizing parallel processing..."))
-            myEnv$bVals <- as.data.frame(data.table::fread(file))
-            rownames(myEnv$bVals) <- myEnv$bVals$V1
-            myEnv$bVals$V1 <- NULL
-        } else {
-            file <- sort(list.files(pattern = "^betaValues\\.csv(\\.gz)?$", full.names = TRUE, ignore.case = TRUE), decreasing = TRUE)[1]
-            message(paste0("Reading ", file, "..."))
-            myEnv$bVals <- read.csv(file, row.names = 1)
+    for (lab in labs) {
+        if (!lab %in% names(results)) next
+        x <- data.frame(Sample = sids, mAge = results[[lab]])
+        a <- methylclock:::ageAcc2(x, df = df, lab = lab)
+
+        for (nm in paste0(c("ageAcc", "ageAcc2", "ageAcc3"), ".", lab)) {
+            results[[nm]] <- a[[nm]]
         }
-    } else {
-        message("Processing IDAT files...")
-        processIDAT(inputDirectory, arrayType, useSampleSheet = TRUE)
     }
-    if (PCs != 0) {
-        pca_scores <- pcaGeneration(PCs, threshold)
-    }
-    # Processing and Writing Residuals ####
-    myEnv$pdataSVs <- data.frame(row.names = colnames(myEnv$bVals))
-    createAnalysisDF(inputDirectory)
-    if (PCs != 0) {
-        myEnv$pdataSVs <-
-            cbind(myEnv$pdataSVs, pca_scores[, seq(from = 1, to = PCs)])
-    }
-    if (!"EpiAge" %in% colnames(myEnv$pdataSVs) & !is.null(formula)) {
-        warning(
-            "You did not specify a column called EpiAge@@@1 in your",
-            "Sample_Sheet.csv", ", rename or use custom formula"
-        )
-        return()
-    }
-    if (!is.numeric(myEnv$rgSet) && arrayType != "27K" && doCellCounts) {
-        CC <- estimateCellCounts(myEnv$rgSet, arrayType, useAdult)
-        assign("CellCountsDf", CC, envir = .GlobalEnv)
-        addCellCountsToPdataSVs(CC, arrayType, useAdult)
-    }
-    if (is.null(formula)) {
-        processAgeType(myEnv$pdataSVs, "EpiAge", " ")
-    } else {
-        processAgeType(myEnv$pdataSVs, gsub(" ", "", sub("~.*", "", formula)), " ")
-    }
-    x <- corCovariates(" ")
-    if (!ignoreCor && is.null(formula)) {
-        removeCovariates()
-    }
-    #myEnv$listofCors <- c()
-    myEnv$corsToRemove <- c()
-    myEnv$residualsCSV <- residGeneration(myEnv$pdataSVs, formula)
-    write.csv(myEnv$outliersCSV, paste0(myEnv$baseDirectory, "/OutlierSamples.csv"))
-    write.csv(myEnv$residualsCSV, paste0(myEnv$baseDirectory, "/Residuals.csv"))
+
+    results
 }
 
-#FUNCTION FROM:
-#https://github.com/yiluyucheng/dnaMethyAge
-# All borrowed functions were carefully curated and modified to suit specific project requirements.
-# Certain parts of the original implementations were excluded to focus on essential functionality.
-# Changes include trimming unused features and restructuring for improved integration.
-methyAge <- function(betas, clock, age_info=NA) {
-    if(grepl('^PC[A-Z]', clock)){
-        data(list="PC-clocks", envir=myEnv, package = "EpigeneticAgePipeline")
-        myEnv$coefs$Coefficient <- myEnv$coefs[[clock]]
-    }else{
-        data(list="DunedinPACE", envir=myEnv, package = "EpigeneticAgePipeline")
-    }
-    is_beta <- TRUE
-    if(clock == 'DunedinPACE'){
-        betas <- preprocessDunedinPACE(betas,
-            ref_means=myEnv$gold_standard_means)
-    }
-    if(is_beta){
-        myEnv$coefs <- setNames(myEnv$coefs$Coefficient, myEnv$coefs$Probe)
-        betas <- rbind(betas, Intercept=1)
-        betas <- betas[rownames(betas) %in% names(myEnv$coefs), ]
 
-        if (myEnv$useImputation) {
-            message("Performing imputation")
-            data(list='golden_ref', envir=myEnv, package = "EpigeneticAgePipeline")
-            ref_mean <- setNames(myEnv$golden_ref$Mean, rownames(myEnv$golden_ref))
-            ref_mean <- ref_mean[names(ref_mean) %in% names(myEnv$coefs)]
-            betas <- meanImputation(mt=betas, ref=ref_mean, only_ref_rows=FALSE)
-        } else {
-            betas[is.na(betas)] <- 0
-        }
+clockSummary <- function() {
+    data("PC-clocks", envir = myEnv, package = "EpigeneticAgePipeline")
 
-        m_age <- t(betas) %*% matrix(data=myEnv$coefs[rownames(betas)])
-    }
-    m_age <- data.frame(Sample=rownames(m_age), mAge=as.numeric(m_age))
-    warning_message <- "\n'age_info' should be a dataframe which contains
-    sample ID and age information,
-    like:\nSample\tAge\nname1\t30\nname2\t60\nname3\t40\nAge acceleration
-    will not be calculated."
-    if (is(age_info, "data.frame")) {
-        if (all(c('Sample', 'Age') %in% colnames(age_info))){
-            m_age <- merge(age_info, m_age, by='Sample', sort=FALSE)
-            if (nrow(m_age) < 1){
-                stop(message("Colnames of the input beta dataframe do not match
-                    any of the values of the 'Sample' column in
-                    age_info!"))
-            }
-            if(clock == 'PCGrimAge'){
-                if('Sex' %in% colnames(age_info)){
-                    m_age$is_Female <- gsub('^F.*', 1, m_age$Sex)
-                    m_age$is_Female <- gsub('^M.*', 0, m_age$is_Female)
-                    m_age$is_Female <- as.numeric(m_age$is_Female)
-                    m_age$mAge <- m_age$mAge +
-                        as.matrix(m_age[, c('is_Female', 'Age')]) %*%
-                        myEnv$PCGrimAge_agesex$PCGrimAge
-                }else{
-                    stop(message("\nTo calculate 'PCGrimage', 'age_info'
-                        should include a 'Sex' column that contains
-                        binary sex annotation, i.e. either Female or Male."))
-                }
-            }
-            m_age$Age_Acceleration <- getAccel(m_age$Age, m_age$mAge)
-        }else{
-            warning(message("\nThe colnames of age_info should include both
-                'Sample' and 'Age',
-                like:\nSample\tAge\nname1\t30\nname2\t60\nname3\t40\nAge\nAge
-                acceleration will not be calculated."))
-        }
-    } else if (is.na(age_info[1])){
-        if(clock == 'PCGrimAge'){
-            stop(message("\nTo calculate 'PCGrimage': \n'age_info' should be
-                a dataframe which contains sample ID, age,
-                sex information,
-                like:\nSample\tAge\tSex\nname1\t30\tFemale\nname2\t60\tMale
-                \nname3\t40\tFemale\n"))
-        }
-    } else {
-        warning(message(warning_message))
-    }
-    return(m_age)
+    cpg.names <- rownames(myEnv$bVals)
+
+    coefHannum_PC <- data.frame(CpGmarker = myEnv$coefs$Probe,
+                                PCHannum2013 = myEnv$coefs$PCHannumG2013)
+    coefHorvath2013_PC <- data.frame(CpGmarker = myEnv$coefs$Probe,
+                                     PCHorvaths2013 = myEnv$coefs$PCHorvathS2013)
+    coefHorvath2018_PC <- data.frame(CpGmarker = myEnv$coefs$Probe,
+                                     PCHorvaths2018 = myEnv$coefs$PCHorvathS2018)
+    coefPhenoAge_PC <- data.frame(CpGmarker = myEnv$coefs$Probe,
+                                  PCHPhenoAge = myEnv$coefs$PCPhenoAge)
+    coefGrimAge_PC <- data.frame(CpGmarker = myEnv$coefs$Probe,
+                                 PCGrimAge = myEnv$coefs$PCGrimAge)
+
+    data("DunedinPACE", envir = myEnv, package = "EpigeneticAgePipeline")
+
+    coefDunedinPACE <- data.frame(CpGmarker = myEnv$coefs$Probe,
+                                 PCGrimAge = myEnv$coefs$Coefficient)
+
+
+    checkHorvath <- coefHorvath$CpGmarker[-1][!coefHorvath$CpGmarker[-1] %in% cpg.names]
+    checkHannum <- coefHannum$CpGmarker[!coefHannum$CpGmarker %in% cpg.names]
+    checkLevine <- coefLevine$CpGmarker[-1][!coefLevine$CpGmarker[-1] %in% cpg.names]
+    checkSkin <- coefSkin$CpGmarker[-1][!coefSkin$CpGmarker[-1] %in% cpg.names]
+    checkPedBE <- coefPedBE$CpGmarker[-1][!coefPedBE$CpGmarker[-1] %in% cpg.names]
+    checkWu <- coefWu$CpGmarker[-1][!coefWu$CpGmarker[-1] %in% cpg.names]
+    checkTL <- coefTL$CpGmarker[-1][!coefTL$CpGmarker[-1] %in% cpg.names]
+    checkBLUP <- coefBLUP$CpGmarker[-1][!coefBLUP$CpGmarker[-1] %in% cpg.names]
+    checkEN <- coefEN$CpGmarker[-1][!coefEN$CpGmarker[-1] %in% cpg.names]
+    checkDunedin <- coefDunedinPACE$CpGmarker[-1][!coefDunedinPACE$CpGmarker[-1] %in% cpg.names]
+    checkGrimAge_PC <-coefGrimAge_PC$CpGmarker[-1][coefGrimAge_PC$CpGmarker[-1] %in% cpg.names]
+    checkHorvath_PC <- coefHorvath2013_PC$CpGmarker[-1][!coefHorvath2013_PC$CpGmarker[-1] %in% cpg.names]
+    checkHannum_PC <- coefHannum_PC$CpGmarker[-1][!coefHannum_PC$CpGmarker[-1] %in% cpg.names]
+    checkLevine_PC <- coefPhenoAge_PC$CpGmarker[-1][!coefPhenoAge_PC$CpGmarker[-1] %in% cpg.names]
+    checkSkin_PC <- coefHorvath2018_PC$CpGmarker[-1][!coefHorvath2018_PC$CpGmarker[-1] %in% cpg.names]
+
+    parsedV1 <- parseGrimAgeTable(myEnv$GrimAge_V1)
+    parsedV2 <- parseGrimAgeTable(myEnv$GrimAge_V2)
+    covListV1 <- lapply(parsedV1$components, coverageReport, betas = myEnv$bVals)
+    covDfV1 <- data.frame(
+        Surrogate = names(covListV1),
+        present   = sapply(covListV1, `[[`, "present"),
+        total     = sapply(covListV1, `[[`, "total"),
+        pct       = sapply(covListV1, `[[`, "pct"),
+        row.names = NULL
+    )
+    covDfV1$Surrogate <- paste0(covDfV1$Surrogate, "_GrimAgeV1")
+    covDfV1$pct <- 1 - covDfV1$pct
+    covListV2 <- lapply(parsedV2$components, coverageReport, betas = myEnv$bVals)
+    covDfV2 <- data.frame(
+        Surrogate = names(covListV2),
+        present   = sapply(covListV2, `[[`, "present"),
+        total     = sapply(covListV2, `[[`, "total"),
+        pct       = sapply(covListV2, `[[`, "pct"),
+        row.names = NULL
+    )
+    covDfV2$Surrogate <- paste0(covDfV2$Surrogate, "_GrimAgeV2")
+    covDfV2$pct <- 1 - covDfV2$pct
+
+
+    sizes <- lengths(list(
+        checkHorvath,           checkHorvath_PC,
+        checkHannum,            checkHannum_PC,
+        checkLevine,            checkLevine_PC,
+        checkSkin,              checkSkin_PC,
+        checkPedBE,
+        checkWu,
+        checkTL,
+        checkBLUP,
+        checkEN,
+        checkDunedin,
+        checkGrimAge_PC
+    ))
+
+    n <- c(
+        nrow(coefHorvath[-1, ]),        nrow(coefHorvath2013_PC[-1, ]),
+        nrow(coefHannum),               nrow(coefHannum_PC[-1, ]),
+        nrow(coefLevine[-1, ]),         nrow(coefPhenoAge_PC[-1, ]),
+        nrow(coefSkin[-1, ]),           nrow(coefHorvath2018_PC[-1, ]),
+        nrow(coefPedBE[-1, ]),
+        nrow(coefWu[-1, ]),
+        nrow(coefTL[-1, ]),
+        nrow(coefBLUP[-1, ]),
+        nrow(coefEN[-1, ]),
+        nrow(coefDunedinPACE[-1, ]),
+        nrow(coefGrimAge_PC[-1, ])
+    )
+
+    df <- data.frame(
+        clock = c(
+            "Horvath", "Horvath_PC",
+            "Hannum",  "Hannum_PC",
+            "Levine",  "Levine_PC",
+            "Horvath_SkinBlood", "Horvath_SkinBlood_PC",
+            "PedBE",
+            "Wu",
+            "TL",
+            "BLUP",
+            "EN",
+            "DunedinPACE",
+            "GrimAge_PC"
+        ),
+        Cpgs_in_clock = n,
+        missing_CpGs = sizes,
+        percentage = round((sizes / n) * 100, 1)
+    )
+
+    # Reformat covDfV1 to match df
+    covDfV1_renamed <- data.frame(
+        clock = covDfV1$Surrogate,
+        Cpgs_in_clock = covDfV1$total,
+        missing_CpGs  = covDfV1$total - covDfV1$present,
+        percentage    = round((1 - (covDfV1$present/covDfV1$total)) * 100, 1),
+        stringsAsFactors = FALSE
+    )
+
+    # Do the same for V2
+    covDfV2_renamed <- data.frame(
+        clock = covDfV2$Surrogate,
+        Cpgs_in_clock = covDfV2$total,
+        missing_CpGs  = covDfV2$total - covDfV2$present,
+        percentage    = round((1 - (covDfV2$present/covDfV2$total)) * 100, 1),
+        stringsAsFactors = FALSE
+    )
+
+    # Bind everything together
+    df_all <- rbind(df, covDfV1_renamed, covDfV2_renamed)
+
+    assign("ClockStats", df_all, envir = myEnv)
+
+    print(df_all)
 }
 
-#FUNCTION FROM:
-#https://github.com/yiluyucheng/dnaMethyAge
-preprocessDunedinPACE <- function(betas, ref_means, least_proportion=0){
-    common_p <- intersect(rownames(betas), names(ref_means))
-    back_p <- length(common_p) / length(ref_means)
-    if(back_p > least_proportion){
-        betas <- betas[common_p, ]
-        betas[,] <- normalize.quantiles.use.target(as.matrix(betas),
-            target=ref_means[common_p])
-        missing_p <- setdiff(names(ref_means), common_p)
-        #### replace NA with reference mean
-        betas <- data.frame(betas, check.names = FALSE)
-        betas[missing_p, ] <- NA
-        ref_means <- ref_means[rownames(betas)]
-        for(c in 1:ncol(betas)){
-            na_col <- which(is.na(betas[, c]))
-            betas[na_col, c] <- ref_means[na_col]
-        }
-        return(betas)
-    }else{
-        stop(sprintf("Missing too many probes. Only %.2f%s of
-                     the required probes have been found!", back_p * 100, "%"))
-    }
-}
 
-#FUNCTION FROM:
-#https://github.com/yiluyucheng/dnaMethyAge
-getAccel <- function(c_age, m_age){
-    message("Age acceleration is calculated as the residual resulting",
-        " from a linear regression model which DNAm age is regressed",
-        " on chronological age.") ## copied
-    fit_model <- lm(m_age ~ c_age, na.action = na.exclude)
-    accel <- residuals(fit_model)
-    return(accel)
-}
-
-#FUNCTION FROM:
-#https://github.com/yiluyucheng/dnaMethyAge
-meanImputation <- function(mt, ref, cut_off=0.9, only_ref_rows=TRUE){
-    mt <- as.matrix(mt)
-    if(only_ref_rows){
-        mt <- mt[rownames(mt) %in% names(ref), ]
-    }
-    t_mt <- rowSums(mt)
-    row_mean <- rowMeans(mt[is.na(t_mt),], na.rm=TRUE)
-    na_row <- intersect(rownames(mt)[is.na(t_mt)], names(ref))
-    for (p in na_row){
-        n_miss <- sum(is.na(mt[p,]))
-        if(n_miss / nrow(mt) > cut_off) {
-            #mt[p,][is.na(mt[p,])] <- ref[p]
-            mt[p,] <- ref[p]
-        }else{
-            mt[p,][is.na(mt[p,])] <- row_mean[p]
-        }
-
-    }
-    ## replace missing rows with reference values
-    miss_row <- setdiff(names(ref), rownames(mt))
-    mt <- rbind(mt, matrix(rep(ref[miss_row], ncol(mt)), ncol=ncol(mt),
-                           dimnames = list(miss_row, colnames(mt))))
-
-    return(mt)
-}
-
-#loadTestData <- function() {
-    #myEnv <- new.env(parent = emptyenv())
-    #data("CpGNames", package = "EpigeneticAgePipeline", envir = myEnv)
-    #CpGNames <- myEnv$CpGNames
-    #df <- data.frame(matrix(runif(length(CpGNames) * 9),
-        #nrow = length(CpGNames), ncol = 9))
-    #colnames(df) <- paste0("Sample", 1:9)
-    #rownames(df) <- CpGNames
-    #SampleSheet <- data.frame(
-        #Sex...2 = ifelse(runif(9) < 0.3, "Male", "Female"),
-        #Age...1 = sample(0:100, 9, replace = TRUE),
-        #EpiAge...1 = sample(0:100, 9, replace = TRUE)
-    #)
-    #write.csv(SampleSheet, paste0(system.file(package =
-        #"EpigeneticAgePipeline"),"/data/Sample_Sheet.csv"))
-    #write.csv(df, paste0(system.file(package = "EpigeneticAgePipeline"),
-        #"/data/betaValues.csv"))
-#}
-
-#removeTestData <- function() {
-    #filePath <- paste0(system.file(package = "EpigeneticAgePipeline"),
-        #"/data/betaValues.csv")
-    #filePath2 <- paste0(system.file(package = "EpigeneticAgePipeline"),
-        #"/data/Sample_Sheet.csv")
-    #if (file.exists(filePath)) {
-        #unlink(filePath)
-        #unlink(filePath2)
-        #message("Test data deleted")
-    #} else {
-        #message("Test data not yet loaded")
-    #}
-#}
 
 
 
