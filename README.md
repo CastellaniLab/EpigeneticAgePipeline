@@ -320,7 +320,7 @@ For all clocks except DunedinPACE, if age is provided as a covariate, 3 types of
 
 ### Introduction to Residual Generation
  
-This section describes the proccess of residual generation adjusted for relevant common covariates. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv, as available. If you have access to these variables in your Sample_Sheet.csv, make sure to append "@@@2" to each variable,  and be mindful of capitalization. More information on using these variables can be found in Usage Guidelines.    
+This section describes the proccess of residual generation adjusted for relevant common covariates. The function constructs a formula string for the linear model based on the presence of the variables “Row”, “Column”, “Slide”, and “Batch” in Sample_Sheet.csv, as available. More information on using these variables can be found in Usage Guidelines.   
  
 #### Dynamic Formula Construction for Linear Models 
 Based on the available data variables, the function dynamically constructs the formula for the linear model. Below are the possible formulae: 
