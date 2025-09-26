@@ -11,20 +11,25 @@ estimates, and covariate analyses with plotting and export utilities.
 
 \usage{
 main(
-  inputDirectory = getwd(),
-  outputDirectory = inputDirectory,
-  normalize = TRUE,
-  useBeta = FALSE,
-  arrayType = "450K",
-  useSampleSheet = TRUE,
-  sampleSheetFile = "Sample_Sheet.csv",
-  columnTypes = NULL,
-  doParallel = TRUE,
-  writeBeta = TRUE,
-  tissue = "bloodAdult",
-  cellDeconvMethod = "CP",
-  placentaTrimester = "third",
-  useImputation = FALSE
+ inputDirectory = getwd(),
+ outputDirectory = inputDirectory,
+ normalize = TRUE,
+ useBeta = FALSE,
+ arrayType = "450K",
+ useSampleSheet = TRUE,
+ sampleSheetFile = "Sample_Sheet.csv",
+ columnTypes = NULL,
+ doParallel = TRUE,
+ writeBeta = TRUE,
+ tissue = "bloodAdult",
+ cellDeconvMethod = "CP",
+ placentaTrimester = "third",
+ useImputation = FALSE,
+ detPSampleCutoff = 0.05,
+ detPProbeCutoff = 0.01,
+ minBeads = 3,
+ beadSampleMaxFailFrac = 0.05,
+ beadProbeMaxFailFrac  = 0.05
 )
 }
 
@@ -86,8 +91,40 @@ String. When \code{tissue = "placenta"}, choose \code{"first"} or \code{"third"}
 }
 
 \item{useImputation}{
-Logical. If \code{TRUE}, perform mean-imputation of missing CpGs for CpG/PC clocks using packaged reference means.
-Note: DunedinPACE applies reference-target quantile normalization and fills missing CpGs to its reference irrespective of this flag.
+Logical. If \code{TRUE}, perform mean-imputation of missing CpGs (from GSE40279) for PC clocks and DunedinPACE using packaged reference means.
+}
+
+\item{detPSampleCutoff}{
+Numeric between 0 and 1. Sample-level detection-p filter.
+For each sample, the mean detection-p across probes is computed.
+Samples with mean detection-p greater than or equal to this cutoff are removed.
+Default: 0.05.
+}
+
+\item{detPProbeCutoff}{
+Numeric between 0 and 1. Probe-level detection-p filter.
+After sample filtering, a probe is retained only if its detection-p is less than this cutoff
+in all remaining samples. Probes failing in any sample are dropped.
+Default: 0.01.
+}
+
+\item{minBeads}{
+Integer greater than or equal to 0. Minimum bead count required for a probe–sample
+measurement to be considered reliable. Observations with bead count less than this
+value are marked as low-bead failures for downstream fraction tests.
+Default: 3.
+}
+
+\item{beadSampleMaxFailFrac}{
+Numeric between 0 and 1. Maximum fraction of low-bead observations permitted per sample.
+Samples with a proportion of low-bead probe calls greater than this value are removed.
+Default: 0.05.
+}
+
+\item{beadProbeMaxFailFrac}{
+Numeric between 0 and 1. Maximum fraction of low-bead observations permitted per probe
+across the (post-filtered) samples. Probes with a proportion of low-bead calls greater
+than this value are removed. Default: 0.05.
 }
 }
 

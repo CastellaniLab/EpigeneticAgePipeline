@@ -55,6 +55,9 @@ processIDAT <- function(directory,
                         arrayType,
                         useSampleSheet,
                         sampleSheetFile = "Sample_Sheet.csv",
+                        # det p thresholds
+                        detPSampleCutoff = 0.05,
+                        detPProbeCutoff = 0.01,
                         # bead-count thresholds
                         minBeads = 3,
                         beadSampleMaxFailFrac = 0.05,
@@ -126,7 +129,7 @@ processIDAT <- function(directory,
     detP <- detectionP(myEnv$rgSet)
     detP <- detP[complete.cases(detP), ]
     samples_before <- ncol(myEnv$rgSet)
-    keep <- colMeans(detP) < 0.05
+    keep <- colMeans(detP) < detPSampleCutoff
     myEnv$rgSet <- dropWithLog(myEnv$rgSet, keep, reason = "detP_fail")
     samples_removed <- samples_before - ncol(myEnv$rgSet)
     if (samples_removed != 0) {
@@ -155,7 +158,7 @@ processIDAT <- function(directory,
 
     detP <- detP[match(featureNames(mSetSq), rownames(detP)), ]
     probes_before <- dim(mSetSq)[1]
-    keep <- rowSums(detP < 0.01) == ncol(mSetSq)
+    keep <- rowSums(detP < detPProbeCutoff) == ncol(mSetSq)
     mSetSqFlt <- mSetSq[keep, ]
     probes_removed <- probes_before - dim(mSetSqFlt)[1]
     message(

@@ -37,7 +37,10 @@ Imports:
     readr,
     sesame,
     data.table,
-    knitr
+    knitr,
+    tidyr,
+    tidyselect,
+    scales
 Suggests:
     magick,
     BiocManager,

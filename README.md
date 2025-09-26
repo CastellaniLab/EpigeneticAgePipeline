@@ -53,6 +53,7 @@ packages_to_install <- c(
     "reshape2",
     "minfi",
 	"FlowSorted.Blood.EPIC",
+	"FlowSorted.Blood.450k",
 	"FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.DLPFC.450k",
     "sesame",
@@ -71,6 +72,7 @@ packages_to_install <- c(
     "reshape2",
     "minfi",
 	"FlowSorted.Blood.EPIC",
+	"FlowSorted.Blood.450k",
 	"FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.DLPFC.450k",
     "IlluminaHumanMethylation27kanno.ilmn12.hg19",
@@ -91,6 +93,7 @@ packages_to_install <- c(
     "reshape2",
     "minfi",
 	"FlowSorted.Blood.EPIC",
+	"FlowSorted.Blood.450k",
 	"FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.DLPFC.450k",
     "IlluminaHumanMethylation450kanno.ilmn12.hg19",
@@ -111,6 +114,7 @@ packages_to_install <- c(
     "reshape2",
     "minfi",
 	"FlowSorted.Blood.EPIC",
+	"FlowSorted.Blood.450k",
 	"FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.DLPFC.450k",
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
@@ -133,6 +137,7 @@ packages_to_install <- c(
 	"FlowSorted.Blood.EPIC",
 	"FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.DLPFC.450k",
+	"FlowSorted.Blood.450k",
     "IlluminaHumanMethylationEPICv2anno.20a1.hg38",
     "IlluminaHumanMethylationEPICv2manifest",
     "sesame",
@@ -151,6 +156,7 @@ packages_to_install <- c(
     "reshape2",
     "minfi",
 	"FlowSorted.Blood.EPIC",
+	"FlowSorted.Blood.450k",
 	"FlowSorted.CordBloodCombined.450k",
 	"FlowSorted.DLPFC.450k",
     "IlluminaHumanMethylationMSAanno.ilm10a1.hg38",
@@ -304,7 +310,7 @@ For all clocks except DunedinPACE, if age is provided as a covariate, 3 types of
 - `cellDeconvMethod=` **"CP"** (constrained projection via FlowSorted.Blood.EPIC) or **"RPC"** (EpiDISH)
 
 **References used automatically**
-- Adult blood: *FlowSorted.Blood.EPIC*
+- Adult blood: *FlowSorted.Blood.450k*
 - Cord blood: *FlowSorted.CordBloodCombined.450k*
 - Saliva: *BeadSorted.Saliva.EPIC* (via ExperimentHub)
 - Placenta: *plaNET* first/third trimester means (`placentaTrimester`)
@@ -370,7 +376,12 @@ main(
   tissue = "bloodCord",     
   cellDeconvMethod = "RPC",       
   placentaTrimester = "third",     
-  useImputation = FALSE
+  useImputation = FALSE,
+  detPSampleCutoff = 0.05,
+  detPProbeCutoff = 0.01,
+  minBeads = 3,
+  beadSampleMaxFailFrac = 0.05,
+  beadProbeMaxFailFrac  = 0.05
 )
 ```
 **`inputDirectory`** *(string)*  
@@ -416,6 +427,21 @@ main(
 
 **`useImputation`** *(logical)*  
   If `TRUE`, perform mean-imputation of missing CpGs (from GSE40279) for PC clocks and DunedinPACE using packaged reference means.  
+
+**detPSampleCutoff** *(numeric 0–1)*  
+  Sample-level detection-p filter. For each sample, compute mean detection-p across probes; samples with mean detection-p ≥ this cutoff are removed. **Default:** `0.05`.
+
+**detPProbeCutoff** *(numeric 0–1)*  
+  Probe-level detection-p filter. After sample filtering, retain a probe only if detection-p is < this cutoff in all remaining samples; otherwise drop the probe. **Default:** `0.01`.
+
+**minBeads** *(integer ≥ 0)*  
+  Minimum bead count for a probe–sample measurement to be considered reliable. Observations with bead count < `minBeads` are marked low-bead for downstream fraction tests. **Default:** `3`.
+
+**beadSampleMaxFailFrac** *(numeric 0–1)*  
+  Max fraction of low-bead observations permitted per sample. Samples with a higher fraction are removed. **Default:** `0.05`.
+
+**beadProbeMaxFailFrac** *(numeric 0–1)*  
+  Max fraction of low-bead observations permitted per probe across the (post-filtered) samples. Probes with a higher fraction are removed. **Default:** `0.05`.
  
 #### Output  
 
@@ -473,7 +499,12 @@ generateResiduals(
   doCellCounts = TRUE,
   tissue = "bloodAdult",
   cellDeconvMethod = "CP",
-  placentaTrimester = "third"
+  placentaTrimester = "third",
+  detPSampleCutoff = 0.05,
+  detPProbeCutoff = 0.01,
+  minBeads = 3,
+  beadSampleMaxFailFrac = 0.05,
+  beadProbeMaxFailFrac  = 0.05
 )
 ``` 
 **`inputDirectory`** *(string)*  
@@ -531,6 +562,21 @@ generateResiduals(
 
 **`placentaTrimester`** *(string)*  
   When `tissue = "placenta"`, choose `"first"` or `"third"` trimester reference. **Default:** `"third"`.
+
+**detPSampleCutoff** *(numeric 0–1)*  
+  Sample-level detection-p filter. For each sample, compute mean detection-p across probes; samples with mean detection-p ≥ this cutoff are removed. **Default:** `0.05`.
+
+**detPProbeCutoff** *(numeric 0–1)*  
+  Probe-level detection-p filter. After sample filtering, retain a probe only if detection-p is < this cutoff in all remaining samples; otherwise drop the probe. **Default:** `0.01`.
+
+**minBeads** *(integer ≥ 0)*  
+  Minimum bead count for a probe–sample measurement to be considered reliable. Observations with bead count < `minBeads` are marked low-bead for downstream fraction tests. **Default:** `3`.
+
+**beadSampleMaxFailFrac** *(numeric 0–1)*  
+  Max fraction of low-bead observations permitted per sample. Samples with a higher fraction are removed. **Default:** `0.05`.
+
+**beadProbeMaxFailFrac** *(numeric 0–1)*  
+  Max fraction of low-bead observations permitted per probe across the (post-filtered) samples. Probes with a higher fraction are removed. **Default:** `0.05`.
  
 #### Output  
 

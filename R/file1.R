@@ -14,11 +14,16 @@ main <- function(inputDirectory = getwd(),
                  tissue = "bloodAdult",
                  cellDeconvMethod = "CP",
                  placentaTrimester = "third",
-                 useImputation = FALSE) {
+                 useImputation = FALSE,
+                 detPSampleCutoff = 0.05,
+                 detPProbeCutoff = 0.01,
+                 minBeads = 3,
+                 beadSampleMaxFailFrac = 0.05,
+                 beadProbeMaxFailFrac  = 0.05) {
 
     if ((missing(columnTypes) || is.null(columnTypes) || length(columnTypes) == 0) && useSampleSheet == TRUE) {
         stop("columnTypes is required if useSampleSheet = TRUE and must be a named integer vector: 1=factor, 2=numeric.\n
-             eg. c(\"Age\"=2=, \"Sex\"=1, \"Batch\"=1, \"BMI\"=2, \"Row\"=1, \"Column\"=1)")
+             eg. c(\"Age\"=2, \"Sex\"=1, \"Batch\"=1, \"BMI\"=2, \"Row\"=1, \"Column\"=1)")
     }
     old_wd <- getwd()
     on.exit(setwd(old_wd), add = TRUE)
@@ -40,7 +45,14 @@ main <- function(inputDirectory = getwd(),
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(inputDirectory, arrayType, useSampleSheet, sampleSheetFile)
+        processIDAT(inputDirectory,
+                    arrayType, useSampleSheet,
+                    sampleSheetFile,
+                    detPSampleCutoff,
+                    detPProbeCutoff,
+                    minBeads,
+                    beadSampleMaxFailFrac,
+                    beadProbeMaxFailFrac)
     }
     preparePdataSVs(myEnv$bVals, useSampleSheet, sampleSheetFile, columnTypes)
     #CC <- NULL

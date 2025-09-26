@@ -14,11 +14,11 @@ diagnostic plots and tables.
 generateResiduals(
   inputDirectory = getwd(),
   outputDirectory = inputDirectory,
-  sampleSheetFile = "Sample_Sheet.csv",
-  columnTypes = NULL,
   useBeta = FALSE,
   formula = NULL,
   arrayType = "450K",
+  sampleSheetFile = "Sample_Sheet.csv",
+  columnTypes = NULL,
   ignoreCor = TRUE,
   PCs = 5,
   threshold = 3,
@@ -26,7 +26,12 @@ generateResiduals(
   doCellCounts = TRUE,
   tissue = "bloodAdult",
   cellDeconvMethod = "CP",
-  placentaTrimester = "third"
+  placentaTrimester = "third",
+  detPSampleCutoff = 0.05,
+  detPProbeCutoff = 0.01,
+  minBeads = 3,
+  beadSampleMaxFailFrac = 0.05,
+  beadProbeMaxFailFrac  = 0.05
 )
 }
 
@@ -59,12 +64,12 @@ Logical. If \code{TRUE}, expect \code{betaValues.csv} (or \code{.csv.gz}) with b
 \item{formula}{
 String or \code{NULL}. Custom model formula (e.g., \code{"EpiAge ~ Age + BMI + Smoking_Status + PC1"}).\\
 PCs are referenced as \code{PC1}, \code{PC2}, ...\\
-Adult blood cells: \code{Bcell, CD4T, CD8T, Mono, Neu, NK}.\\
-Cord blood cells: \code{Bcell, CD4T, CD8T, Gran, Mono, nRBC, NK}.\\
+Adult blood cells: \code{CD8T, CD4T, NK, Bcell, Mono, Gran}.\\
+Cord blood cells: \code{CD8T, CD4T, NK, Bcell, Mono, Gran, nRBC}.\\
 Saliva cells: \code{Epithelial, Immune}.\\
 Placenta cells: \code{Trophoblasts, Stromal, Hofbauer, Endothelial, nRBC, Syncytiotrophoblast}.\\
 Frontal cortex cells: \code{NeuN_neg, NeuN_pos}.\\
-Buccal cells: \code{NeuN_neg, NeuN_pos}.\\
+Buccal cells: \code{Epi, Fib, IC, CD4Tnvm, Baso, CD4Tmem, Bmem, Bnv, Treg, CD8Tmem, CD8Tnv, Eos, NK, Neu, Mono}.\\
 If \code{NULL}, a formula is constructed dynamically from available covariates.
 }
 
@@ -102,6 +107,39 @@ String. Cell proportion method: \code{"CP"} (constrained projection) or \code{"R
 
 \item{placentaTrimester}{
 String. When \code{tissue = "placenta"}, choose \code{"first"} or \code{"third"} trimester reference.
+}
+
+\item{detPSampleCutoff}{
+Numeric between 0 and 1. Sample-level detection-p filter.
+For each sample, the mean detection-p across probes is computed.
+Samples with mean detection-p greater than or equal to this cutoff are removed.
+Default: 0.05.
+}
+
+\item{detPProbeCutoff}{
+Numeric between 0 and 1. Probe-level detection-p filter.
+After sample filtering, a probe is retained only if its detection-p is less than this cutoff
+in all remaining samples. Probes failing in any sample are dropped.
+Default: 0.01.
+}
+
+\item{minBeads}{
+Integer greater than or equal to 0. Minimum bead count required for a probe–sample
+measurement to be considered reliable. Observations with bead count less than this
+value are marked as low-bead failures for downstream fraction tests.
+Default: 3.
+}
+
+\item{beadSampleMaxFailFrac}{
+Numeric between 0 and 1. Maximum fraction of low-bead observations permitted per sample.
+Samples with a proportion of low-bead probe calls greater than this value are removed.
+Default: 0.05.
+}
+
+\item{beadProbeMaxFailFrac}{
+Numeric between 0 and 1. Maximum fraction of low-bead observations permitted per probe
+across the (post-filtered) samples. Probes with a proportion of low-bead calls greater
+than this value are removed. Default: 0.05.
 }
 }
 

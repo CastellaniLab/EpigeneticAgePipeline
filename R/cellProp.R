@@ -14,20 +14,15 @@ estimateCellCountsFlexible <- function(rgSet,
 
     # choose reference/compTable
     if (tissue == "bloodAdult") {
-        # EPIC IDOL reference (cells: CD8T, CD4T, NK, Bcell, Mono, Neu)
-        data("IDOLOptimizedCpGs.compTable", envir = myEnv, package = "FlowSorted.Blood.EPIC")
-        compTable <- myEnv$IDOLOptimizedCpGs.compTable
-
+        data("FlowSorted.Blood.450k.compTable", package = "FlowSorted.Blood.450k")
+        compTable <- myEnv$FlowSorted.Blood.450k.compTable[,c("CD8T","CD4T","NK","Bcell","Mono","Gran")]
     } else if (tissue == "bloodCord") {
-        # Cord blood IDOL (adds nRBC, Gran)
         data("FlowSorted.CordBloodCombined.450k.compTable", envir = myEnv,
              package = "FlowSorted.CordBloodCombined.450k")
         compTable <- myEnv$FlowSorted.CordBloodCombined.450k.compTable
-
     } else if (tissue == "saliva") {
         compTable <- getSalivaCompTable()
     } else if (tissue == "placenta") {
-        # plaNET mean CpGs (first/third trimester sets)
         if (!requireNamespace("planet", quietly = TRUE)) stop("Install 'planet' for placenta.")
         if (placentaTrimester == "third") {
             data("plCellCpGsThird", envir = myEnv, package = "planet")
@@ -37,7 +32,6 @@ estimateCellCountsFlexible <- function(rgSet,
             compTable <- myEnv$plCellCpGsFirst
         }
     } else if (tissue == "brainDLPFC") {
-        # Build a simple compTable from FlowSorted.DLPFC.450k by averaging per cell type
         if (!requireNamespace("FlowSorted.DLPFC.450k", quietly = TRUE))
             stop("Install 'FlowSorted.DLPFC.450k' for brain deconvolution.")
         ref <- FlowSorted.DLPFC.450k::FlowSorted.DLPFC.450k

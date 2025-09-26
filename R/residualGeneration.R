@@ -136,6 +136,8 @@ generateResiduals <- function(inputDirectory = getwd(),
                               useBeta = FALSE,
                               formula = NULL,
                               arrayType = "450K",
+                              sampleSheetFile = "Sample_Sheet.csv",
+                              columnTypes = NULL,
                               ignoreCor = TRUE,
                               PCs = 5,
                               threshold = 3,
@@ -144,12 +146,15 @@ generateResiduals <- function(inputDirectory = getwd(),
                               tissue = "bloodAdult",
                               cellDeconvMethod = "CP",
                               placentaTrimester = "third",
-                              sampleSheetFile = "Sample_Sheet.csv",
-                              columnTypes = NULL) {
+                              detPSampleCutoff = 0.05,
+                              detPProbeCutoff = 0.01,
+                              minBeads = 3,
+                              beadSampleMaxFailFrac = 0.05,
+                              beadProbeMaxFailFrac  = 0.05) {
 
     if ((missing(columnTypes) || is.null(columnTypes) || length(columnTypes) == 0)) {
         stop("columnTypes is required to specify columns and must be a named integer vector: 1=factor, 2=numeric.\n
-             eg. c(\"Age\"=2=, \"Sex\"=1, \"Batch\"=1, \"BMI\"=2, \"Row\"=1, \"Column\"=1)")
+             eg. c(\"Age\"=2, \"Sex\"=1, \"Batch\"=1, \"BMI\"=2, \"Row\"=1, \"Column\"=1)")
     }
     old_wd <- getwd()
     on.exit(setwd(old_wd), add = TRUE)
@@ -171,7 +176,14 @@ generateResiduals <- function(inputDirectory = getwd(),
         }
     } else {
         message("Processing IDAT files...")
-        processIDAT(inputDirectory, arrayType, useSampleSheet = TRUE, sampleSheetFile = sampleSheetFile)
+        processIDAT(inputDirectory,
+                    arrayType, useSampleSheet = TRUE,
+                    sampleSheetFile,
+                    detPSampleCutoff,
+                    detPProbeCutoff,
+                    minBeads,
+                    beadSampleMaxFailFrac,
+                    beadProbeMaxFailFrac)
     }
 
     if (PCs != 0) {
@@ -203,7 +215,13 @@ generateResiduals <- function(inputDirectory = getwd(),
         processAgeType(myEnv$pdataSVs, gsub(" ", "", sub("~.*", "", formula)), " ")
     }
 
-    x <- corCovariates(" ")
+    validColumns <- c()
+    for (i in colnames(myEnv$pdataSVs)) {
+        if (length(unique(myEnv$pdataSVs[[i]])) != 1) {
+            validColumns <- c(validColumns, i)
+        }
+    }
+    x <- corCovariates(" ", validColumns)
     if (!ignoreCor && is.null(formula)) removeCovariates()
     myEnv$corsToRemove <- c()
 
