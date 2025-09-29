@@ -571,7 +571,7 @@ clockSummary <- function() {
     checkBLUP <- coefBLUP$CpGmarker[-1][!coefBLUP$CpGmarker[-1] %in% cpg.names]
     checkEN <- coefEN$CpGmarker[-1][!coefEN$CpGmarker[-1] %in% cpg.names]
     checkDunedin <- coefDunedinPACE$CpGmarker[-1][!coefDunedinPACE$CpGmarker[-1] %in% cpg.names]
-    checkGrimAge_PC <-coefGrimAge_PC$CpGmarker[-1][coefGrimAge_PC$CpGmarker[-1] %in% cpg.names]
+    checkGrimAge_PC <-coefGrimAge_PC$CpGmarker[-1][!coefGrimAge_PC$CpGmarker[-1] %in% cpg.names]
     checkHorvath_PC <- coefHorvath2013_PC$CpGmarker[-1][!coefHorvath2013_PC$CpGmarker[-1] %in% cpg.names]
     checkHannum_PC <- coefHannum_PC$CpGmarker[-1][!coefHannum_PC$CpGmarker[-1] %in% cpg.names]
     checkLevine_PC <- coefPhenoAge_PC$CpGmarker[-1][!coefPhenoAge_PC$CpGmarker[-1] %in% cpg.names]

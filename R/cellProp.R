@@ -14,8 +14,10 @@ estimateCellCountsFlexible <- function(rgSet,
 
     # choose reference/compTable
     if (tissue == "bloodAdult") {
-        data("FlowSorted.Blood.450k.compTable", package = "FlowSorted.Blood.450k")
+        data("FlowSorted.Blood.450k.compTable", envir = myEnv, package = "FlowSorted.Blood.450k")
         compTable <- myEnv$FlowSorted.Blood.450k.compTable[,c("CD8T","CD4T","NK","Bcell","Mono","Gran")]
+        compTable <- as.matrix(compTable)
+        storage.mode(compTable) <- "double"
     } else if (tissue == "bloodCord") {
         data("FlowSorted.CordBloodCombined.450k.compTable", envir = myEnv,
              package = "FlowSorted.CordBloodCombined.450k")
