@@ -95,6 +95,7 @@ main <- function(inputDirectory = getwd(),
     }
     exportResults(results, myEnv$bVals, finalOutput)
     clockSummary()
+    warning("NOTE: Please review the GitHub documentation for each clock’s recommended sample/tissue specifications and any usage limitations before interpreting results.")
 }
 
 # Function for loading tools and setting variables
@@ -522,8 +523,10 @@ recomputeAccels <- function(results) {
     candidates <- candidates[!grepl("accel|ageAcc", candidates, ignore.case = TRUE)]
     labs <- candidates
 
-    # Always skip DunedinPACE even if passed in explicitly
+    # Skip DunedinPACE, TL and age ageAcc calculations
     labs <- setdiff(labs, "DunedinPACE")
+    labs <- setdiff(labs, "TL")
+    labs <- setdiff(labs, "age")
 
     for (lab in labs) {
         if (!lab %in% names(results)) next
@@ -534,6 +537,10 @@ recomputeAccels <- function(results) {
             results[[nm]] <- a[[nm]]
         }
     }
+
+    results$ageAcc.TL <- NULL
+    results$ageAcc2.TL <- NULL
+    results$ageAcc3.TL <- NULL
 
     results
 }

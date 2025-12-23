@@ -479,7 +479,7 @@ Cell composition estimates (when IDATs and cell deconvolution are performed) ass
 Working environment that retains intermediate and final objects (e.g., `bVals`, `pdataSVs`, `exportDf`) for programmatic access.
 This also includes a dataframe summarizing CpG clock coverage. 
 
-
+[Example outputs](https://github.com/StanRaye/Plots)
 
  
 ### Using the generateResiduals function

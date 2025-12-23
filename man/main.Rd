@@ -129,6 +129,10 @@ than this value are removed. Default: 0.05.
 }
 
 \details{
+
+NOTE: Please review \href{https://github.com/CastellaniLab/EpigeneticAgePipeline}{GitHub documentation}
+for each clock’s recommended sample/tissue specifications and any usage limitations before interpreting results.
+
 \strong{Input Files}
 
 \emph{Sample_Sheet.csv:} A CSV with one row per sample and one column per variable.
@@ -167,7 +171,7 @@ Required for \code{useSampleSheet = TRUE}.
 \emph{GrimAge requirements:} Include \code{Age} (numeric) and \code{Sex} (factor). Valid sex encodings include \code{1}/\code{Male} and \code{2}/\code{Female} (case-insensitive).
 If an \code{Array} column is supplied in \code{RXCY} format, \code{Row} and \code{Column} are auto-derived for mixed-effects modeling.
 
-For additional guidance, see the package repository.
+For additional guidance, see the \href{https://github.com/CastellaniLab/EpigeneticAgePipeline}{package repository}
 }
 
 \examples{
