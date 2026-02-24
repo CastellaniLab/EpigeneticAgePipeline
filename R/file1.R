@@ -141,9 +141,9 @@ calculateDNAmAge <- function(bVals, pdataSVs, shouldNormalize) {
     betaValues <- as.matrix(bVals)
     if ("Age" %in% colnames(pdataSVs)) {
         results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize,
-                                        age = pdataSVs$Age)
+                                        age = pdataSVs$Age, min.perc = 0)
     } else {
-        results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize)
+        results <- methylclock::DNAmAge(betaValues, normalize = shouldNormalize, min.perc = 0)
     }
     return(results)
 }

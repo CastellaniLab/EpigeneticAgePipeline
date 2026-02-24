@@ -96,7 +96,7 @@ methyAge <- function(betas, clock, age_info=NA) {
 preprocessDunedinPACE <- function(betas, ref_means, least_proportion=0){
     common_p <- intersect(rownames(betas), names(ref_means))
     back_p <- length(common_p) / length(ref_means)
-    warning(paste0(back_p, "% of the required probes have been found for DunedinPACE"))
+    warning(paste0(back_p * 100, "% of the required probes have been found for DunedinPACE"))
     if(back_p > least_proportion){
         betas <- betas[common_p, ]
         betas[,] <- normalize.quantiles.use.target(as.matrix(betas),
