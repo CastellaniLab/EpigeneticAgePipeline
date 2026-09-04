@@ -290,8 +290,8 @@ https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-019-0667-1
 #### Acceleration  
 For all clocks except DunedinPACE, if age is provided as a covariate, 3 types of age acceleration is provided:
 - `ageAcc` -> Epigenetic Age - Chronological age  
-- `ageAcc2` -> Residuals of Epigenetic Age ~ Chronological age + Cell Proportions  
-- `ageAcc3` -> Residuals of Epigenetic Age ~ Chronological age  
+- `ageAcc2` -> Residuals of Epigenetic Age ~ Chronological age  
+- `ageAcc3` -> Residuals of Epigenetic Age ~ Chronological age + Cell Proportions  
 
 #### Quality Control & Filtering 
 - **Low intensity:** Drops samples with mean(`mMed`,`uMed`) < **10.5** (minfi::getQC).
